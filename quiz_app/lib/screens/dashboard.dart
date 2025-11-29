@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/services/active_session_checker.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/appbar.dart';
@@ -54,11 +55,13 @@ class _DashboardState extends ConsumerState<Dashboard> {
           }
         }
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: Appbar(),
-        body: BottomNavbarController(key: bottomNavbarKey),
-        backgroundColor: AppColors.background,
+      child: ActiveSessionChecker(
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          appBar: Appbar(),
+          body: BottomNavbarController(key: bottomNavbarKey),
+          backgroundColor: AppColors.background,
+        ),
       ),
     );
   }
