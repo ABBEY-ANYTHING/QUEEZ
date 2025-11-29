@@ -264,7 +264,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
                         return Icon(
                           Icons.inventory_2_outlined,
                           size: 100,
-                          color: AppColors.textSecondary.withOpacity(0.3),
+                          color: AppColors.textSecondary.withValues(alpha: 0.3),
                         );
                       },
                     ),
@@ -374,7 +374,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -403,7 +403,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: AppColors.primaryLight.withOpacity(0.2),
+                color: AppColors.primaryLight.withValues(alpha: 0.2),
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -412,7 +412,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.quiz, color: AppColors.primary, size: 24),
@@ -465,7 +465,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: AppColors.primaryLight.withOpacity(0.2),
+                color: AppColors.primaryLight.withValues(alpha: 0.2),
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -474,7 +474,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.style, color: AppColors.primary, size: 24),
@@ -527,7 +527,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: AppColors.primaryLight.withOpacity(0.2),
+                color: AppColors.primaryLight.withValues(alpha: 0.2),
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -536,7 +536,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.note, color: AppColors.primary, size: 24),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/screens/ai_study_set_configuration.dart';
-import 'package:quiz_app/CreateSection/screens/study_set_details.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 

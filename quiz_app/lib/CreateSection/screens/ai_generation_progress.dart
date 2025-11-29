@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
 import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -125,9 +125,11 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Text(
                       e.toString().replaceAll('Exception: ', ''),
@@ -168,37 +170,41 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
   Widget build(BuildContext context) {
     final state = ref.watch(aiStudySetProvider);
 
-    return WillPopScope(
-      onWillPop: () async {
-        // Prevent back navigation during generation
-        if (state.isGenerating) {
-          final shouldExit = await showDialog<bool>(
-            context: context,
-            builder:
-                (context) => AlertDialog(
-                  title: const Text('Cancel Generation?'),
-                  content: const Text(
-                    'Are you sure you want to cancel? Your progress will be lost.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Continue Generating'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ],
+    return PopScope(
+      canPop: !state.isGenerating,
+      onPopInvokedWithResult: (didPop, result) async {
+        // If already popped or not generating, do nothing
+        if (didPop || !state.isGenerating) return;
+
+        // Show confirmation dialog
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Cancel Generation?'),
+                content: const Text(
+                  'Are you sure you want to cancel? Your progress will be lost.',
                 ),
-          );
-          return shouldExit ?? false;
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Continue Generating'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ),
+        );
+
+        if (shouldExit == true && context.mounted) {
+          Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
         backgroundColor: AppColors.background,

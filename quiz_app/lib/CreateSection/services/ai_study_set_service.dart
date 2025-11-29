@@ -6,14 +6,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiz_app/CreateSection/models/ai_study_set_models.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
-import 'package:http_parser/http_parser.dart';
 
 class AIStudySetService {
   static const String baseUrl = ApiConfig.baseUrl;
 
-  static Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-  };
 
   /// Get resumable upload URL from backend
   static Future<String> getUploadUrl({

@@ -56,7 +56,7 @@ class LearningToolsPage extends StatelessWidget {
                 onPressed: () => _onFlashcardsTap(context),
                 showArrow: true,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               CustomCard(
                 title: 'Notes',
                 description:

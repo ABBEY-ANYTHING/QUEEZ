@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
-import 'package:quiz_app/utils/color.dart';
 
 class CreatePage extends StatelessWidget {
   const CreatePage({super.key});
@@ -82,7 +81,7 @@ class CreatePage extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(

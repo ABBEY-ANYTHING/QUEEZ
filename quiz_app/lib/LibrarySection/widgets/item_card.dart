@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
-import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
 import 'package:quiz_app/CreateSection/screens/study_set_viewer.dart';
@@ -18,11 +17,18 @@ import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/wait_screen.dart';
 
-class ItemCard extends StatelessWidget {
+class ItemCard extends StatefulWidget {
   final LibraryItem item;
   final VoidCallback onDelete;
 
   const ItemCard({super.key, required this.item, required this.onDelete});
+
+  @override
+  State<ItemCard> createState() => _ItemCardState();
+}
+
+class _ItemCardState extends State<ItemCard> {
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +72,14 @@ class ItemCard extends StatelessWidget {
   }
 
   void _handleItemTap(BuildContext context) {
+    if (_isDeleting) return;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    if (item.isNote) {
+    if (widget.item.isNote) {
       _navigateToNote(context, user.uid);
-    } else if (item.isFlashcard) {
+    } else if (widget.item.isFlashcard) {
       _navigateToFlashcard(context, user.uid);
     } else {
       _navigateToQuiz(context, user.uid);
@@ -213,7 +221,45 @@ class ItemCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildItemCountTag(),
-              _buildDateAndDeleteButton(softRed),
+              Row(
+                children: [
+                  Text(
+                    widget.item.createdAt ?? 'Unknown',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () {
+                      // Prevent tap from propagating to parent InkWell
+                    },
+                    child: Material(
+                      color: softRed,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        onPressed: () {
+                          setState(() => _isDeleting = true);
+                          widget.onDelete();
+                        },
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                          maxWidth: 36,
+                          maxHeight: 36,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
@@ -270,7 +316,7 @@ class ItemCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            item.isQuiz
+            widget.item.isQuiz
                 ? Icons.quiz_outlined
                 : item.isNote
                 ? Icons.description_outlined
@@ -282,7 +328,7 @@ class ItemCard extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            item.isNote
+            widget.item.isNote
                 ? 'Note'
                 : item.isStudySet
                 ? '${item.itemCount} Items'
@@ -363,7 +409,7 @@ class ItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Text(
-        item.title,
+        widget.item.title,
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
@@ -388,7 +434,7 @@ class ItemCard extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              item.originalOwnerUsername!,
+              widget.item.originalOwnerUsername!,
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary.withValues(alpha: 0.8),
@@ -407,7 +453,7 @@ class ItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Text(
-        item.description,
+        widget.item.description,
         style: const TextStyle(
           fontSize: 15,
           color: AppColors.textSecondary,
@@ -538,8 +584,8 @@ class ItemCard extends StatelessWidget {
           final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
           showModeSelection(
             context: context,
-            quizId: item.id,
-            quizTitle: item.title,
+            quizId: widget.item.id,
+            quizTitle: widget.item.title,
             hostId: hostId,
           );
         },
@@ -600,3 +646,4 @@ class ItemCard extends StatelessWidget {
     );
   }
 }
+

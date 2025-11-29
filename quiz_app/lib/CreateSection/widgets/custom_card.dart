@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/quiz_design_system.dart';
 
-// Updated CustomCard Widget with optional arrow
 class CustomCard extends StatelessWidget {
   final String title;
   final String description;
@@ -20,33 +20,37 @@ class CustomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Card(
-        elevation: 6,
-        color: Colors.grey[150],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        shadowColor: Colors.black26,
+    return Material(
+      color: AppColors.white,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 0,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 24,
-          ),
+          padding: const EdgeInsets.all(QuizSpacing.lg),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
-              Image.asset(
-                iconPath,
-                width: 40,
-                height: 40,
-                fit: BoxFit.contain,
+              // Icon Container
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+                ),
+                child: Center(
+                  child: Image.asset(
+                    iconPath,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: QuizSpacing.lg),
 
-              // Texts
+              // Text Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,30 +58,38 @@ class CustomCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black54,
-                        height: 1.3,
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
                       ),
                     ),
                   ],
                 ),
               ),
-              
-              // Conditional Arrow indicator
+
+              // Arrow indicator
               if (showArrow)
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppColors.iconActive,
-                  size: 18,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.primary,
+                    size: 16,
+                  ),
                 ),
             ],
           ),

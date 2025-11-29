@@ -289,6 +289,12 @@ class _AnimatedItemListState extends State<_AnimatedItemList> {
             child: ItemCard(
               item: item,
               onDelete: () async {
+                // Capture context before any async operations
+                final dialogContext = context;
+                
+                // Check if context is still valid
+                if (!dialogContext.mounted) return;
+                
                 // Show confirmation dialog
                 final confirmed = await showDialog<bool>(
                   context: context,

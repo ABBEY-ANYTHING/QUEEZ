@@ -60,7 +60,7 @@ class AssessmentPage extends StatelessWidget {
                 onPressed: () => _onQuizTap(context),
                 showArrow: true,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               CustomCard(
                 title: 'Create a Poll',
                 description:
@@ -69,7 +69,7 @@ class AssessmentPage extends StatelessWidget {
                 onPressed: () => _onPollTap(context),
                 showArrow: true,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               CustomCard(
                 title: 'Create a Survey',
                 description:
