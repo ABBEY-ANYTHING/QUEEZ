@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
 import 'package:quiz_app/CreateSection/services/study_set_service.dart';
-import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 
 class AIGenerationProgress extends ConsumerStatefulWidget {
@@ -69,8 +69,8 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
         );
         return;
       }
-
-      // Show success dialog
+      if (!mounted) return;
+      //Show success dialog
       await QuizSavedDialog.show(
         context,
         title: 'Study Set Generated!',
@@ -80,7 +80,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
           if (mounted) {
             // Trigger library reload FIRST using the provider directly
             await ref.read(quizLibraryProvider.notifier).reload();
-
+            if (!mounted) return;
             // Pop back to create page
             Navigator.of(context).popUntil((route) => route.isFirst);
 
@@ -225,7 +225,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
                         return Icon(
                           Icons.auto_awesome,
                           size: 100,
-                          color: AppColors.primary.withOpacity(0.5),
+                          color: AppColors.primary.withValues(alpha: 0.5),
                         );
                       },
                     ),
@@ -264,10 +264,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
                         vertical: 16,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
+                        color: AppColors.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -276,7 +276,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -309,10 +309,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.amber.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.amber.withOpacity(0.3),
+                          color: Colors.amber.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(

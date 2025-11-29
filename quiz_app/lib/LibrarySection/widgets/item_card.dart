@@ -15,7 +15,6 @@ import 'package:quiz_app/LibrarySection/screens/mode_selection_sheet.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/wait_screen.dart';
 
 class ItemCard extends StatefulWidget {
@@ -29,7 +28,6 @@ class ItemCard extends StatefulWidget {
 }
 
 class _ItemCardState extends State<ItemCard> {
-  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -72,20 +70,6 @@ class _ItemCardState extends State<ItemCard> {
     );
   }
 
-  void _handleItemTap(BuildContext context) {
-    if (_isDeleting) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    if (widget.item.isNote) {
-      _navigateToNote(context, user.uid);
-    } else if (widget.item.isFlashcard) {
-      _navigateToFlashcard(context, user.uid);
-    } else {
-      _navigateToQuiz(context, user.uid);
-    }
-  }
 
   void _navigateToNote(BuildContext context, String userId) {
     Note? loadedNote;
@@ -234,7 +218,6 @@ class _ItemCardState extends State<ItemCard> {
                       shape: const CircleBorder(),
                       child: IconButton(
                         onPressed: () {
-                          setState(() => _isDeleting = true);
                           widget.onDelete();
                         },
                         icon: const Icon(
@@ -336,35 +319,6 @@ class _ItemCardState extends State<ItemCard> {
     );
   }
 
-  Widget _buildDateAndDeleteButton(Color softRed) {
-    return Row(
-      children: [
-        Text(
-          widget.item.createdAt ?? 'Unknown',
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-        ),
-        const SizedBox(width: 12),
-        InkWell(
-          onTap: widget.onDelete,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: softRed,
-              border: Border.all(color: Colors.transparent, width: 2),
-            ),
-            child: const Icon(
-              Icons.delete_outline,
-              color: AppColors.error,
-              size: 20,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildCoverImage() {
     return Container(
