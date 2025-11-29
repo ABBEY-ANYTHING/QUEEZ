@@ -125,3 +125,62 @@ abstract class _$PreviousNavIndex extends $Notifier<int> {
     element.handleValue(ref, created);
   }
 }
+
+/// Provider for tracking keyboard visibility
+
+@ProviderFor(KeyboardVisible)
+const keyboardVisibleProvider = KeyboardVisibleProvider._();
+
+/// Provider for tracking keyboard visibility
+final class KeyboardVisibleProvider
+    extends $NotifierProvider<KeyboardVisible, bool> {
+  /// Provider for tracking keyboard visibility
+  const KeyboardVisibleProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'keyboardVisibleProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$keyboardVisibleHash();
+
+  @$internal
+  @override
+  KeyboardVisible create() => KeyboardVisible();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$keyboardVisibleHash() => r'ada559cf16080ff3d0d2e485bc3371e2ab191245';
+
+/// Provider for tracking keyboard visibility
+
+abstract class _$KeyboardVisible extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
