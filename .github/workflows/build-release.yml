@@ -30,16 +30,15 @@ jobs:
           cache: true
 
       - name: Create google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-        working-directory: Queez-Frontend/quiz_app
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > quiz_app/android/app/google-services.json
 
       - name: Get dependencies
         run: flutter pub get
-        working-directory: Queez-Frontend/quiz_app
+        working-directory: quiz_app
 
       - name: Build APK
         run: flutter build apk --release --split-per-abi
-        working-directory: Queez-Frontend/quiz_app
+        working-directory: quiz_app
 
       - name: Get version
         id: version
@@ -47,7 +46,7 @@ jobs:
           VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-        working-directory: Queez-Frontend/quiz_app
+        working-directory: quiz_app
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -62,8 +61,8 @@ jobs:
             - `app-armeabi-v7a-release.apk` - For older 32-bit devices
             - `app-x86_64-release.apk` - For x86 emulators
           files: |
-            Queez-Frontend/quiz_app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            Queez-Frontend/quiz_app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-            Queez-Frontend/quiz_app/build/app/outputs/flutter-apk/app-x86_64-release.apk
+            quiz_app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            quiz_app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            quiz_app/build/app/outputs/flutter-apk/app-x86_64-release.apk
           draft: false
           prerelease: false
