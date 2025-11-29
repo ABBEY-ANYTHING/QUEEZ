@@ -27,3 +27,16 @@ class PreviousNavIndex extends _$PreviousNavIndex {
     state = index;
   }
 }
+
+/// Provider for tracking keyboard visibility
+@riverpod
+class KeyboardVisible extends _$KeyboardVisible {
+  @override
+  bool build() {
+    return false;
+  }
+
+  void setVisible(bool visible) {
+    state = visible;
+  }
+}

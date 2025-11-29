@@ -36,7 +36,7 @@ final class QuizLibraryProvider
   QuizLibrary create() => QuizLibrary();
 }
 
-String _$quizLibraryHash() => r'941dd467ba14ab27d26b67b7a29cf191298fd15f';
+String _$quizLibraryHash() => r'8238e15acf0c9885952b67f5f3b4203c1401afac';
 
 /// Provider for unified library items (quizzes + flashcards)
 

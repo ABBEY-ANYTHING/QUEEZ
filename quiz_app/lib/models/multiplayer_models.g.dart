@@ -74,10 +74,9 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
   timeBonus: (json['time_bonus'] as num?)?.toInt(),
   multiplier: (json['multiplier'] as num?)?.toDouble(),
   correctAnswer: json['correct_answer'],
-  rankings:
-      (json['rankings'] as List<dynamic>?)
-          ?.map((e) => e as Map<String, dynamic>)
-          .toList(),
+  rankings: (json['rankings'] as List<dynamic>?)
+      ?.map((e) => e as Map<String, dynamic>)
+      .toList(),
   lastAnswerCorrect: json['last_answer_correct'] as bool?,
   selectedAnswer: json['selected_answer'],
   answerDistribution: (json['answer_distribution'] as Map<String, dynamic>?)
@@ -140,12 +139,11 @@ _LeaderboardState _$LeaderboardStateFromJson(Map<String, dynamic> json) =>
               ?.map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      currentUserEntry:
-          json['current_user_entry'] == null
-              ? null
-              : LeaderboardEntry.fromJson(
-                json['current_user_entry'] as Map<String, dynamic>,
-              ),
+      currentUserEntry: json['current_user_entry'] == null
+          ? null
+          : LeaderboardEntry.fromJson(
+              json['current_user_entry'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$LeaderboardStateToJson(_LeaderboardState instance) =>
