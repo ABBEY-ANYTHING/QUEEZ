@@ -105,6 +105,7 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
     final selectedIndex = ref.watch(bottomNavIndexProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: List.generate(_pages.length, _buildTransitioningPage),
       ),
