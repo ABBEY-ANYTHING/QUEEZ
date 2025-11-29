@@ -5,7 +5,7 @@ import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
 import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
-import 'package:quiz_app/LibrarySection/screens/library_page.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/globals.dart';
 
 class AIGenerationProgress extends ConsumerStatefulWidget {
@@ -79,16 +79,16 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
         title: 'Study Set Generated!',
         message:
             'Your AI-powered study set has been created and saved successfully.',
-        onDismiss: () {
+        onDismiss: () async {
           if (mounted) {
+            // Trigger library reload FIRST using the provider directly
+            await ref.read(quizLibraryProvider.notifier).reload();
+            
             // Pop back to create page
             Navigator.of(context).popUntil((route) => route.isFirst);
 
-            // Switch to library tab (index 1) and trigger GET request
+            // Switch to library tab (index 1)
             bottomNavbarKey.currentState?.setIndex(1);
-
-            // Trigger library reload to fetch the new study set
-            LibraryPage.reloadItems();
           }
         },
       );

@@ -5,7 +5,7 @@ import 'package:quiz_app/utils/color.dart';
 class QuizSavedDialog extends StatefulWidget {
   final String title;
   final String message;
-  final VoidCallback? onDismiss;
+  final Future<void> Function()? onDismiss;
 
   const QuizSavedDialog({
     super.key,
@@ -21,7 +21,7 @@ class QuizSavedDialog extends StatefulWidget {
     BuildContext context, {
     required String title,
     required String message,
-    VoidCallback? onDismiss,
+    Future<void> Function()? onDismiss,
   }) {
     return showDialog<void>(
       context: context,
@@ -78,10 +78,10 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
     });
 
     // Auto dismiss after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () async {
       if (mounted && Navigator.canPop(context)) {
         Navigator.of(context).pop();
-        widget.onDismiss?.call();
+        await widget.onDismiss?.call();
       }
     });
   }
@@ -185,9 +185,9 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
               
               // Close Button
               GestureDetector(
-                onTap: () {
+                onTap: () async {
                   Navigator.of(context).pop();
-                  widget.onDismiss?.call();
+                  await widget.onDismiss?.call();
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(

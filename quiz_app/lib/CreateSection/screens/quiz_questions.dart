@@ -220,7 +220,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
             context,
             title: 'Quiz Added!',
             message: 'Quiz has been added to your study set.',
-            onDismiss: () {
+            onDismiss: () async {
               debugPrint('Dialog dismissed, now popping navigation stack...');
 
               if (mounted) {
@@ -267,7 +267,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
           context,
           title: 'Success!',
           message: 'Your quiz has been saved successfully and is ready to use!',
-          onDismiss: () {
+          onDismiss: () async {
             debugPrint('Success dialog dismissed');
             QuizCacheManager.instance.clearCache();
             debugPrint('Cache cleared');

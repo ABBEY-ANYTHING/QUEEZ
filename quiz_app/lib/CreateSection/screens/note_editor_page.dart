@@ -79,7 +79,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
             context,
             title: 'Note Added!',
             message: 'Note has been added to your study set.',
-            onDismiss: () {
+            onDismiss: () async {
               if (mounted) {
                 // Pop back to dashboard with simple slide animation
                 // Stack: ... -> Dashboard -> NoteDetailsPage -> NoteEditorPage (current)

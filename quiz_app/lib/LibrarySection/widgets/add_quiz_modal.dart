@@ -103,7 +103,7 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
             dialogContext,
             title: 'Success!',
             message: 'Quiz "$quizTitle" has been added to your library!',
-            onDismiss: () {
+            onDismiss: () async {
               // This will be called when dialog auto-dismisses
             },
           );

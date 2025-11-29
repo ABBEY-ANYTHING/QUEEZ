@@ -114,7 +114,7 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
             context,
             title: 'Flashcard Set Added!',
             message: 'Flashcard set has been added to your study set.',
-            onDismiss: () {
+            onDismiss: () async {
               if (mounted) {
                 // Pop back to dashboard with simple slide animation
                 // Stack: ... -> Dashboard -> FlashcardDetailsPage -> FlashcardCreationPage (current)
@@ -146,7 +146,7 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
           title: 'Success!',
           message:
               'Your flashcard set has been saved successfully and is ready to use!',
-          onDismiss: () {
+          onDismiss: () async {
             debugPrint('Success dialog dismissed');
             if (mounted) {
               // Pop back to the Create page

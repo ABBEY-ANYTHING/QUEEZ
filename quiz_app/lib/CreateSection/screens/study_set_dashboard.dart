@@ -327,7 +327,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         context,
         title: 'Success!',
         message: 'Your study set has been saved successfully.',
-        onDismiss: () {
+        onDismiss: () async {
           if (mounted) {
             // Pop back to dashboard
             Navigator.of(context).popUntil((route) => route.isFirst);
