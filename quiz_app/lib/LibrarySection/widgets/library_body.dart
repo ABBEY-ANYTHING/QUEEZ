@@ -295,21 +295,27 @@ class _AnimatedItemListState extends State<_AnimatedItemList> {
                 if (!dialogContext.mounted) return;
 
                 // Show confirmation dialog
-                final confirmed = await AppDialog.show<bool>(
+                final confirmed = await showDialog<bool>(
                   context: context,
-                  title:
-                      'Delete ${item.isQuiz
-                          ? 'Quiz'
-                          : item.isNote
-                          ? 'Note'
-                          : item.isStudySet
-                          ? 'Study Set'
-                          : 'Flashcard Set'}',
-                  content: 'Are you sure you want to delete "${item.title}"?',
-                  primaryActionText: 'Delete',
-                  primaryActionCallback: () => Navigator.pop(context, true),
-                  secondaryActionText: 'Cancel',
-                  secondaryActionCallback: () => Navigator.pop(context, false),
+                  barrierDismissible: true,
+                  barrierColor: AppColors.primary.withValues(alpha: 0.3),
+                  builder: (dialogContext) => AppDialog(
+                    title:
+                        'Delete ${item.isQuiz
+                            ? 'Quiz'
+                            : item.isNote
+                            ? 'Note'
+                            : item.isStudySet
+                            ? 'Study Set'
+                            : 'Flashcard Set'}',
+                    content: 'Are you sure you want to delete "${item.title}"?',
+                    primaryActionText: 'Delete',
+                    primaryActionCallback: () =>
+                        Navigator.pop(dialogContext, true),
+                    secondaryActionText: 'Cancel',
+                    secondaryActionCallback: () =>
+                        Navigator.pop(dialogContext, false),
+                  ),
                 );
 
                 if (confirmed == true) {
