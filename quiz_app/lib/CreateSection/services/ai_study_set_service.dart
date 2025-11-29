@@ -121,7 +121,7 @@ class AIStudySetService {
 
         return UploadedFile(
           fileName: fileData['displayName'] ?? fileName,
-          fileUri: fileData['uri'] ?? fileData['name'],
+          fileUri: fileData['name'] ?? fileData['uri'],
           fileSize: fileSize,
           mimeType: fileData['mimeType'] ?? mimeType,
         );
@@ -137,7 +137,6 @@ class AIStudySetService {
   /// Generate study set using uploaded file URIs
   static Future<StudySet> generateStudySet({
     required List<String> fileUris,
-    required StudySetConfig config,
     required GenerationSettings settings,
   }) async {
     try {
@@ -157,7 +156,6 @@ class AIStudySetService {
             },
             body: jsonEncode({
               'fileUris': fileUris,
-              'config': config.toJson(),
               'settings': settings.toJson(),
             }),
           )

@@ -4,9 +4,11 @@ import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
+import 'package:quiz_app/CreateSection/screens/study_set_viewer.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
+import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/screens/mode_selection_sheet.dart';
@@ -27,34 +29,38 @@ class ItemCard extends StatelessWidget {
     final Color softRed = AppColors.error.withValues(alpha: 0.1);
 
     // Check if this item was shared in a restrictive mode (only for quizzes)
-    final isRestrictiveMode = item.isQuiz &&
-        (item.sharedMode == 'self_paced' || item.sharedMode == 'timed_individual');
+    final isRestrictiveMode =
+        item.isQuiz &&
+        (item.sharedMode == 'self_paced' ||
+            item.sharedMode == 'timed_individual');
 
     // Show full features if not in restrictive mode
     final showFullFeatures = !isRestrictiveMode;
 
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 0,
-      child: InkWell(
-        onTap: () => _handleItemTap(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              _buildHeader(softRed),
-              _buildCoverImage(),
-              _buildTitle(),
-              if (item.originalOwnerUsername != null &&
-                  item.originalOwnerUsername!.isNotEmpty)
-                _buildAuthorInfo(),
-              _buildDescription(),
-              _buildActionButtons(context, showFullFeatures),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-        ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(softRed),
+          _buildCoverImage(),
+          _buildTitle(),
+          if (item.originalOwnerUsername != null &&
+              item.originalOwnerUsername!.isNotEmpty)
+            _buildAuthorInfo(),
+          _buildDescription(),
+          _buildActionButtons(context, showFullFeatures),
+        ],
       ),
     );
   }
@@ -77,24 +83,26 @@ class ItemCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WaitScreen(
-          loadingMessage: 'Loading note',
-          onLoadComplete: () async {
-            loadedNote = await NoteService.getNote(item.id, userId);
-          },
-          onNavigate: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NoteViewerPage(
-                  noteId: item.id,
-                  userId: userId,
-                  preloadedNote: loadedNote,
-                ),
-              ),
-            );
-          },
-        ),
+        builder:
+            (context) => WaitScreen(
+              loadingMessage: 'Loading note',
+              onLoadComplete: () async {
+                loadedNote = await NoteService.getNote(item.id, userId);
+              },
+              onNavigate: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => NoteViewerPage(
+                          noteId: item.id,
+                          userId: userId,
+                          preloadedNote: loadedNote,
+                        ),
+                  ),
+                );
+              },
+            ),
       ),
     );
   }
@@ -104,24 +112,28 @@ class ItemCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WaitScreen(
-          loadingMessage: 'Loading flashcards',
-          onLoadComplete: () async {
-            loadedFlashcardSet =
-                await FlashcardService.getFlashcardSet(item.id, userId);
-          },
-          onNavigate: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FlashcardPlayScreen(
-                  flashcardSetId: item.id,
-                  preloadedFlashcardSet: loadedFlashcardSet,
-                ),
-              ),
-            );
-          },
-        ),
+        builder:
+            (context) => WaitScreen(
+              loadingMessage: 'Loading flashcards',
+              onLoadComplete: () async {
+                loadedFlashcardSet = await FlashcardService.getFlashcardSet(
+                  item.id,
+                  userId,
+                );
+              },
+              onNavigate: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => FlashcardPlayScreen(
+                          flashcardSetId: item.id,
+                          preloadedFlashcardSet: loadedFlashcardSet,
+                        ),
+                  ),
+                );
+              },
+            ),
       ),
     );
   }
@@ -131,35 +143,67 @@ class ItemCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WaitScreen(
-          loadingMessage: 'Loading quiz',
-          onLoadComplete: () async {
-            loadedQuestions =
-                await QuizService.fetchQuestionsByQuizId(item.id, userId);
-          },
-          onNavigate: () {
-            Navigator.pushReplacement(
-              context,
-              customRoute(
-                QuizPlayScreen(
-                  quizItem: QuizLibraryItem.fromJson(item.toQuizLibraryItem()),
-                  preloadedQuestions: loadedQuestions,
-                ),
-                AnimationType.slideUp,
-              ),
-            );
-          },
-        ),
+        builder:
+            (context) => WaitScreen(
+              loadingMessage: 'Loading quiz',
+              onLoadComplete: () async {
+                loadedQuestions = await QuizService.fetchQuestionsByQuizId(
+                  item.id,
+                  userId,
+                );
+              },
+              onNavigate: () {
+                Navigator.pushReplacement(
+                  context,
+                  customRoute(
+                    QuizPlayScreen(
+                      quizItem: QuizLibraryItem.fromJson(
+                        item.toQuizLibraryItem(),
+                      ),
+                      preloadedQuestions: loadedQuestions,
+                    ),
+                    AnimationType.slideUp,
+                  ),
+                );
+              },
+            ),
+      ),
+    );
+  }
+
+  void _navigateToStudySet(BuildContext context) {
+    StudySet? loadedStudySet;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => WaitScreen(
+              loadingMessage: 'Loading study set',
+              onLoadComplete: () async {
+                loadedStudySet = await StudySetService.fetchStudySetById(
+                  item.id,
+                );
+              },
+              onNavigate: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => StudySetViewer(
+                          studySetId: item.id,
+                          preloadedStudySet: loadedStudySet,
+                        ),
+                  ),
+                );
+              },
+            ),
       ),
     );
   }
 
   Widget _buildHeader(Color softRed) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.md,
-        vertical: QuizSpacing.md,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -179,27 +223,36 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildTypeLabel() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.sm,
-        vertical: QuizSpacing.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: item.isQuiz
-            ? AppColors.primary.withValues(alpha: 0.15)
-            : item.isNote
+        color:
+            item.isQuiz
+                ? AppColors.primary.withValues(alpha: 0.15)
+                : item.isNote
                 ? AppColors.warning.withValues(alpha: 0.15)
+                : item.isStudySet
+                ? AppColors.secondary.withValues(alpha: 0.15)
                 : AppColors.accentBright.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        item.isQuiz ? 'QUIZ' : item.isNote ? 'NOTE' : 'FLASHCARD SET',
+        item.isQuiz
+            ? 'QUIZ'
+            : item.isNote
+            ? 'NOTE'
+            : item.isStudySet
+            ? 'STUDY SET'
+            : 'FLASHCARD SET',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: item.isQuiz
-              ? AppColors.primary
-              : item.isNote
+          color:
+              item.isQuiz
+                  ? AppColors.primary
+                  : item.isNote
                   ? AppColors.warning
+                  : item.isStudySet
+                  ? AppColors.secondary
                   : AppColors.accentBright,
           letterSpacing: 0.5,
         ),
@@ -209,13 +262,10 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildItemCountTag() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.md,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
@@ -223,8 +273,10 @@ class ItemCard extends StatelessWidget {
             item.isQuiz
                 ? Icons.quiz_outlined
                 : item.isNote
-                    ? Icons.description_outlined
-                    : Icons.style_outlined,
+                ? Icons.description_outlined
+                : item.isStudySet
+                ? Icons.collections_bookmark_outlined
+                : Icons.style_outlined,
             size: 18,
             color: AppColors.primary,
           ),
@@ -232,6 +284,8 @@ class ItemCard extends StatelessWidget {
           Text(
             item.isNote
                 ? 'Note'
+                : item.isStudySet
+                ? '${item.itemCount} Items'
                 : '${item.itemCount} ${item.isQuiz ? 'Questions' : 'Cards'}',
             style: const TextStyle(
               fontSize: 13,
@@ -249,25 +303,19 @@ class ItemCard extends StatelessWidget {
       children: [
         Text(
           item.createdAt ?? 'Unknown',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(width: 12),
         InkWell(
           onTap: onDelete,
-          borderRadius: BorderRadius.circular(QuizBorderRadius.circular),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: softRed,
-              border: Border.all(
-                color: Colors.transparent,
-                width: 2,
-              ),
+              border: Border.all(color: Colors.transparent, width: 2),
             ),
             child: const Icon(
               Icons.delete_outline,
@@ -283,41 +331,37 @@ class ItemCard extends StatelessWidget {
   Widget _buildCoverImage() {
     return Container(
       height: 160,
-      margin: const EdgeInsets.symmetric(horizontal: QuizSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
-        child: item.coverImagePath != null
-            ? Image.network(
-                item.coverImagePath!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildDefaultIcon(),
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: AppColors.surface,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                        strokeWidth: 2,
+        borderRadius: BorderRadius.circular(16),
+        child:
+            item.coverImagePath != null
+                ? Image.network(
+                  item.coverImagePath!,
+                  fit: BoxFit.cover,
+                  errorBuilder:
+                      (context, error, stackTrace) => _buildDefaultIcon(),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: AppColors.surface,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                          strokeWidth: 2,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              )
-            : _buildDefaultIcon(),
+                    );
+                  },
+                )
+                : _buildDefaultIcon(),
       ),
     );
   }
 
   Widget _buildTitle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.md,
-        QuizSpacing.lg,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Text(
         item.title,
         style: const TextStyle(
@@ -333,12 +377,7 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildAuthorInfo() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.sm,
-        QuizSpacing.lg,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
         children: [
           Icon(
@@ -366,12 +405,7 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildDescription() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.sm,
-        QuizSpacing.lg,
-        QuizSpacing.lg,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Text(
         item.description,
         style: const TextStyle(
@@ -387,15 +421,13 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildActionButtons(BuildContext context, bool showFullFeatures) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        0,
-        QuizSpacing.lg,
-        QuizSpacing.lg,
-      ),
-      child: item.isNote
-          ? _buildNoteButton(context)
-          : item.isFlashcard
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child:
+          item.isNote
+              ? _buildNoteButton(context)
+              : item.isStudySet
+              ? _buildStudySetButton(context)
+              : item.isFlashcard
               ? _buildFlashcardButton(context)
               : _buildQuizButtons(context, showFullFeatures),
     );
@@ -422,7 +454,30 @@ class ItemCard extends StatelessWidget {
           foregroundColor: AppColors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudySetButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: () => _navigateToStudySet(context),
+        icon: const Icon(Icons.visibility, size: 20, color: AppColors.white),
+        label: const Text(
+          'View',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -498,7 +553,7 @@ class ItemCard extends StatelessWidget {
           foregroundColor: AppColors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -538,7 +593,7 @@ class ItemCard extends StatelessWidget {
       child: const Center(
         child: Icon(
           Icons.quiz_rounded,
-          size: 48,
+          size: 64,
           color: AppColors.iconInactive,
         ),
       ),

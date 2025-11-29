@@ -62,7 +62,7 @@ class _AIStudySetConfigurationState
     final notifier = ref.read(aiStudySetProvider.notifier);
     final state = ref.read(aiStudySetProvider);
 
-    if (state.uploadedFiles.length >= 3) {
+    if (state.pendingFiles.length >= 3) {
       _showError('Maximum 3 files allowed');
       return;
     }
@@ -76,7 +76,7 @@ class _AIStudySetConfigurationState
 
       if (result != null) {
         for (final platformFile in result.files) {
-          if (ref.read(aiStudySetProvider).uploadedFiles.length >= 3) {
+          if (ref.read(aiStudySetProvider).pendingFiles.length >= 3) {
             _showError('Maximum 3 files reached');
             break;
           }
@@ -91,26 +91,8 @@ class _AIStudySetConfigurationState
             continue;
           }
 
-          // Show loading
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder:
-                (context) => const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                  ),
-                ),
-          );
-
-          try {
-            await notifier.uploadFile(File(platformFile.path!));
-            if (mounted) Navigator.pop(context); // Close loading dialog
-            _showSuccess('File uploaded successfully');
-          } catch (e) {
-            if (mounted) Navigator.pop(context); // Close loading dialog
-            _showError('Upload failed: ${e.toString()}');
-          }
+          // Just add file to pending list (don't upload yet)
+          notifier.addPendingFile(File(platformFile.path!));
         }
       }
     } catch (e) {
@@ -139,17 +121,8 @@ class _AIStudySetConfigurationState
   }
 
   void _startGeneration() {
-    final notifier = ref.read(aiStudySetProvider.notifier);
-
-    // Update config
-    notifier.updateConfig(
-      name: _nameController.text,
-      description: _descriptionController.text,
-      category: _selectedCategory,
-      language: _selectedLanguage,
-    );
-
-    // Navigate to progress screen
+    // Settings are already stored in the provider state via sliders
+    // Just navigate to progress screen
     Navigator.push(
       context,
       customRoute(const AIGenerationProgress(), AnimationType.slideUp),
@@ -191,9 +164,9 @@ class _AIStudySetConfigurationState
 
             // File Upload Slots
             ...List.generate(3, (index) {
-              if (index < state.uploadedFiles.length) {
-                return _buildUploadedFileCard(
-                  state.uploadedFiles[index],
+              if (index < state.pendingFiles.length) {
+                return _buildPendingFileCard(
+                  state.pendingFiles[index],
                   index,
                   notifier,
                 );
@@ -205,7 +178,7 @@ class _AIStudySetConfigurationState
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: state.uploadedFiles.length < 3 ? _pickFiles : null,
+                onPressed: state.pendingFiles.length < 3 ? _pickFiles : null,
                 icon: const Icon(Icons.add),
                 label: const Text('Add Documents'),
                 style: ElevatedButton.styleFrom(
@@ -221,97 +194,30 @@ class _AIStudySetConfigurationState
 
             const SizedBox(height: 32),
 
-            // Study Set Info
-            _buildSectionTitle('Study Set Information', Icons.info_outline),
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Name *',
-                hintText: 'e.g., Biology Chapter 5',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
+            // AI Info Box
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
               ),
-              onChanged: (value) => setState(() {}),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: 'Description *',
-                hintText: 'Brief description of the study set',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: Colors.deepPurple, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'AI will automatically generate study set name, description, categories, and language based on your document content!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 3,
-              onChanged: (value) => setState(() {}),
-            ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedCategory.isEmpty ? null : _selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Category *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                    ),
-                    items:
-                        _categories.map((category) {
-                          return DropdownMenuItem(
-                            value: category,
-                            child: Text(category),
-                          );
-                        }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value ?? '';
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedLanguage.isEmpty ? null : _selectedLanguage,
-                    decoration: InputDecoration(
-                      labelText: 'Language *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                    ),
-                    items:
-                        _languages.map((language) {
-                          return DropdownMenuItem(
-                            value: language,
-                            child: Text(language),
-                          );
-                        }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedLanguage = value ?? '';
-                      });
-                    },
-                  ),
-                ),
-              ],
             ),
 
             const SizedBox(height: 32),
@@ -397,14 +303,7 @@ class _AIStudySetConfigurationState
               width: double.infinity,
               height: 56,
               child: ElevatedButton.icon(
-                onPressed:
-                    state.canGenerate &&
-                            _nameController.text.length >= 3 &&
-                            _descriptionController.text.length >= 10 &&
-                            _selectedCategory.isNotEmpty &&
-                            _selectedLanguage.isNotEmpty
-                        ? _startGeneration
-                        : null,
+                onPressed: state.canGenerate ? _startGeneration : null,
                 icon: const Icon(Icons.auto_awesome, size: 24),
                 label: const Text(
                   'Generate Study Set',
@@ -482,6 +381,74 @@ class _AIStudySetConfigurationState
                 fontStyle: FontStyle.italic,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPendingFileCard(
+    File file,
+    int index,
+    AIStudySetNotifier notifier,
+  ) {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    final fileSizeBytes = file.lengthSync();
+    final fileSizeMB = (fileSizeBytes / (1024 * 1024)).toStringAsFixed(2);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.description_outlined,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$fileSizeMB MB',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => notifier.removeFile(index),
+            icon: Icon(Icons.close, color: Colors.red[400], size: 20),
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
           ),
         ],
       ),
