@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
-import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
+import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
+import 'package:quiz_app/LibrarySection/screens/library_page.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class AIGenerationProgress extends ConsumerStatefulWidget {
   const AIGenerationProgress({super.key});
@@ -27,25 +30,67 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
     final notifier = ref.read(aiStudySetProvider.notifier);
 
     try {
-      await notifier.generateStudySet();
+      debugPrint('=== STARTING AI GENERATION ===');
+
+      // Generate the study set (this includes upload progress internally)
+      final studySet = await notifier.generateStudySet();
+
+      debugPrint('=== GENERATION COMPLETE ===');
+      debugPrint('Study set ID: ${studySet.id}');
+      debugPrint('Study set name: ${studySet.name}');
+      debugPrint('Quizzes: ${studySet.quizzes.length}');
+      debugPrint('Flashcard sets: ${studySet.flashcardSets.length}');
+      debugPrint('Notes: ${studySet.notes.length}');
 
       if (!mounted) return;
 
+      // Save to database
+      try {
+        debugPrint('=== SAVING TO DATABASE ===');
+        await StudySetService.saveStudySet(studySet);
+        debugPrint('=== SAVE SUCCESSFUL ===');
+      } catch (saveError) {
+        debugPrint('=== SAVE ERROR: $saveError ===');
+        // Show error but don't fail the whole process
+        if (!mounted) return;
+
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Save Error'),
+                content: Text(
+                  'Study set generated but failed to save: $saveError',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+        return;
+      }
+
       // Show success dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (context) => QuizSavedDialog(
-              title: 'Study Set Generated!',
-              message:
-                  'Your AI-powered study set has been created successfully.',
-              onDismiss: () {
-                // Navigate to Library tab
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                // TODO: Switch to Library tab and refresh
-              },
-            ),
+      await QuizSavedDialog.show(
+        context,
+        title: 'Study Set Generated!',
+        message:
+            'Your AI-powered study set has been created and saved successfully.',
+        onDismiss: () {
+          if (mounted) {
+            // Pop back to create page
+            Navigator.of(context).popUntil((route) => route.isFirst);
+
+            // Switch to library tab (index 1) and trigger GET request
+            bottomNavbarKey.currentState?.setIndex(1);
+
+            // Trigger library reload to fetch the new study set
+            LibraryPage.reloadItems();
+          }
+        },
       );
 
       // Reset provider
@@ -167,143 +212,145 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Generating Your Study Set',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.5,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Generating Your Study Set',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
+                    const SizedBox(height: 48),
 
-                  // Lottie loading animation
-                  Lottie.asset(
-                    'assets/animations/loading.json',
-                    width: 200,
-                    height: 200,
-                    repeat: true,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.auto_awesome,
-                        size: 100,
-                        color: AppColors.primary.withValues(alpha: 0.5),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // Progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: state.progress / 100,
-                      minHeight: 12,
-                      backgroundColor: AppColors.surface,
-                      valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                    // Lottie loading animation
+                    Lottie.asset(
+                      'assets/animations/loading.json',
+                      width: 200,
+                      height: 200,
+                      repeat: true,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.auto_awesome,
+                          size: 100,
+                          color: AppColors.primary.withOpacity(0.5),
+                        );
+                      },
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 48),
 
-                  // Progress percentage
-                  Text(
-                    '${state.progress.toInt()}%',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Status text
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        width: 1,
+                    // Progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: state.progress / 100,
+                        minHeight: 12,
+                        backgroundColor: AppColors.surface,
+                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.hourglass_empty,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            state.currentStep.isEmpty
-                                ? 'Initializing...'
-                                : state.currentStep,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.textPrimary,
-                              height: 1.4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 16),
 
-                  // Fun tip
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.3),
+                    // Progress percentage
+                    Text(
+                      '${state.progress.toInt()}%',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline,
-                          color: Colors.amber.shade700,
-                          size: 24,
+
+                    const SizedBox(height: 24),
+
+                    // Status text
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.2),
+                          width: 1,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'AI is analyzing your documents and creating personalized study materials just for you!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                              height: 1.4,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.hourglass_empty,
+                              color: AppColors.primary,
+                              size: 20,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              state.currentStep.isEmpty
+                                  ? 'Initializing...'
+                                  : state.currentStep,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textPrimary,
+                                height: 1.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 32),
+
+                    // Fun tip
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            color: Colors.amber.shade700,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'AI is analyzing your documents and creating personalized study materials just for you!',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:quiz_app/CreateSection/services/ai_study_set_service.dart';
 
 // State class to hold all AI study set data
 class AIStudySetState {
+  final List<File> pendingFiles; // Files picked but not uploaded yet
   final List<UploadedFile> uploadedFiles;
   final StudySetConfig config;
   final GenerationSettings settings;
@@ -17,6 +18,7 @@ class AIStudySetState {
   final StudySet? generatedStudySet;
 
   const AIStudySetState({
+    this.pendingFiles = const [],
     this.uploadedFiles = const [],
     required this.config,
     required this.settings,
@@ -28,13 +30,11 @@ class AIStudySetState {
   });
 
   bool get canGenerate {
-    return uploadedFiles.isNotEmpty &&
-        uploadedFiles.length <= 3 &&
-        config.isValid &&
-        !isGenerating;
+    return pendingFiles.isNotEmpty && pendingFiles.length <= 3 && !isGenerating;
   }
 
   AIStudySetState copyWith({
+    List<File>? pendingFiles,
     List<UploadedFile>? uploadedFiles,
     StudySetConfig? config,
     GenerationSettings? settings,
@@ -45,6 +45,7 @@ class AIStudySetState {
     StudySet? generatedStudySet,
   }) {
     return AIStudySetState(
+      pendingFiles: pendingFiles ?? this.pendingFiles,
       uploadedFiles: uploadedFiles ?? this.uploadedFiles,
       config: config ?? this.config,
       settings: settings ?? this.settings,
@@ -103,11 +104,20 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
 
   /// Remove an uploaded file
   void removeFile(int index) {
-    if (index >= 0 && index < state.uploadedFiles.length) {
-      final updatedFiles = List<UploadedFile>.from(state.uploadedFiles);
+    if (index >= 0 && index < state.pendingFiles.length) {
+      final updatedFiles = List<File>.from(state.pendingFiles);
       updatedFiles.removeAt(index);
-      state = state.copyWith(uploadedFiles: updatedFiles);
+      state = state.copyWith(pendingFiles: updatedFiles);
     }
+  }
+
+  /// Add a pending file (not uploaded yet)
+  void addPendingFile(File file) {
+    if (state.pendingFiles.length >= 3) {
+      throw Exception('Maximum 3 files allowed');
+    }
+    final updatedFiles = [...state.pendingFiles, file];
+    state = state.copyWith(pendingFiles: updatedFiles);
   }
 
   /// Update study set configuration
@@ -171,37 +181,60 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
       );
       _updateProgress(0, 'Preparing your documents...');
 
-      // Simulate initial progress
-      await Future.delayed(const Duration(milliseconds: 500));
-      _updateProgress(10, 'Sending files to Gemini...');
+      // Upload pending files first
+      final uploadedFilesList = <UploadedFile>[];
+      final totalFiles = state.pendingFiles.length;
 
+      for (int i = 0; i < totalFiles; i++) {
+        final file = state.pendingFiles[i];
+        final uploadProgress =
+            ((i + 1) / totalFiles) * 25; // Upload takes 0-25%
+        _updateProgress(
+          uploadProgress,
+          'Uploading file ${i + 1} of $totalFiles...',
+        );
+
+        try {
+          final uploadedFile = await AIStudySetService.uploadFileToGemini(
+            file: file,
+          );
+          uploadedFilesList.add(uploadedFile);
+          debugPrint(
+            'File uploaded: ${uploadedFile.fileName} -> ${uploadedFile.fileUri}',
+          );
+        } catch (e) {
+          throw Exception('Failed to upload ${file.path.split('/').last}: $e');
+        }
+      }
+
+      state = state.copyWith(uploadedFiles: uploadedFilesList);
+
+      _updateProgress(30, 'Analyzing document content...');
       await Future.delayed(const Duration(milliseconds: 500));
-      _updateProgress(20, 'Analyzing document content...');
 
       // Extract file URIs
-      final fileUris = state.uploadedFiles.map((f) => f.fileUri).toList();
+      final fileUris = uploadedFilesList.map((f) => f.fileUri).toList();
 
       // Call backend to generate
-      _updateProgress(30, 'Generating study materials...');
+      _updateProgress(40, 'Generating study materials...');
 
       final studySet = await AIStudySetService.generateStudySet(
         fileUris: fileUris,
-        config: state.config,
         settings: state.settings,
       );
 
       // Simulate generation phases
       await Future.delayed(const Duration(milliseconds: 800));
-      _updateProgress(50, 'Creating quiz questions...');
+      _updateProgress(60, 'Creating quiz questions...');
 
       await Future.delayed(const Duration(milliseconds: 800));
-      _updateProgress(70, 'Building flashcard sets...');
+      _updateProgress(75, 'Building flashcard sets...');
 
       await Future.delayed(const Duration(milliseconds: 600));
-      _updateProgress(85, 'Compiling study notes...');
+      _updateProgress(90, 'Compiling study notes...');
 
       await Future.delayed(const Duration(milliseconds: 400));
-      _updateProgress(95, 'Finalizing your study set...');
+      _updateProgress(98, 'Finalizing your study set...');
 
       await Future.delayed(const Duration(milliseconds: 300));
       _updateProgress(100, 'Complete!');

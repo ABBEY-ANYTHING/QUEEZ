@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
+import 'package:quiz_app/CreateSection/screens/study_set_viewer.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
+import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/screens/mode_selection_sheet.dart';
@@ -34,35 +36,37 @@ class _ItemCardState extends State<ItemCard> {
 
     // Check if this item was shared in a restrictive mode (only for quizzes)
     final isRestrictiveMode =
-        widget.item.isQuiz &&
-        (widget.item.sharedMode == 'self_paced' ||
-            widget.item.sharedMode == 'timed_individual');
+        item.isQuiz &&
+        (item.sharedMode == 'self_paced' ||
+            item.sharedMode == 'timed_individual');
 
     // Show full features if not in restrictive mode
     final showFullFeatures = !isRestrictiveMode;
 
-    return Material(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 0,
-      child: InkWell(
-        onTap: _isDeleting ? null : () => _handleItemTap(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              _buildHeaderWithDelete(softRed),
-              _buildCoverImage(),
-              _buildTitle(),
-              if (widget.item.originalOwnerUsername != null &&
-                  widget.item.originalOwnerUsername!.isNotEmpty)
-                _buildAuthorInfo(),
-              _buildDescription(),
-              _buildActionButtons(context, showFullFeatures),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-        ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(softRed),
+          _buildCoverImage(),
+          _buildTitle(),
+          if (item.originalOwnerUsername != null &&
+              item.originalOwnerUsername!.isNotEmpty)
+            _buildAuthorInfo(),
+          _buildDescription(),
+          _buildActionButtons(context, showFullFeatures),
+        ],
       ),
     );
   }
@@ -91,7 +95,7 @@ class _ItemCardState extends State<ItemCard> {
             (context) => WaitScreen(
               loadingMessage: 'Loading note',
               onLoadComplete: () async {
-                loadedNote = await NoteService.getNote(widget.item.id, userId);
+                loadedNote = await NoteService.getNote(item.id, userId);
               },
               onNavigate: () {
                 Navigator.pushReplacement(
@@ -99,7 +103,7 @@ class _ItemCardState extends State<ItemCard> {
                   MaterialPageRoute(
                     builder:
                         (context) => NoteViewerPage(
-                          noteId: widget.item.id,
+                          noteId: item.id,
                           userId: userId,
                           preloadedNote: loadedNote,
                         ),
@@ -121,7 +125,7 @@ class _ItemCardState extends State<ItemCard> {
               loadingMessage: 'Loading flashcards',
               onLoadComplete: () async {
                 loadedFlashcardSet = await FlashcardService.getFlashcardSet(
-                  widget.item.id,
+                  item.id,
                   userId,
                 );
               },
@@ -131,7 +135,7 @@ class _ItemCardState extends State<ItemCard> {
                   MaterialPageRoute(
                     builder:
                         (context) => FlashcardPlayScreen(
-                          flashcardSetId: widget.item.id,
+                          flashcardSetId: item.id,
                           preloadedFlashcardSet: loadedFlashcardSet,
                         ),
                   ),
@@ -152,7 +156,7 @@ class _ItemCardState extends State<ItemCard> {
               loadingMessage: 'Loading quiz',
               onLoadComplete: () async {
                 loadedQuestions = await QuizService.fetchQuestionsByQuizId(
-                  widget.item.id,
+                  item.id,
                   userId,
                 );
               },
@@ -162,7 +166,7 @@ class _ItemCardState extends State<ItemCard> {
                   customRoute(
                     QuizPlayScreen(
                       quizItem: QuizLibraryItem.fromJson(
-                        widget.item.toQuizLibraryItem(),
+                        item.toQuizLibraryItem(),
                       ),
                       preloadedQuestions: loadedQuestions,
                     ),
@@ -175,12 +179,39 @@ class _ItemCardState extends State<ItemCard> {
     );
   }
 
-  Widget _buildHeaderWithDelete(Color softRed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.md,
-        vertical: QuizSpacing.md,
+  void _navigateToStudySet(BuildContext context) {
+    StudySet? loadedStudySet;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => WaitScreen(
+              loadingMessage: 'Loading study set',
+              onLoadComplete: () async {
+                loadedStudySet = await StudySetService.fetchStudySetById(
+                  item.id,
+                );
+              },
+              onNavigate: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => StudySetViewer(
+                          studySetId: item.id,
+                          preloadedStudySet: loadedStudySet,
+                        ),
+                  ),
+                );
+              },
+            ),
       ),
+    );
+  }
+
+  Widget _buildHeader(Color softRed) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -238,33 +269,36 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildTypeLabel() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.sm,
-        vertical: QuizSpacing.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color:
-            widget.item.isQuiz
+            item.isQuiz
                 ? AppColors.primary.withValues(alpha: 0.15)
-                : widget.item.isNote
+                : item.isNote
                 ? AppColors.warning.withValues(alpha: 0.15)
+                : item.isStudySet
+                ? AppColors.secondary.withValues(alpha: 0.15)
                 : AppColors.accentBright.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        widget.item.isQuiz
+        item.isQuiz
             ? 'QUIZ'
-            : widget.item.isNote
+            : item.isNote
             ? 'NOTE'
+            : item.isStudySet
+            ? 'STUDY SET'
             : 'FLASHCARD SET',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
           color:
-              widget.item.isQuiz
+              item.isQuiz
                   ? AppColors.primary
-                  : widget.item.isNote
+                  : item.isNote
                   ? AppColors.warning
+                  : item.isStudySet
+                  ? AppColors.secondary
                   : AppColors.accentBright,
           letterSpacing: 0.5,
         ),
@@ -274,21 +308,20 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildItemCountTag() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.md,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Icon(
             widget.item.isQuiz
                 ? Icons.quiz_outlined
-                : widget.item.isNote
+                : item.isNote
                 ? Icons.description_outlined
+                : item.isStudySet
+                ? Icons.collections_bookmark_outlined
                 : Icons.style_outlined,
             size: 18,
             color: AppColors.primary,
@@ -297,7 +330,9 @@ class _ItemCardState extends State<ItemCard> {
           Text(
             widget.item.isNote
                 ? 'Note'
-                : '${widget.item.itemCount} ${widget.item.isQuiz ? 'Questions' : 'Cards'}',
+                : item.isStudySet
+                ? '${item.itemCount} Items'
+                : '${item.itemCount} ${item.isQuiz ? 'Questions' : 'Cards'}',
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.primary,
@@ -309,16 +344,46 @@ class _ItemCardState extends State<ItemCard> {
     );
   }
 
+  Widget _buildDateAndDeleteButton(Color softRed) {
+    return Row(
+      children: [
+        Text(
+          item.createdAt ?? 'Unknown',
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        ),
+        const SizedBox(width: 12),
+        InkWell(
+          onTap: onDelete,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: softRed,
+              border: Border.all(color: Colors.transparent, width: 2),
+            ),
+            child: const Icon(
+              Icons.delete_outline,
+              color: AppColors.error,
+              size: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCoverImage() {
     return Container(
       height: 160,
-      margin: const EdgeInsets.symmetric(horizontal: QuizSpacing.lg),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        borderRadius: BorderRadius.circular(16),
         child:
-            widget.item.coverImagePath != null
+            item.coverImagePath != null
                 ? Image.network(
-                  widget.item.coverImagePath!,
+                  item.coverImagePath!,
                   fit: BoxFit.cover,
                   errorBuilder:
                       (context, error, stackTrace) => _buildDefaultIcon(),
@@ -342,12 +407,7 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildTitle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.md,
-        QuizSpacing.lg,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Text(
         widget.item.title,
         style: const TextStyle(
@@ -363,12 +423,7 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildAuthorInfo() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.sm,
-        QuizSpacing.lg,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       child: Row(
         children: [
           Icon(
@@ -396,12 +451,7 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildDescription() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        QuizSpacing.sm,
-        QuizSpacing.lg,
-        QuizSpacing.lg,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       child: Text(
         widget.item.description,
         style: const TextStyle(
@@ -417,16 +467,13 @@ class _ItemCardState extends State<ItemCard> {
 
   Widget _buildActionButtons(BuildContext context, bool showFullFeatures) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        QuizSpacing.lg,
-        0,
-        QuizSpacing.lg,
-        QuizSpacing.lg,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child:
-          widget.item.isNote
+          item.isNote
               ? _buildNoteButton(context)
-              : widget.item.isFlashcard
+              : item.isStudySet
+              ? _buildStudySetButton(context)
+              : item.isFlashcard
               ? _buildFlashcardButton(context)
               : _buildQuizButtons(context, showFullFeatures),
     );
@@ -453,7 +500,30 @@ class _ItemCardState extends State<ItemCard> {
           foregroundColor: AppColors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStudySetButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: () => _navigateToStudySet(context),
+        icon: const Icon(Icons.visibility, size: 20, color: AppColors.white),
+        label: const Text(
+          'View',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: AppColors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -529,7 +599,7 @@ class _ItemCardState extends State<ItemCard> {
           foregroundColor: AppColors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -569,10 +639,11 @@ class _ItemCardState extends State<ItemCard> {
       child: const Center(
         child: Icon(
           Icons.quiz_rounded,
-          size: 48,
+          size: 64,
           color: AppColors.iconInactive,
         ),
       ),
     );
   }
 }
+

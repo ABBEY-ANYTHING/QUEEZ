@@ -36,13 +36,6 @@ class StudySetConfig {
     this.coverImagePath,
   });
 
-  bool get isValid {
-    return name.length >= 3 &&
-        description.length >= 10 &&
-        category.isNotEmpty &&
-        language.isNotEmpty;
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'name': name,
