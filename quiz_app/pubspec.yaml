@@ -52,7 +52,7 @@ dependencies:
   json_annotation: ^4.9.0
   uuid: ^4.5.2
   flutter_quill: ^11.5.0
-  lottie: ^3.3.2
+  lottie: ^3.1.0
   file_picker: ^8.1.6
   http_parser: ^4.1.2
 
