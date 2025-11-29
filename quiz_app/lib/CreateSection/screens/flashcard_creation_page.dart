@@ -63,14 +63,13 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
 
   Future<void> _saveFlashcardSet() async {
     // Validate cards
-    final validCards =
-        _cards
-            .where(
-              (card) =>
-                  card['front']!.trim().isNotEmpty &&
-                  card['back']!.trim().isNotEmpty,
-            )
-            .toList();
+    final validCards = _cards
+        .where(
+          (card) =>
+              card['front']!.trim().isNotEmpty &&
+              card['back']!.trim().isNotEmpty,
+        )
+        .toList();
 
     if (validCards.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,16 +84,15 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
       // If in study set mode, create flashcard set and add to cache
       if (widget.isStudySetMode && widget.onSaveForStudySet != null) {
         final flashcardSetId = const Uuid().v4();
-        final flashcards =
-            validCards
-                .map(
-                  (card) => Flashcard(
-                    id: card['id']!,
-                    front: card['front']!,
-                    back: card['back']!,
-                  ),
-                )
-                .toList();
+        final flashcards = validCards
+            .map(
+              (card) => Flashcard(
+                id: card['id']!,
+                front: card['front']!,
+                back: card['back']!,
+              ),
+            )
+            .toList();
 
         final flashcardSet = FlashcardSet(
           id: flashcardSetId,
@@ -206,57 +204,55 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
                   color: _isSaving ? Colors.grey : AppColors.primary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child:
-                    _isSaving
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                        : const Text(
-                          'Save',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
                           ),
                         ),
+                      )
+                    : const Text(
+                        'Save',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ),
             ),
           ),
         ],
       ),
-      body:
-          _cards.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      key: ValueKey('flashcard_$currentCardIndex'),
-                      child: _FlashcardInputCard(
-                        key: ValueKey('card_$currentCardIndex'),
-                        card: _cards[currentCardIndex],
-                        onUpdate: (updatedCard) {
-                          setState(() {
-                            _cards[currentCardIndex] = updatedCard;
-                          });
-                        },
-                      ),
+      body: _cards.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: ValueKey('flashcard_$currentCardIndex'),
+                    child: _FlashcardInputCard(
+                      key: ValueKey('card_$currentCardIndex'),
+                      card: _cards[currentCardIndex],
+                      onUpdate: (updatedCard) {
+                        setState(() {
+                          _cards[currentCardIndex] = updatedCard;
+                        });
+                      },
                     ),
                   ),
-                  _FlashcardNavigationBar(
-                    currentIndex: currentCardIndex,
-                    totalCards: _cards.length,
-                    onIndexChanged: _navigateToCard,
-                    onAddCard: _addNewCard,
-                  ),
-                ],
-              ),
+                ),
+                _FlashcardNavigationBar(
+                  currentIndex: currentCardIndex,
+                  totalCards: _cards.length,
+                  onIndexChanged: _navigateToCard,
+                  onAddCard: _addNewCard,
+                ),
+              ],
+            ),
     );
   }
 }
@@ -428,10 +424,9 @@ class _FlashcardInputCardState extends State<_FlashcardInputCard> {
                           : 'Your question will appear here',
                       style: TextStyle(
                         fontSize: 16,
-                        color:
-                            _frontController.text.isNotEmpty
-                                ? Colors.black
-                                : Colors.black.withValues(alpha: 0.5),
+                        color: _frontController.text.isNotEmpty
+                            ? Colors.black
+                            : Colors.black.withValues(alpha: 0.5),
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
@@ -479,10 +474,9 @@ class _FlashcardNavigationBar extends StatelessWidget {
         children: [
           // Previous button
           IconButton(
-            onPressed:
-                currentIndex > 0
-                    ? () => onIndexChanged(currentIndex - 1)
-                    : null,
+            onPressed: currentIndex > 0
+                ? () => onIndexChanged(currentIndex - 1)
+                : null,
             icon: Icon(
               Icons.arrow_back_ios,
               color: currentIndex > 0 ? AppColors.primary : Colors.grey,
@@ -526,10 +520,9 @@ class _FlashcardNavigationBar extends StatelessWidget {
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            index == currentIndex
-                                ? AppColors.primary
-                                : AppColors.surface,
+                        color: index == currentIndex
+                            ? AppColors.primary
+                            : AppColors.surface,
                       ),
                     );
                   }),

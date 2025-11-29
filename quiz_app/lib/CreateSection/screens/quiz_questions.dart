@@ -108,78 +108,75 @@ class _QuizQuestionsState extends State<QuizQuestions> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      _isSaving
-                          ? AppColors.secondary.withValues(alpha: 0.6)
-                          : AppColors.secondary,
+                  color: _isSaving
+                      ? AppColors.secondary.withValues(alpha: 0.6)
+                      : AppColors.secondary,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child:
-                    _isSaving
-                        ? SizedBox(
-                          width: 40,
-                          height: 20,
-                          child: Center(
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
+                child: _isSaving
+                    ? SizedBox(
+                        width: 40,
+                        height: 20,
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
                             ),
                           ),
-                        )
-                        : Text(
-                          'Save',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
                         ),
+                      )
+                    : Text(
+                        'Save',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
               ),
             ),
           ),
         ],
       ),
-      body:
-          questions.isEmpty
-              ? Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                  key: ValueKey('emptyQuestionsLoadingIndicator'),
-                ),
-              )
-              : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
+      body: questions.isEmpty
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                key: ValueKey('emptyQuestionsLoadingIndicator'),
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: ValueKey(
+                      'question_${questions[currentQuestionIndex].id}',
+                    ),
+                    child: QuestionCard(
                       key: ValueKey(
-                        'question_${questions[currentQuestionIndex].id}',
+                        'card_${questions[currentQuestionIndex].id}',
                       ),
-                      child: QuestionCard(
-                        key: ValueKey(
-                          'card_${questions[currentQuestionIndex].id}',
-                        ),
-                        question: questions[currentQuestionIndex],
-                        onQuestionUpdated: _updateQuestion,
-                        isLocked: _isLocked,
-                      ),
+                      question: questions[currentQuestionIndex],
+                      onQuestionUpdated: _updateQuestion,
+                      isLocked: _isLocked,
                     ),
                   ),
-                  QuestionNavigation(
-                    currentIndex: currentQuestionIndex,
-                    totalQuestions: questions.length,
-                    onIndexChanged: _navigateToQuestion,
-                    onAddQuestion: _addNewQuestion,
-                    isExpanded: isNavigationExpanded,
-                    onToggleExpanded: _toggleNavigationMode,
-                    isLocked: _isLocked,
-                  ),
-                ],
-              ),
+                ),
+                QuestionNavigation(
+                  currentIndex: currentQuestionIndex,
+                  totalQuestions: questions.length,
+                  onIndexChanged: _navigateToQuestion,
+                  onAddQuestion: _addNewQuestion,
+                  isExpanded: isNavigationExpanded,
+                  onToggleExpanded: _toggleNavigationMode,
+                  isLocked: _isLocked,
+                ),
+              ],
+            ),
     );
   }
 

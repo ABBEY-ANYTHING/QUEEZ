@@ -196,12 +196,15 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
                   // Capitalize the text as user types
                   final capitalizedValue = value.toUpperCase();
                   if (value != capitalizedValue) {
-                    _quizCodeController.value = _quizCodeController.value.copyWith(
-                      text: capitalizedValue,
-                      selection: TextSelection.collapsed(offset: capitalizedValue.length),
-                    );
+                    _quizCodeController.value = _quizCodeController.value
+                        .copyWith(
+                          text: capitalizedValue,
+                          selection: TextSelection.collapsed(
+                            offset: capitalizedValue.length,
+                          ),
+                        );
                   }
-                  
+
                   if (_errorMessage != null) {
                     setState(() {
                       _errorMessage = null;

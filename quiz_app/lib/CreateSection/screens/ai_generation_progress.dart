@@ -56,19 +56,16 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
 
         showDialog(
           context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Save Error'),
-                content: Text(
-                  'Study set generated but failed to save: $saveError',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
-                  ),
-                ],
+          builder: (context) => AlertDialog(
+            title: const Text('Save Error'),
+            content: Text('Study set generated but failed to save: $saveError'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
               ),
+            ],
+          ),
         );
         return;
       }
@@ -83,7 +80,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
           if (mounted) {
             // Trigger library reload FIRST using the provider directly
             await ref.read(quizLibraryProvider.notifier).reload();
-            
+
             // Pop back to create page
             Navigator.of(context).popUntil((route) => route.isFirst);
 
@@ -101,67 +98,58 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
       // Show error dialog
       showDialog(
         context: context,
-        builder:
-            (context) => AlertDialog(
-              title: Row(
-                children: [
-                  Icon(Icons.error_outline, color: Colors.red, size: 28),
-                  const SizedBox(width: 12),
-                  const Text('Generation Failed'),
-                ],
+        builder: (context) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              const SizedBox(width: 12),
+              const Text('Generation Failed'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'An error occurred while generating your study set:',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'An error occurred while generating your study set:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.red.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(
-                      e.toString().replaceAll('Exception: ', ''),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  e.toString().replaceAll('Exception: ', ''),
+                  style: TextStyle(fontSize: 13, color: Colors.red.shade700),
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Go back to config
-                  },
-                  child: const Text('Go Back'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    _startGeneration(); // Retry
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Go back to config
+              },
+              child: const Text('Go Back'),
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _startGeneration(); // Retry
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -179,27 +167,26 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
         // Show confirmation dialog
         final shouldExit = await showDialog<bool>(
           context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('Cancel Generation?'),
-                content: const Text(
-                  'Are you sure you want to cancel? Your progress will be lost.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Continue Generating'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                ],
+          builder: (context) => AlertDialog(
+            title: const Text('Cancel Generation?'),
+            content: const Text(
+              'Are you sure you want to cancel? Your progress will be lost.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Continue Generating'),
               ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
         );
 
         if (shouldExit == true && context.mounted) {

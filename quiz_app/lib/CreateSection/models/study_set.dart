@@ -56,7 +56,7 @@ class StudySet {
       category: json['category'] ?? '',
       language: json['language'] ?? '',
       coverImagePath: json['coverImagePath'],
-      ownerId: json['ownerId'] ?? json['owner_id'] ?? '',
+      ownerId: json['ownerId'] ?? json['owner_id'] ?? json['creatorId'] ?? '',
       quizzes:
           (json['quizzes'] as List? ?? [])
               .map((q) => Quiz.fromJson(q))

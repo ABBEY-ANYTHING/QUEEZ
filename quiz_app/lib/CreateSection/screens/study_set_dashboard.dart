@@ -69,73 +69,71 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder:
-          (context) => DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.4,
-            maxChildSize: 0.9,
-            expand: false,
-            builder:
-                (context, scrollController) => SingleChildScrollView(
-                  controller: scrollController,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: AppColors.textSecondary.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Add Item to Study Set',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        _buildAddItemOption(
-                          icon: Icons.quiz_outlined,
-                          title: 'Quiz',
-                          description: 'Create multiple choice questions',
-                          onTap: () {
-                            Navigator.pop(context);
-                            _navigateToQuizCreation();
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildAddItemOption(
-                          icon: Icons.style_outlined,
-                          title: 'Flashcard',
-                          description: 'Create flashcard sets for memorization',
-                          onTap: () {
-                            Navigator.pop(context);
-                            _navigateToFlashcardCreation();
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _buildAddItemOption(
-                          icon: Icons.note_outlined,
-                          title: 'Note',
-                          description: 'Write detailed notes and explanations',
-                          onTap: () {
-                            Navigator.pop(context);
-                            _navigateToNoteCreation();
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  'Add Item to Study Set',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildAddItemOption(
+                  icon: Icons.quiz_outlined,
+                  title: 'Quiz',
+                  description: 'Create multiple choice questions',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _navigateToQuizCreation();
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildAddItemOption(
+                  icon: Icons.style_outlined,
+                  title: 'Flashcard',
+                  description: 'Create flashcard sets for memorization',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _navigateToFlashcardCreation();
+                  },
+                ),
+                const SizedBox(height: 16),
+                _buildAddItemOption(
+                  icon: Icons.note_outlined,
+                  title: 'Note',
+                  description: 'Write detailed notes and explanations',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _navigateToNoteCreation();
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
+        ),
+      ),
     );
   }
 
@@ -151,7 +149,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: AppColors.primaryLight.withValues(alpha: 0.3),
+          ),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -378,17 +378,16 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
               padding: const EdgeInsets.only(right: 8.0),
               child: TextButton.icon(
                 onPressed: _isSaving ? null : _saveStudySet,
-                icon:
-                    _isSaving
-                        ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.primary,
-                          ),
-                        )
-                        : Icon(Icons.save, color: AppColors.primary),
+                icon: _isSaving
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : Icon(Icons.save, color: AppColors.primary),
                 label: Text(
                   _isSaving ? 'Saving...' : 'Save',
                   style: TextStyle(
@@ -620,7 +619,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -674,7 +675,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -728,7 +731,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [

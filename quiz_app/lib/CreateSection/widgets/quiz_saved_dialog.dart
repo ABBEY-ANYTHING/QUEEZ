@@ -48,12 +48,12 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
   @override
   void initState() {
     super.initState();
-    
+
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _checkController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -123,10 +123,7 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.green,
-                    width: 3,
-                  ),
+                  border: Border.all(color: Colors.green, width: 3),
                 ),
                 child: AnimatedBuilder(
                   animation: _checkAnimation,
@@ -138,9 +135,9 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
                   },
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Title
               Text(
                 widget.title,
@@ -151,9 +148,9 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Message
               Text(
                 widget.message,
@@ -164,9 +161,9 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Decorative elements
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -180,9 +177,9 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
                   _buildDot(Colors.pink),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Close Button
               GestureDetector(
                 onTap: () async {
@@ -226,10 +223,7 @@ class _QuizSavedDialogState extends State<QuizSavedDialog>
     return Container(
       width: 8,
       height: 8,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -258,15 +252,19 @@ class CheckmarkPainter extends CustomPainter {
     if (progress <= 0.5) {
       // First half: draw line from start to middle
       final currentProgress = progress * 2;
-      final currentPoint = Offset.lerp(startPoint, middlePoint, currentProgress)!;
-      
+      final currentPoint = Offset.lerp(
+        startPoint,
+        middlePoint,
+        currentProgress,
+      )!;
+
       checkPath.moveTo(startPoint.dx, startPoint.dy);
       checkPath.lineTo(currentPoint.dx, currentPoint.dy);
     } else {
       // Second half: draw line from middle to end
       final currentProgress = (progress - 0.5) * 2;
       final currentPoint = Offset.lerp(middlePoint, endPoint, currentProgress)!;
-      
+
       checkPath.moveTo(startPoint.dx, startPoint.dy);
       checkPath.lineTo(middlePoint.dx, middlePoint.dy);
       checkPath.lineTo(currentPoint.dx, currentPoint.dy);
