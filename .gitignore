@@ -36,3 +36,4 @@ dist/
 
 .kiro/
 backend/
+.github/copilot-instructions.md
