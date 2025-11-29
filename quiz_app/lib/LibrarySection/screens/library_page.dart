@@ -77,32 +77,31 @@ class LibraryPageState extends ConsumerState<LibraryPage>
       context: context,
       title: 'Filter Library',
       content: StatefulBuilder(
-        builder:
-            (context, setDialogState) => RadioGroup<String?>(
-              groupValue: _typeFilter,
-              onChanged: (value) {
-                setDialogState(() => _typeFilter = value);
-                setState(() => _typeFilter = value);
-                Navigator.pop(context);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<String?>(
-                    title: const Text('All Items'),
-                    value: null,
-                  ),
-                  RadioListTile<String?>(
-                    title: const Text('Quizzes Only'),
-                    value: 'quiz',
-                  ),
-                  RadioListTile<String?>(
-                    title: const Text('Flashcards Only'),
-                    value: 'flashcard',
-                  ),
-                ],
+        builder: (context, setDialogState) => RadioGroup<String?>(
+          groupValue: _typeFilter,
+          onChanged: (value) {
+            setDialogState(() => _typeFilter = value);
+            setState(() => _typeFilter = value);
+            Navigator.pop(context);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String?>(
+                title: const Text('All Items'),
+                value: null,
               ),
-            ),
+              RadioListTile<String?>(
+                title: const Text('Quizzes Only'),
+                value: 'quiz',
+              ),
+              RadioListTile<String?>(
+                title: const Text('Flashcards Only'),
+                value: 'flashcard',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -117,15 +116,10 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
-      filtered =
-          filtered.where((item) {
-            return item.title.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                ) ||
-                item.description.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                );
-          }).toList();
+      filtered = filtered.where((item) {
+        return item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            item.description.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
     }
 
     return filtered;
@@ -154,30 +148,36 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: buildSearchSection(
-              searchQuery: _searchQuery,
-              searchController: _searchController,
-              onQueryChanged: _filterItems,
-              context: context,
-              onAddQuiz: () {
-                showAddQuizModal(context, _reloadItems);
-              },
-              onFilter: _showFilterDialog,
-              typeFilter: _typeFilter,
+      body: RefreshIndicator(
+        onRefresh: _reloadItems,
+        color: AppColors.primary,
+        backgroundColor: AppColors.white,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: buildSearchSection(
+                searchQuery: _searchQuery,
+                searchController: _searchController,
+                onQueryChanged: _filterItems,
+                context: context,
+                onAddQuiz: () {
+                  showAddQuizModal(context, _reloadItems);
+                },
+                onFilter: _showFilterDialog,
+                typeFilter: _typeFilter,
+              ),
             ),
-          ),
-          buildLibraryBody(
-            context: context,
-            isLoading: isLoading,
-            errorMessage: errorMessage,
-            filteredItems: filteredItems,
-            searchQuery: _searchQuery,
-            onRetry: _reloadItems,
-          ),
-        ],
+            buildLibraryBody(
+              context: context,
+              isLoading: isLoading,
+              errorMessage: errorMessage,
+              filteredItems: filteredItems,
+              searchQuery: _searchQuery,
+              onRetry: _reloadItems,
+            ),
+          ],
+        ),
       ),
     );
   }
