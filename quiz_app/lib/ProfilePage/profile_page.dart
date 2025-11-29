@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
+import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -67,6 +68,44 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _signOut() async {
+    final shouldSignOut = await AppDialog.show<bool>(
+      context: context,
+      title: 'Sign Out',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.logout_rounded,
+              color: Colors.red.shade600,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Are you sure you want to sign out?',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      primaryActionText: 'Sign Out',
+      primaryActionCallback: () => Navigator.of(context).pop(true),
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () => Navigator.of(context).pop(false),
+    );
+
+    if (shouldSignOut != true) return;
+
     try {
       // Clear SharedPreferences first
       final prefs = await SharedPreferences.getInstance();
