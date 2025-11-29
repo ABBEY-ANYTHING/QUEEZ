@@ -132,7 +132,8 @@ class GameNotifier extends Notifier<GameState> {
         pointsEarned: null,
         timeBonus: null,
         multiplier: null,
-        rankings: null,
+        // DON'T reset rankings - keep the leaderboard visible for host
+        // rankings: null,
         showingLeaderboard: false,
       );
       debugPrint(

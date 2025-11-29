@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/services/unified_library_service.dart';
-import 'package:quiz_app/providers/auth_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'library_provider.g.dart';
@@ -13,16 +12,13 @@ part 'library_provider.g.dart';
 class QuizLibrary extends _$QuizLibrary {
   @override
   Future<List<LibraryItem>> build() async {
-    // Wait for auth state to be fully loaded before proceeding
-    final authState = await ref.watch(appAuthProvider.future);
+    // Use Firebase Auth directly as the source of truth for user state
     final user = FirebaseAuth.instance.currentUser;
 
-    debugPrint(
-      '📚 LIBRARY_PROVIDER - Auth state: loggedIn=${authState.loggedIn}, user=${user?.uid}',
-    );
+    debugPrint('📚 LIBRARY_PROVIDER - Firebase user: ${user?.uid}');
 
-    // Only fetch if the user is logged in.
-    if (authState.loggedIn && user != null) {
+    // Only fetch if the user is logged in (Firebase user exists)
+    if (user != null) {
       debugPrint(
         '📚 LIBRARY_PROVIDER - Fetching library for user: ${user.uid}',
       );
@@ -47,15 +43,14 @@ class QuizLibrary extends _$QuizLibrary {
     final firestore = FirebaseFirestore.instance;
 
     // Collect unique owner IDs
-    final uniqueOwnerIds =
-        items
-            .where(
-              (item) =>
-                  item.originalOwner != null && item.originalOwner!.isNotEmpty,
-            )
-            .map((item) => item.originalOwner!)
-            .toSet()
-            .toList();
+    final uniqueOwnerIds = items
+        .where(
+          (item) =>
+              item.originalOwner != null && item.originalOwner!.isNotEmpty,
+        )
+        .map((item) => item.originalOwner!)
+        .toSet()
+        .toList();
 
     if (uniqueOwnerIds.isEmpty) return;
 
@@ -67,11 +62,10 @@ class QuizLibrary extends _$QuizLibrary {
       for (var i = 0; i < uniqueOwnerIds.length; i += 10) {
         final chunk = uniqueOwnerIds.skip(i).take(10).toList();
 
-        final userDocs =
-            await firestore
-                .collection('users')
-                .where(FieldPath.documentId, whereIn: chunk)
-                .get();
+        final userDocs = await firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
 
         for (var doc in userDocs.docs) {
           final username = doc.data()['username'] as String?;
