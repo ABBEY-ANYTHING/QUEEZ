@@ -20,37 +20,6 @@ class _AIStudySetConfigurationState
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String _selectedCategory = '';
-  String _selectedLanguage = '';
-
-  final List<String> _categories = [
-    'Science',
-    'Mathematics',
-    'History',
-    'Geography',
-    'Literature',
-    'Technology',
-    'Business',
-    'Arts',
-    'Medicine',
-    'Engineering',
-    'Law',
-    'Other',
-  ];
-
-  final List<String> _languages = [
-    'English',
-    'Spanish',
-    'French',
-    'German',
-    'Chinese',
-    'Japanese',
-    'Hindi',
-    'Arabic',
-    'Portuguese',
-    'Russian',
-  ];
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -110,15 +79,6 @@ class _AIStudySetConfigurationState
     );
   }
 
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
 
   void _startGeneration() {
     // Settings are already stored in the provider state via sliders
@@ -455,136 +415,7 @@ class _AIStudySetConfigurationState
     );
   }
 
-  Widget _buildPendingFileCard(
-    File file,
-    int index,
-    AIStudySetNotifier notifier,
-  ) {
-    final fileName = file.path.split(Platform.pathSeparator).last;
-    final fileSizeBytes = file.lengthSync();
-    final fileSizeMB = (fileSizeBytes / (1024 * 1024)).toStringAsFixed(2);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.description_outlined,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$fileSizeMB MB',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => notifier.removeFile(index),
-            icon: Icon(Icons.close, color: Colors.red[400], size: 20),
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUploadedFileCard(
-    dynamic file,
-    int index,
-    AIStudySetNotifier notifier,
-  ) {
-    final fileSizeMB = (file.fileSize / (1024 * 1024)).toStringAsFixed(2);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.check_circle, color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  file.fileName,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$fileSizeMB MB',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => notifier.removeFile(index),
-            icon: const Icon(Icons.close, color: Colors.red),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSliderSetting(
     String label,

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
 import 'package:quiz_app/CreateSection/screens/study_set_viewer.dart';
@@ -36,9 +37,9 @@ class _ItemCardState extends State<ItemCard> {
 
     // Check if this item was shared in a restrictive mode (only for quizzes)
     final isRestrictiveMode =
-        item.isQuiz &&
-        (item.sharedMode == 'self_paced' ||
-            item.sharedMode == 'timed_individual');
+        widget.item.isQuiz &&
+        (widget.item.sharedMode == 'self_paced' ||
+            widget.item.sharedMode == 'timed_individual');
 
     // Show full features if not in restrictive mode
     final showFullFeatures = !isRestrictiveMode;
@@ -61,8 +62,8 @@ class _ItemCardState extends State<ItemCard> {
           _buildHeader(softRed),
           _buildCoverImage(),
           _buildTitle(),
-          if (item.originalOwnerUsername != null &&
-              item.originalOwnerUsername!.isNotEmpty)
+          if (widget.item.originalOwnerUsername != null &&
+              widget.item.originalOwnerUsername!.isNotEmpty)
             _buildAuthorInfo(),
           _buildDescription(),
           _buildActionButtons(context, showFullFeatures),
@@ -91,26 +92,24 @@ class _ItemCardState extends State<ItemCard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => WaitScreen(
-              loadingMessage: 'Loading note',
-              onLoadComplete: () async {
-                loadedNote = await NoteService.getNote(item.id, userId);
-              },
-              onNavigate: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => NoteViewerPage(
-                          noteId: item.id,
-                          userId: userId,
-                          preloadedNote: loadedNote,
-                        ),
-                  ),
-                );
-              },
-            ),
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading note',
+          onLoadComplete: () async {
+            loadedNote = await NoteService.getNote(widget.item.id, userId);
+          },
+          onNavigate: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NoteViewerPage(
+                  noteId: widget.item.id,
+                  userId: userId,
+                  preloadedNote: loadedNote,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -120,28 +119,26 @@ class _ItemCardState extends State<ItemCard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => WaitScreen(
-              loadingMessage: 'Loading flashcards',
-              onLoadComplete: () async {
-                loadedFlashcardSet = await FlashcardService.getFlashcardSet(
-                  item.id,
-                  userId,
-                );
-              },
-              onNavigate: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => FlashcardPlayScreen(
-                          flashcardSetId: item.id,
-                          preloadedFlashcardSet: loadedFlashcardSet,
-                        ),
-                  ),
-                );
-              },
-            ),
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading flashcards',
+          onLoadComplete: () async {
+            loadedFlashcardSet = await FlashcardService.getFlashcardSet(
+              widget.item.id,
+              userId,
+            );
+          },
+          onNavigate: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FlashcardPlayScreen(
+                  flashcardSetId: widget.item.id,
+                  preloadedFlashcardSet: loadedFlashcardSet,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -151,30 +148,29 @@ class _ItemCardState extends State<ItemCard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => WaitScreen(
-              loadingMessage: 'Loading quiz',
-              onLoadComplete: () async {
-                loadedQuestions = await QuizService.fetchQuestionsByQuizId(
-                  item.id,
-                  userId,
-                );
-              },
-              onNavigate: () {
-                Navigator.pushReplacement(
-                  context,
-                  customRoute(
-                    QuizPlayScreen(
-                      quizItem: QuizLibraryItem.fromJson(
-                        item.toQuizLibraryItem(),
-                      ),
-                      preloadedQuestions: loadedQuestions,
-                    ),
-                    AnimationType.slideUp,
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading quiz',
+          onLoadComplete: () async {
+            loadedQuestions = await QuizService.fetchQuestionsByQuizId(
+              widget.item.id,
+              userId,
+            );
+          },
+          onNavigate: () {
+            Navigator.pushReplacement(
+              context,
+              customRoute(
+                QuizPlayScreen(
+                  quizItem: QuizLibraryItem.fromJson(
+                    widget.item.toQuizLibraryItem(),
                   ),
-                );
-              },
-            ),
+                  preloadedQuestions: loadedQuestions,
+                ),
+                AnimationType.slideUp,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -184,27 +180,25 @@ class _ItemCardState extends State<ItemCard> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => WaitScreen(
-              loadingMessage: 'Loading study set',
-              onLoadComplete: () async {
-                loadedStudySet = await StudySetService.fetchStudySetById(
-                  item.id,
-                );
-              },
-              onNavigate: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => StudySetViewer(
-                          studySetId: item.id,
-                          preloadedStudySet: loadedStudySet,
-                        ),
-                  ),
-                );
-              },
-            ),
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading study set',
+          onLoadComplete: () async {
+            loadedStudySet = await StudySetService.fetchStudySetById(
+              widget.item.id,
+            );
+          },
+          onNavigate: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudySetViewer(
+                  studySetId: widget.item.id,
+                  preloadedStudySet: loadedStudySet,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -271,35 +265,33 @@ class _ItemCardState extends State<ItemCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color:
-            item.isQuiz
-                ? AppColors.primary.withValues(alpha: 0.15)
-                : item.isNote
-                ? AppColors.warning.withValues(alpha: 0.15)
-                : item.isStudySet
-                ? AppColors.secondary.withValues(alpha: 0.15)
-                : AppColors.accentBright.withValues(alpha: 0.15),
+        color: widget.item.isQuiz
+            ? AppColors.primary.withValues(alpha: 0.15)
+            : widget.item.isNote
+            ? AppColors.warning.withValues(alpha: 0.15)
+            : widget.item.isStudySet
+            ? AppColors.secondary.withValues(alpha: 0.15)
+            : AppColors.accentBright.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        item.isQuiz
+        widget.item.isQuiz
             ? 'QUIZ'
-            : item.isNote
+            : widget.item.isNote
             ? 'NOTE'
-            : item.isStudySet
+            : widget.item.isStudySet
             ? 'STUDY SET'
             : 'FLASHCARD SET',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color:
-              item.isQuiz
-                  ? AppColors.primary
-                  : item.isNote
-                  ? AppColors.warning
-                  : item.isStudySet
-                  ? AppColors.secondary
-                  : AppColors.accentBright,
+          color: widget.item.isQuiz
+              ? AppColors.primary
+              : widget.item.isNote
+              ? AppColors.warning
+              : widget.item.isStudySet
+              ? AppColors.secondary
+              : AppColors.accentBright,
           letterSpacing: 0.5,
         ),
       ),
@@ -318,9 +310,9 @@ class _ItemCardState extends State<ItemCard> {
           Icon(
             widget.item.isQuiz
                 ? Icons.quiz_outlined
-                : item.isNote
+                : widget.item.isNote
                 ? Icons.description_outlined
-                : item.isStudySet
+                : widget.item.isStudySet
                 ? Icons.collections_bookmark_outlined
                 : Icons.style_outlined,
             size: 18,
@@ -330,9 +322,9 @@ class _ItemCardState extends State<ItemCard> {
           Text(
             widget.item.isNote
                 ? 'Note'
-                : item.isStudySet
-                ? '${item.itemCount} Items'
-                : '${item.itemCount} ${item.isQuiz ? 'Questions' : 'Cards'}',
+                : widget.item.isStudySet
+                ? '${widget.item.itemCount} Items'
+                : '${widget.item.itemCount} ${widget.item.isQuiz ? 'Questions' : 'Cards'}',
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.primary,
@@ -348,12 +340,12 @@ class _ItemCardState extends State<ItemCard> {
     return Row(
       children: [
         Text(
-          item.createdAt ?? 'Unknown',
+          widget.item.createdAt ?? 'Unknown',
           style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(width: 12),
         InkWell(
-          onTap: onDelete,
+          onTap: widget.onDelete,
           borderRadius: BorderRadius.circular(20),
           child: Container(
             width: 36,
@@ -380,27 +372,26 @@ class _ItemCardState extends State<ItemCard> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child:
-            item.coverImagePath != null
-                ? Image.network(
-                  item.coverImagePath!,
-                  fit: BoxFit.cover,
-                  errorBuilder:
-                      (context, error, stackTrace) => _buildDefaultIcon(),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: AppColors.surface,
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                          strokeWidth: 2,
-                        ),
+        child: widget.item.coverImagePath != null
+            ? Image.network(
+                widget.item.coverImagePath!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildDefaultIcon(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: AppColors.surface,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                        strokeWidth: 2,
                       ),
-                    );
-                  },
-                )
-                : _buildDefaultIcon(),
+                    ),
+                  );
+                },
+              )
+            : _buildDefaultIcon(),
       ),
     );
   }
@@ -468,14 +459,13 @@ class _ItemCardState extends State<ItemCard> {
   Widget _buildActionButtons(BuildContext context, bool showFullFeatures) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child:
-          item.isNote
-              ? _buildNoteButton(context)
-              : item.isStudySet
-              ? _buildStudySetButton(context)
-              : item.isFlashcard
-              ? _buildFlashcardButton(context)
-              : _buildQuizButtons(context, showFullFeatures),
+      child: widget.item.isNote
+          ? _buildNoteButton(context)
+          : widget.item.isStudySet
+          ? _buildStudySetButton(context)
+          : widget.item.isFlashcard
+          ? _buildFlashcardButton(context)
+          : _buildQuizButtons(context, showFullFeatures),
     );
   }
 
@@ -646,4 +636,3 @@ class _ItemCardState extends State<ItemCard> {
     );
   }
 }
-
