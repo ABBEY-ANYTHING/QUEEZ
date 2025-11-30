@@ -43,19 +43,15 @@ class _LoginPageState extends ConsumerState<LoginPage>
       duration: QuizAnimations.slow,
     );
 
-    _confirmPassOffsetAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
-    );
+    _confirmPassOffsetAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
+        );
 
-    _buttonOffsetAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, 0.35),
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
-    );
+    _buttonOffsetAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 0.35)).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
+        );
   }
 
   @override
@@ -342,7 +338,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       onPressed: _isSignUpMode ? _signUp : _login,
                       isLoading: _loading,
                       fullWidth: true,
-                      size: AppButtonSize.large,
+                      size: AppButtonSize.medium,
                     ),
                   ),
 

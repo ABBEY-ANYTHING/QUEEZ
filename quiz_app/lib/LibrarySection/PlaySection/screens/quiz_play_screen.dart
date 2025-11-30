@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/models/quiz_attempt.dart';
@@ -244,44 +245,61 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     final userAnswer = _quizAttempt!.answers[_currentIndex];
     final hasAnswered = userAnswer != null;
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const ClampingScrollPhysics(),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 12.0,
-            ),
-            child: ProgressTimerBar(
-              controller: _progressController,
-              currentIndex: _currentIndex,
-              total: _quizAttempt!.questions.length,
+    // Timer and progress stay fixed at top (like Kahoot/Quizlet/Trivia Crack)
+    return Column(
+      children: [
+        // Fixed header section - always visible
+        Container(
+          color: AppColors.background,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
+                child: ProgressTimerBar(
+                  controller: _progressController,
+                  currentIndex: _currentIndex,
+                  total: _quizAttempt!.questions.length,
+                ),
+              ),
+              // Countdown Timer - stays fixed at top
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: _buildCountdownTimer(question.timeLimit, hasAnswered),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+        // Scrollable question content
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const ClampingScrollPhysics(),
+            child: Column(
+              children: [
+                const SizedBox(height: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  transitionBuilder: (child, animation) {
+                    return SlideTransition(position: _slideAnimation, child: child);
+                  },
+                  child: PlayQuestionCard(
+                    key: ValueKey<String>(question.id),
+                    question: question,
+                    userAnswer: userAnswer,
+                    onAnswerSelected: _onAnswerSelected,
+                    scrollController: _scrollController,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
-          // Countdown Timer
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: _buildCountdownTimer(question.timeLimit, hasAnswered),
-          ),
-          const SizedBox(height: 16),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (child, animation) {
-              return SlideTransition(position: _slideAnimation, child: child);
-            },
-            child: PlayQuestionCard(
-              key: ValueKey<String>(question.id),
-              question: question,
-              userAnswer: userAnswer,
-              onAnswerSelected: _onAnswerSelected,
-              scrollController: _scrollController,
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
+        ),
+      ],
     );
   }
   
