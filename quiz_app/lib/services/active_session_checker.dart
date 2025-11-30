@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_host_view.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_lobby.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_quiz.dart';
+import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -79,16 +80,27 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       );
 
       if (result != null && result['has_active_session'] == true) {
-        // Merge local session info for username etc
+        // Merge local session info for username and quiz details
+        // Backend provides: session_code, status, quiz_id, quiz_title, mode, is_host, participant_count
+        // Local provides: username (more reliable), quiz_id/title/mode (as fallback)
         result['username'] = localSession['username'];
         result['is_host'] = localSession['is_host'] ?? result['is_host'];
         result['user_id'] = userId; // Ensure user_id is set
+
+        // Use backend values if available, fallback to local
+        result['quiz_id'] = result['quiz_id'] ?? localSession['quiz_id'];
+        result['quiz_title'] =
+            result['quiz_title'] ?? localSession['quiz_title'];
+        result['mode'] = result['mode'] ?? localSession['mode'];
 
         debugPrint('🔄 ACTIVE_SESSION_CHECKER - Found active session:');
         debugPrint('   session_code: ${result['session_code']}');
         debugPrint('   user_id: ${result['user_id']}');
         debugPrint('   is_host: ${result['is_host']}');
         debugPrint('   status: ${result['status']}');
+        debugPrint('   quiz_id: ${result['quiz_id']}');
+        debugPrint('   quiz_title: ${result['quiz_title']}');
+        debugPrint('   mode: ${result['mode']}');
 
         setState(() {
           _activeSessionInfo = result;
@@ -125,12 +137,18 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
     final isHost = _activeSessionInfo!['is_host'] as bool? ?? false;
     final userId = _activeSessionInfo!['user_id'] as String?;
     final username = _activeSessionInfo!['username'] as String? ?? 'Player';
+    final quizId = _activeSessionInfo!['quiz_id'] as String?;
+    final quizTitle = _activeSessionInfo!['quiz_title'] as String? ?? 'Quiz';
+    final mode = _activeSessionInfo!['mode'] as String? ?? 'live_multiplayer';
 
     debugPrint('🔄 ACTIVE_SESSION_CHECKER - Rejoin data:');
     debugPrint('   sessionCode: $sessionCode');
     debugPrint('   userId: $userId');
     debugPrint('   isHost: $isHost');
     debugPrint('   status: $sessionStatus');
+    debugPrint('   quizId: $quizId');
+    debugPrint('   quizTitle: $quizTitle');
+    debugPrint('   mode: $mode');
 
     if (sessionCode == null || userId == null) {
       debugPrint('❌ ACTIVE_SESSION_CHECKER - Missing required data');
@@ -159,12 +177,15 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         debugPrint('🔄 HOST RECONNECTION - Skipping join, navigating directly');
         ref.read(currentUserProvider.notifier).setUser(userId);
 
-        // Restore active session tracking
+        // Restore active session tracking with quiz info
         await ActiveSessionService.saveActiveSession(
           sessionCode: sessionCode,
           userId: userId,
           username: username,
           isHost: true,
+          quizId: quizId,
+          quizTitle: quizTitle,
+          mode: mode,
         );
       } else {
         // PARTICIPANT: Join the session via the provider
@@ -192,13 +213,32 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
           );
         }
       } else if (sessionStatus == 'waiting') {
-        // Still in lobby
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) =>
-                LiveMultiplayerLobby(sessionCode: sessionCode, isHost: isHost),
-          ),
-        );
+        // Still in lobby - Host goes to HostingPage (Dashboard), Participants go to lobby
+        if (isHost && quizId != null) {
+          debugPrint(
+            '🔄 HOST RECONNECTION - Navigating to HostingPage (Dashboard)',
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => HostingPage(
+                quizId: quizId,
+                quizTitle: quizTitle,
+                mode: mode,
+                hostId: userId,
+                existingSessionCode: sessionCode, // Skip session creation
+              ),
+            ),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => LiveMultiplayerLobby(
+                sessionCode: sessionCode,
+                isHost: isHost,
+              ),
+            ),
+          );
+        }
       } else {
         // Session is completed or in unknown state
         _showError('The session has ended.');

@@ -16,6 +16,9 @@ class ActiveSessionService {
   static const String _usernameKey = 'active_session_username';
   static const String _isHostKey = 'active_session_is_host';
   static const String _joinedAtKey = 'active_session_joined_at';
+  static const String _quizIdKey = 'active_session_quiz_id';
+  static const String _quizTitleKey = 'active_session_quiz_title';
+  static const String _modeKey = 'active_session_mode';
 
   /// Save active session info to local storage
   static Future<void> saveActiveSession({
@@ -23,6 +26,9 @@ class ActiveSessionService {
     required String userId,
     required String username,
     required bool isHost,
+    String? quizId,
+    String? quizTitle,
+    String? mode,
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -31,6 +37,9 @@ class ActiveSessionService {
       await prefs.setString(_usernameKey, username);
       await prefs.setBool(_isHostKey, isHost);
       await prefs.setString(_joinedAtKey, DateTime.now().toIso8601String());
+      if (quizId != null) await prefs.setString(_quizIdKey, quizId);
+      if (quizTitle != null) await prefs.setString(_quizTitleKey, quizTitle);
+      if (mode != null) await prefs.setString(_modeKey, mode);
       debugPrint('✅ Saved active session: $sessionCode (host: $isHost)');
     } catch (e) {
       debugPrint('❌ Failed to save active session: $e');
@@ -46,6 +55,9 @@ class ActiveSessionService {
       final username = prefs.getString(_usernameKey);
       final isHost = prefs.getBool(_isHostKey);
       final joinedAt = prefs.getString(_joinedAtKey);
+      final quizId = prefs.getString(_quizIdKey);
+      final quizTitle = prefs.getString(_quizTitleKey);
+      final mode = prefs.getString(_modeKey);
 
       if (sessionCode == null || userId == null) {
         return null;
@@ -72,6 +84,9 @@ class ActiveSessionService {
         'username': username ?? 'Anonymous',
         'is_host': isHost ?? false,
         'joined_at': joinedAt,
+        'quiz_id': quizId,
+        'quiz_title': quizTitle,
+        'mode': mode,
       };
     } catch (e) {
       debugPrint('❌ Failed to get local active session: $e');
@@ -88,6 +103,9 @@ class ActiveSessionService {
       await prefs.remove(_usernameKey);
       await prefs.remove(_isHostKey);
       await prefs.remove(_joinedAtKey);
+      await prefs.remove(_quizIdKey);
+      await prefs.remove(_quizTitleKey);
+      await prefs.remove(_modeKey);
       debugPrint('🗑️ Cleared active session from local storage');
     } catch (e) {
       debugPrint('❌ Failed to clear active session: $e');

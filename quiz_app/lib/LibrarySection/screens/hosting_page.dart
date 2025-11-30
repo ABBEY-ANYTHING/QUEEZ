@@ -22,6 +22,8 @@ class HostingPage extends ConsumerStatefulWidget {
   final String quizTitle;
   final String mode;
   final String hostId;
+  final String?
+  existingSessionCode; // For reconnection - skip creating new session
 
   const HostingPage({
     super.key,
@@ -29,6 +31,7 @@ class HostingPage extends ConsumerStatefulWidget {
     required this.quizTitle,
     required this.mode,
     required this.hostId,
+    this.existingSessionCode,
   });
 
   @override
@@ -53,7 +56,13 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   @override
   void initState() {
     super.initState();
-    _createSession();
+    if (widget.existingSessionCode != null) {
+      // Reconnecting to existing session - skip creation
+      _reconnectToSession();
+    } else {
+      // New session - create it
+      _createSession();
+    }
   }
 
   @override
@@ -108,12 +117,15 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           isLoading = false;
         });
 
-        // Save active session for host reconnection
+        // Save active session for host reconnection (with quiz info for proper navigation)
         await ActiveSessionService.saveActiveSession(
           sessionCode: result['session_code'],
           userId: widget.hostId,
           username: 'Host', // Will be updated in _connectHostToWebSocket
           isHost: true,
+          quizId: widget.quizId,
+          quizTitle: widget.quizTitle,
+          mode: widget.mode,
         );
 
         _startCountdownTimer();
@@ -130,6 +142,75 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         isLoading = false;
         errorMessage = e.toString().replaceAll('Exception: ', '');
       });
+    }
+  }
+
+  /// Reconnect to an existing session (used when host reopens app)
+  Future<void> _reconnectToSession() async {
+    debugPrint(
+      '🔄 HOST RECONNECTION - Reconnecting to session: ${widget.existingSessionCode}',
+    );
+
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
+      // Get session info from backend to verify it still exists
+      final sessionData = await SessionService.getSessionInfo(
+        widget.existingSessionCode!,
+      );
+
+      if (sessionData['session_code'] != null) {
+        setState(() {
+          sessionCode = widget.existingSessionCode;
+          // Use remaining time from backend if available
+          remainingSeconds = sessionData['expires_in'] ?? 600;
+          isLoading = false;
+
+          // Update participants if available
+          final participantsMap =
+              sessionData['participants'] as Map<String, dynamic>? ?? {};
+          participantCount = participantsMap.length;
+          participants = participantsMap.entries.map((e) {
+            final p = e.value as Map<String, dynamic>;
+            return {
+              'user_id': e.key,
+              'username': p['username'] ?? 'Anonymous',
+              'joined_at': p['joined_at'],
+              'connected': p['connected'] ?? true,
+              'score': p['score'] ?? 0,
+            };
+          }).toList();
+        });
+
+        debugPrint(
+          '✅ HOST RECONNECTION - Session validated, $participantCount participants',
+        );
+
+        _startCountdownTimer();
+
+        if (widget.mode == 'live_multiplayer') {
+          await _connectHostToWebSocket();
+        }
+      } else {
+        // Session no longer valid
+        debugPrint('❌ HOST RECONNECTION - Session no longer valid');
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Session has expired. Please create a new quiz.';
+        });
+        await ActiveSessionService.clearActiveSession();
+      }
+    } catch (e) {
+      debugPrint('❌ HOST RECONNECTION - Error: $e');
+      setState(() {
+        isLoading = false;
+        errorMessage =
+            'Could not reconnect to session: ${e.toString().replaceAll('Exception: ', '')}';
+      });
+      await ActiveSessionService.clearActiveSession();
     }
   }
 
