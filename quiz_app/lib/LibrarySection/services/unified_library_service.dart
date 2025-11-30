@@ -30,7 +30,7 @@ class UnifiedLibraryService {
           );
 
       debugPrint('📚 UNIFIED_LIBRARY_SERVICE - Response status: ${response.statusCode}');
-      print(
+      debugPrint(
         '📚 UNIFIED_LIBRARY_SERVICE - Response status: ${response.statusCode}',
       );
 

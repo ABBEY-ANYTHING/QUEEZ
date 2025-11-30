@@ -89,13 +89,15 @@ class SessionNotifier extends Notifier<SessionState?> {
         },
       );
 
-      // Save active session for reconnection
-      await ActiveSessionService.saveActiveSession(
-        sessionCode: sessionCode,
-        userId: userId,
-        username: username,
-        isHost: isHost,
-      );
+      // Save active session for reconnection (skip for hosts - already saved in HostingPage)
+      if (!isHost) {
+        await ActiveSessionService.saveActiveSession(
+          sessionCode: sessionCode,
+          userId: userId,
+          username: username,
+          isHost: false,
+        );
+      }
 
       debugPrint('✅ Joined session successfully');
     } catch (e) {

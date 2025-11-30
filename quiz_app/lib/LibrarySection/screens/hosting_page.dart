@@ -254,10 +254,10 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       debugPrint('🎯 HOST - User ID: ${widget.hostId}');
       debugPrint('🎯 HOST - Mode: ${widget.mode}');
 
-      // Connect host as a participant via WebSocket
+      // Connect host to WebSocket (isHost: true to preserve host status)
       await ref
           .read(sessionProvider.notifier)
-          .joinSession(sessionCode!, widget.hostId, username)
+          .joinSession(sessionCode!, widget.hostId, username, isHost: true)
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
