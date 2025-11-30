@@ -326,6 +326,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         '✅ HOST - Start quiz message sent via WebSocket, waiting for confirmation...',
       );
 
+      // Fallback: Poll for status change in case listener doesn't fire
+      _startQuizPolling();
+
       // Don't navigate immediately - wait for WebSocket to confirm status == 'active'
       // The ref.listen above will handle navigation when backend sends quiz_started
     } catch (e) {
@@ -339,6 +342,59 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         );
       }
     }
+  }
+
+  void _startQuizPolling() {
+    // Poll every 500ms for up to 10 seconds to check if quiz started
+    int attempts = 0;
+    const maxAttempts = 20;
+
+    Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      attempts++;
+
+      if (!mounted || !_isStartingQuiz) {
+        timer.cancel();
+        return;
+      }
+
+      // Check current state
+      final session = ref.read(sessionProvider);
+      debugPrint(
+        '🔄 HOST - Polling status (attempt $attempts): ${session?.status}',
+      );
+
+      if (session?.status == 'active') {
+        debugPrint('🎯 HOST - Polling detected active status! Navigating...');
+        timer.cancel();
+        _isStartingQuiz = false;
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LiveHostView(sessionCode: sessionCode!),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        debugPrint(
+          '⚠️ HOST - Polling timeout after ${maxAttempts * 500}ms, resetting...',
+        );
+        timer.cancel();
+        if (mounted) {
+          setState(() {
+            _isStartingQuiz = false;
+          });
+          AppSnackBar.showError(
+            context,
+            'Quiz start timed out. Please try again.',
+          );
+        }
+      }
+    });
   }
 
   Future<void> _shareQRCode() async {
@@ -448,15 +504,25 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   Widget build(BuildContext context) {
     // ✅ Listen to WebSocket updates for real-time participant sync
     ref.listen(sessionProvider, (previous, next) {
+      debugPrint(
+        '🔔 HOST - sessionProvider changed: prev=${previous?.status}, next=${next?.status}, _isStartingQuiz=$_isStartingQuiz',
+      );
+
       if (next != null && widget.mode == 'live_multiplayer') {
-        debugPrint('🔔 HOST - sessionProvider updated in HostingPage');
         _updateParticipantsFromWebSocket();
 
         // ✅ Navigate to LiveHostView when quiz becomes active
-        if (next.status == 'active' && _isStartingQuiz) {
+        // Check if status changed TO 'active' (not already active)
+        final wasActive = previous?.status == 'active';
+        final isNowActive = next.status == 'active';
+
+        if (isNowActive && _isStartingQuiz && !wasActive) {
           debugPrint(
-            '🎯 HOST - Quiz is now active, navigating to LiveHostView',
+            '🎯 HOST - Quiz is now active! Navigating to LiveHostView',
           );
+          // Reset flag before navigation
+          _isStartingQuiz = false;
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(

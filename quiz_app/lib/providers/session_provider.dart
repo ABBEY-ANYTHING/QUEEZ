@@ -201,7 +201,7 @@ class SessionNotifier extends Notifier<SessionState?> {
         }
       }
     } else if (type == 'quiz_started') {
-      debugPrint('🚀 FLUTTER - Quiz started');
+      debugPrint('🚀 FLUTTER - Quiz started!');
       final overallTimeLimit = payload['overall_time_limit'] as int? ?? 0;
       final perQuestionTimeLimit =
           payload['per_question_time_limit'] as int? ?? 30;
@@ -210,8 +210,23 @@ class SessionNotifier extends Notifier<SessionState?> {
       );
 
       if (state != null) {
+        debugPrint('🔄 FLUTTER - Updating state status to active');
         state = state!.copyWith(status: 'active');
+      } else {
+        // Edge case: state is null but we received quiz_started
+        // This can happen if host reconnects and WebSocket hasn't fully synced
+        debugPrint('⚠️ FLUTTER - State is null but quiz_started received');
+        // Create a minimal state so navigation can work
+        state = SessionState(
+          sessionCode: '',
+          quizId: '',
+          hostId: '',
+          status: 'active',
+          participants: [],
+          participantCount: 0,
+        );
       }
+      debugPrint('✅ FLUTTER - State status is now: ${state?.status}');
       // Time settings will be handled by game_provider when it receives the first question
     } else if (type == 'quiz_completed' || type == 'quiz_ended') {
       debugPrint('🏁 FLUTTER - Quiz completed');
