@@ -49,6 +49,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   Timer? countdownTimer;
   final GlobalKey _qrKey = GlobalKey();
   bool _isStartingQuiz = false;
+  bool _hasNavigatedToLiveHostView = false; // Prevent duplicate navigation
 
   // Time settings for live multiplayer
   int _perQuestionTimeLimit = 30; // Default 30 seconds per question
@@ -72,6 +73,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   }
 
   void _updateParticipantsFromWebSocket() {
+    // Safety check - don't access ref if widget is unmounted
+    if (!mounted) return;
+
     final sessionState = ref.read(sessionProvider);
     if (sessionState != null && widget.mode == 'live_multiplayer') {
       debugPrint(
@@ -373,7 +377,8 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         timer.cancel();
         _isStartingQuiz = false;
 
-        if (mounted) {
+        if (mounted && !_hasNavigatedToLiveHostView) {
+          _hasNavigatedToLiveHostView = true;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -528,12 +533,16 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         final wasActive = previous?.status == 'active';
         final isNowActive = next.status == 'active';
 
-        if (isNowActive && _isStartingQuiz && !wasActive) {
+        if (isNowActive &&
+            _isStartingQuiz &&
+            !wasActive &&
+            !_hasNavigatedToLiveHostView) {
           debugPrint(
             '🎯 HOST - Quiz is now active! Navigating to LiveHostView',
           );
-          // Reset flag before navigation
+          // Reset flags before navigation
           _isStartingQuiz = false;
+          _hasNavigatedToLiveHostView = true;
 
           Navigator.pushReplacement(
             context,
