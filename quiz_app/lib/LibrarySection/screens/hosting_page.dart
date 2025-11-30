@@ -274,6 +274,11 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         '✅ HOST - Successfully connected to WebSocket for session $sessionCode',
       );
       debugPrint('✅ HOST - Now listening for participant updates in real-time');
+
+      // ✅ IMPORTANT: Update participants from WebSocket state AFTER connection
+      // This ensures we get the latest participants list from session_state
+      await Future.delayed(const Duration(milliseconds: 500));
+      _updateParticipantsFromWebSocket();
     } catch (e, stackTrace) {
       debugPrint('⚠️ HOST - WebSocket connection issue: $e');
       debugPrint('⚠️ HOST - Stack trace: $stackTrace');
@@ -502,13 +507,20 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Watch session provider to trigger rebuild when participants change
+    final sessionState = ref.watch(sessionProvider);
+
     // ✅ Listen to WebSocket updates for real-time participant sync
     ref.listen(sessionProvider, (previous, next) {
       debugPrint(
         '🔔 HOST - sessionProvider changed: prev=${previous?.status}, next=${next?.status}, _isStartingQuiz=$_isStartingQuiz',
       );
+      debugPrint(
+        '🔔 HOST - Participants: prev=${previous?.participants.length ?? 0}, next=${next?.participants.length ?? 0}',
+      );
 
       if (next != null && widget.mode == 'live_multiplayer') {
+        // ✅ Always update participants when state changes
         _updateParticipantsFromWebSocket();
 
         // ✅ Navigate to LiveHostView when quiz becomes active
@@ -532,6 +544,18 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         }
       }
     });
+
+    // ✅ Also sync participants from watched state (belt and suspenders approach)
+    if (sessionState != null &&
+        widget.mode == 'live_multiplayer' &&
+        sessionState.participants.length != participantCount) {
+      // Schedule update for next frame to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _updateParticipantsFromWebSocket();
+        }
+      });
+    }
 
     if (isLoading) {
       return Scaffold(
