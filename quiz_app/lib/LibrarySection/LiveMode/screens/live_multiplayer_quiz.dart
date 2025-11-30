@@ -20,32 +20,65 @@ class LiveMultiplayerQuiz extends ConsumerStatefulWidget {
 
 class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
   bool _hasNavigatedToResults = false;
+  bool _isShowingHostEndedDialog = false;
 
   void _navigateToResults() {
     if (_hasNavigatedToResults) {
       debugPrint('🏁 QUIZ_SCREEN - Already navigated to results, skipping');
       return;
     }
-    
+
     _hasNavigatedToResults = true;
     debugPrint('🏁 QUIZ_SCREEN - Navigating to results');
-    
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const LiveMultiplayerResults(),
-        ),
+        MaterialPageRoute(builder: (context) => const LiveMultiplayerResults()),
       );
     }
   }
 
+  void _showHostEndedDialog() {
+    if (_isShowingHostEndedDialog || _hasNavigatedToResults) return;
+    _isShowingHostEndedDialog = true;
+
+    debugPrint('🏁 QUIZ_SCREEN - Showing host ended dialog');
+
+    AppDialog.show(
+      context: context,
+      title: 'Quiz Ended',
+      content:
+          'The host has ended the quiz. Tap below to see the final results!',
+      primaryActionText: 'View Results',
+      primaryActionCallback: () {
+        Navigator.of(context).pop(); // Close dialog
+        _navigateToResults();
+      },
+      dismissible: false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Get user/host info early for all listeners
+    final currentUserId = ref.watch(currentUserProvider);
+    final sessionState = ref.watch(sessionProvider);
+    final isHost = sessionState?.hostId == currentUserId;
+
     ref.listen(sessionProvider, (previous, next) {
       if (next != null && next.status == 'completed') {
-        debugPrint('🏁 QUIZ_SCREEN - Session completed');
-        _navigateToResults();
+        debugPrint(
+          '🏁 QUIZ_SCREEN - Session completed, hostEnded: ${next.hostEndedQuiz}',
+        );
+
+        // If host manually ended AND we're not the host, show dialog
+        if (next.hostEndedQuiz && !isHost) {
+          _showHostEndedDialog();
+        } else {
+          // Natural completion or we are host - just navigate
+          _navigateToResults();
+        }
       }
     });
 
@@ -107,8 +140,6 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
 
     final gameState = ref.watch(gameProvider);
     final currentQuestion = gameState.currentQuestion;
-    final currentUserId = ref.watch(currentUserProvider);
-    final isHost = ref.watch(sessionProvider)?.hostId == currentUserId;
     debugPrint(
       '🎮 UI - Building with currentQuestion: ${currentQuestion != null ? "SET" : "NULL"}',
     );
@@ -160,9 +191,8 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                           // Ranks button (only for participants)
                           if (!isHost)
                             GestureDetector(
-                              onTap:
-                                  () =>
-                                      _showLeaderboardBottomSheet(context, ref),
+                              onTap: () =>
+                                  _showLeaderboardBottomSheet(context, ref),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -206,35 +236,51 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                 key: ValueKey(gameState.currentScore),
                                 duration: const Duration(milliseconds: 800),
                                 tween: IntTween(
-                                  begin: gameState.currentScore - (gameState.pointsEarned ?? 0),
+                                  begin:
+                                      gameState.currentScore -
+                                      (gameState.pointsEarned ?? 0),
                                   end: gameState.currentScore,
                                 ),
                                 curve: Curves.easeOutCubic,
                                 builder: (context, value, child) {
-                                  final isAnimating = value != gameState.currentScore;
-                                  final pointsEarned = gameState.pointsEarned ?? 0;
-                                  final showFloating = isAnimating && pointsEarned > 0;
-                                  
+                                  final isAnimating =
+                                      value != gameState.currentScore;
+                                  final pointsEarned =
+                                      gameState.pointsEarned ?? 0;
+                                  final showFloating =
+                                      isAnimating && pointsEarned > 0;
+
                                   return Stack(
                                     clipBehavior: Clip.none,
                                     children: [
                                       // Main points badge
                                       AnimatedContainer(
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 14,
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
                                           color: isAnimating && pointsEarned > 0
-                                              ? _getPointsColor(gameState.multiplier ?? 1.0, gameState.isPartial)
+                                              ? _getPointsColor(
+                                                  gameState.multiplier ?? 1.0,
+                                                  gameState.isPartial,
+                                                )
                                               : const Color(0xFFFFD700),
-                                          borderRadius: BorderRadius.circular(20),
-                                          boxShadow: isAnimating && pointsEarned > 0
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          boxShadow:
+                                              isAnimating && pointsEarned > 0
                                               ? [
                                                   BoxShadow(
-                                                    color: _getPointsColor(gameState.multiplier ?? 1.0, gameState.isPartial)
-                                                        .withValues(alpha: 0.5),
+                                                    color: _getPointsColor(
+                                                      gameState.multiplier ??
+                                                          1.0,
+                                                      gameState.isPartial,
+                                                    ).withValues(alpha: 0.5),
                                                     blurRadius: 12,
                                                     spreadRadius: 2,
                                                   ),
@@ -261,36 +307,48 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                           ],
                                         ),
                                       ),
-                                      
+
                                       // Floating +points animation
                                       if (showFloating)
                                         Positioned(
                                           right: -10,
                                           top: -5,
                                           child: TweenAnimationBuilder<double>(
-                                            duration: const Duration(milliseconds: 1200),
+                                            duration: const Duration(
+                                              milliseconds: 1200,
+                                            ),
                                             tween: Tween(begin: 0.0, end: 1.0),
                                             curve: Curves.easeOut,
                                             builder: (context, progress, child) {
                                               return Transform.translate(
-                                                offset: Offset(0, -progress * 30),
+                                                offset: Offset(
+                                                  0,
+                                                  -progress * 30,
+                                                ),
                                                 child: Opacity(
                                                   opacity: 1.0 - progress,
                                                   child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
                                                     decoration: BoxDecoration(
                                                       color: _getPointsColor(
-                                                        gameState.multiplier ?? 1.0,
+                                                        gameState.multiplier ??
+                                                            1.0,
                                                         gameState.isPartial,
                                                       ),
-                                                      borderRadius: BorderRadius.circular(12),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
                                                       boxShadow: [
                                                         BoxShadow(
                                                           color: _getPointsColor(
-                                                            gameState.multiplier ?? 1.0,
+                                                            gameState
+                                                                    .multiplier ??
+                                                                1.0,
                                                             gameState.isPartial,
                                                           ).withValues(alpha: 0.4),
                                                           blurRadius: 8,
@@ -299,20 +357,26 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                                       ],
                                                     ),
                                                     child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
                                                         Icon(
                                                           Icons.add,
-                                                          color: AppColors.white,
+                                                          color:
+                                                              AppColors.white,
                                                           size: 12,
                                                         ),
                                                         Text(
                                                           '$pointsEarned',
-                                                          style: const TextStyle(
-                                                            color: AppColors.white,
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w700,
-                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                color: AppColors
+                                                                    .white,
+                                                                fontSize: 12,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
                                                         ),
                                                       ],
                                                     ),
@@ -346,8 +410,6 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                   ),
                 ),
               ),
-
-
 
               // Progress Bar
               SliverToBoxAdapter(
@@ -418,15 +480,19 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                         isCorrect: gameState.isCorrect,
                         correctAnswer: gameState.correctAnswer,
                       ),
-                      
+
                       // Partial credit indicator
-                      if (gameState.hasAnswered && gameState.isPartial && gameState.partialCredit != null)
+                      if (gameState.hasAnswered &&
+                          gameState.isPartial &&
+                          gameState.partialCredit != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
                           child: Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFFFF9800,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: const Color(0xFFFF9800),
@@ -450,7 +516,8 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Partial Credit',
@@ -483,7 +550,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                             ),
                           ),
                         ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -564,8 +631,8 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                 content:
                                     'Are you sure you want to end the quiz early? All progress will be saved.',
                                 secondaryActionText: 'CANCEL',
-                                secondaryActionCallback:
-                                    () => Navigator.pop(context),
+                                secondaryActionCallback: () =>
+                                    Navigator.pop(context),
                                 primaryActionText: 'END NOW',
                                 primaryActionCallback: () {
                                   Navigator.pop(context);
@@ -613,237 +680,217 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (context) => Consumer(
-            builder: (context, ref, child) {
-              final gameState = ref.watch(gameProvider);
-              ref.watch(currentUserProvider);
-              final rankings = gameState.rankings ?? [];
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final gameState = ref.watch(gameProvider);
+          ref.watch(currentUserProvider);
+          final rankings = gameState.rankings ?? [];
 
-              return Container(
-                height: MediaQuery.of(context).size.height * 0.75,
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    // Handle bar
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
 
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Live Leaderboard',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Icon(
-                              Icons.close,
-                              size: 24,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+                // Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Live Leaderboard',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(
+                          Icons.close,
+                          size: 24,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-                    // Leaderboard content
-                    Expanded(
-                      child:
-                          rankings.isEmpty
-                              ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    CircularProgressIndicator(
-                                      color: AppColors.primary,
+                // Leaderboard content
+                Expanded(
+                  child: rankings.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Loading...',
+                                style: TextStyle(color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: rankings.length,
+                          itemBuilder: (context, index) {
+                            final entry = rankings[index];
+                            final rank = index + 1;
+                            final answeredCount = entry['answered_count'] ?? 0;
+                            final totalQuestions =
+                                entry['total_questions'] ??
+                                gameState.totalQuestions;
+                            final score = entry['score'] ?? 0;
+                            final username = entry['username'] ?? 'Unknown';
+
+                            // Medal colors for top 3
+                            Color? medalColor;
+                            if (rank == 1) {
+                              medalColor = const Color(0xFFFFD700); // Gold
+                            } else if (rank == 2) {
+                              medalColor = const Color(0xFFC0C0C0); // Silver
+                            } else if (rank == 3) {
+                              medalColor = const Color(0xFFCD7F32); // Bronze
+                            }
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  // Rank badge
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color:
+                                          medalColor ?? AppColors.primaryLight,
                                     ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'Loading...',
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                    child: Center(
+                                      child: Text(
+                                        '$rank',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: medalColor != null
+                                              ? AppColors.white
+                                              : AppColors.primary,
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              )
-                              : ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                itemCount: rankings.length,
-                                itemBuilder: (context, index) {
-                                  final entry = rankings[index];
-                                  final rank = index + 1;
-                                  final answeredCount =
-                                      entry['answered_count'] ?? 0;
-                                  final totalQuestions =
-                                      entry['total_questions'] ??
-                                      gameState.totalQuestions;
-                                  final score = entry['score'] ?? 0;
-                                  final username =
-                                      entry['username'] ?? 'Unknown';
+                                  ),
+                                  const SizedBox(width: 12),
 
-                                  // Medal colors for top 3
-                                  Color? medalColor;
-                                  if (rank == 1) {
-                                    medalColor = const Color(
-                                      0xFFFFD700,
-                                    ); // Gold
-                                  } else if (rank == 2) {
-                                    medalColor = const Color(
-                                      0xFFC0C0C0,
-                                    ); // Silver
-                                  } else if (rank == 3) {
-                                    medalColor = const Color(
-                                      0xFFCD7F32,
-                                    ); // Bronze
-                                  }
-
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.background,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
+                                  // Username and progress
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        // Rank badge
-                                        Container(
-                                          width: 32,
-                                          height: 32,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color:
-                                                medalColor ??
-                                                AppColors.primaryLight,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '$rank',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14,
-                                                color:
-                                                    medalColor != null
-                                                        ? AppColors.white
-                                                        : AppColors.primary,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-
-                                        // Username and progress
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                username,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 15,
-                                                  color: AppColors.textPrimary,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Q$answeredCount/$totalQuestions',
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-
-                                        // Score
                                         Text(
-                                          '$score',
+                                          username,
                                           style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 16,
-                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Q$answeredCount/$totalQuestions',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: AppColors.textSecondary,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  );
-                                },
-                              ),
-                    ),
+                                  ),
 
-                    // Refresh button
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            ref
-                                .read(gameProvider.notifier)
-                                .requestLeaderboard();
+                                  // Score
+                                  Text(
+                                    '$score',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                           },
-                          icon: const Icon(Icons.refresh, size: 18),
-                          label: const Text(
-                            'Refresh',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(
-                              color: AppColors.primary,
-                              width: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: AppColors.white,
-                          ),
+                        ),
+                ),
+
+                // Refresh button
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        ref.read(gameProvider.notifier).requestLeaderboard();
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text(
+                        'Refresh',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
                         ),
                       ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: AppColors.white,
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-              );
-            },
-          ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-  
+
   Color _getPointsColor(double multiplier, bool isPartial) {
     if (isPartial) return const Color(0xFFFF9800); // Orange for partial credit
-    if (multiplier >= 1.8) return const Color(0xFFFFD700); // Gold for super fast
+    if (multiplier >= 1.8) {
+      return const Color(0xFFFFD700); // Gold for super fast
+    }
     if (multiplier >= 1.5) return const Color(0xFF4CAF50); // Green for fast
     if (multiplier >= 1.2) return AppColors.primary; // Primary for good
     return const Color(0xFF2196F3); // Blue for normal

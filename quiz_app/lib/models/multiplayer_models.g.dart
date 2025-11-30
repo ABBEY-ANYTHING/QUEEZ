@@ -46,6 +46,7 @@ _SessionState _$SessionStateFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       participantCount: (json['participant_count'] as num?)?.toInt() ?? 0,
+      hostEndedQuiz: json['host_ended_quiz'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$SessionStateToJson(_SessionState instance) =>
@@ -60,6 +61,7 @@ Map<String, dynamic> _$SessionStateToJson(_SessionState instance) =>
       'total_questions': instance.totalQuestions,
       'participants': instance.participants,
       'participant_count': instance.participantCount,
+      'host_ended_quiz': instance.hostEndedQuiz,
     };
 
 _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(

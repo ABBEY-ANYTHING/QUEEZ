@@ -107,7 +107,16 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
     });
 
     debugPrint('🛑 HOST - Ending session...');
+
+    // End the quiz via WebSocket - this will broadcast to all participants
     ref.read(sessionProvider.notifier).endQuiz();
+
+    // Request final leaderboard immediately so we have rankings for podium
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        ref.read(gameProvider.notifier).requestLeaderboard();
+      }
+    });
   }
 
   /// Navigate back to home/library after session ends

@@ -299,7 +299,7 @@ as List<Map<String, dynamic>>,
 /// @nodoc
 mixin _$SessionState {
 
-@JsonKey(name: 'session_code') String get sessionCode;@JsonKey(name: 'quiz_id') String get quizId;@JsonKey(name: 'host_id') String get hostId; String get status; String get mode;@JsonKey(name: 'current_question_index') int get currentQuestionIndex;@JsonKey(name: 'quiz_title') String get quizTitle;@JsonKey(name: 'total_questions') int get totalQuestions; List<Participant> get participants;@JsonKey(name: 'participant_count') int get participantCount;
+@JsonKey(name: 'session_code') String get sessionCode;@JsonKey(name: 'quiz_id') String get quizId;@JsonKey(name: 'host_id') String get hostId; String get status; String get mode;@JsonKey(name: 'current_question_index') int get currentQuestionIndex;@JsonKey(name: 'quiz_title') String get quizTitle;@JsonKey(name: 'total_questions') int get totalQuestions; List<Participant> get participants;@JsonKey(name: 'participant_count') int get participantCount;@JsonKey(name: 'host_ended_quiz') bool get hostEndedQuiz;
 /// Create a copy of SessionState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -312,16 +312,16 @@ $SessionStateCopyWith<SessionState> get copyWith => _$SessionStateCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionState&&(identical(other.sessionCode, sessionCode) || other.sessionCode == sessionCode)&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.status, status) || other.status == status)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&(identical(other.quizTitle, quizTitle) || other.quizTitle == quizTitle)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&const DeepCollectionEquality().equals(other.participants, participants)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionState&&(identical(other.sessionCode, sessionCode) || other.sessionCode == sessionCode)&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.status, status) || other.status == status)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&(identical(other.quizTitle, quizTitle) || other.quizTitle == quizTitle)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&const DeepCollectionEquality().equals(other.participants, participants)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.hostEndedQuiz, hostEndedQuiz) || other.hostEndedQuiz == hostEndedQuiz));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionCode,quizId,hostId,status,mode,currentQuestionIndex,quizTitle,totalQuestions,const DeepCollectionEquality().hash(participants),participantCount);
+int get hashCode => Object.hash(runtimeType,sessionCode,quizId,hostId,status,mode,currentQuestionIndex,quizTitle,totalQuestions,const DeepCollectionEquality().hash(participants),participantCount,hostEndedQuiz);
 
 @override
 String toString() {
-  return 'SessionState(sessionCode: $sessionCode, quizId: $quizId, hostId: $hostId, status: $status, mode: $mode, currentQuestionIndex: $currentQuestionIndex, quizTitle: $quizTitle, totalQuestions: $totalQuestions, participants: $participants, participantCount: $participantCount)';
+  return 'SessionState(sessionCode: $sessionCode, quizId: $quizId, hostId: $hostId, status: $status, mode: $mode, currentQuestionIndex: $currentQuestionIndex, quizTitle: $quizTitle, totalQuestions: $totalQuestions, participants: $participants, participantCount: $participantCount, hostEndedQuiz: $hostEndedQuiz)';
 }
 
 
@@ -332,7 +332,7 @@ abstract mixin class $SessionStateCopyWith<$Res>  {
   factory $SessionStateCopyWith(SessionState value, $Res Function(SessionState) _then) = _$SessionStateCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'session_code') String sessionCode,@JsonKey(name: 'quiz_id') String quizId,@JsonKey(name: 'host_id') String hostId, String status, String mode,@JsonKey(name: 'current_question_index') int currentQuestionIndex,@JsonKey(name: 'quiz_title') String quizTitle,@JsonKey(name: 'total_questions') int totalQuestions, List<Participant> participants,@JsonKey(name: 'participant_count') int participantCount
+@JsonKey(name: 'session_code') String sessionCode,@JsonKey(name: 'quiz_id') String quizId,@JsonKey(name: 'host_id') String hostId, String status, String mode,@JsonKey(name: 'current_question_index') int currentQuestionIndex,@JsonKey(name: 'quiz_title') String quizTitle,@JsonKey(name: 'total_questions') int totalQuestions, List<Participant> participants,@JsonKey(name: 'participant_count') int participantCount,@JsonKey(name: 'host_ended_quiz') bool hostEndedQuiz
 });
 
 
@@ -349,7 +349,7 @@ class _$SessionStateCopyWithImpl<$Res>
 
 /// Create a copy of SessionState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sessionCode = null,Object? quizId = null,Object? hostId = null,Object? status = null,Object? mode = null,Object? currentQuestionIndex = null,Object? quizTitle = null,Object? totalQuestions = null,Object? participants = null,Object? participantCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? sessionCode = null,Object? quizId = null,Object? hostId = null,Object? status = null,Object? mode = null,Object? currentQuestionIndex = null,Object? quizTitle = null,Object? totalQuestions = null,Object? participants = null,Object? participantCount = null,Object? hostEndedQuiz = null,}) {
   return _then(_self.copyWith(
 sessionCode: null == sessionCode ? _self.sessionCode : sessionCode // ignore: cast_nullable_to_non_nullable
 as String,quizId: null == quizId ? _self.quizId : quizId // ignore: cast_nullable_to_non_nullable
@@ -361,7 +361,8 @@ as int,quizTitle: null == quizTitle ? _self.quizTitle : quizTitle // ignore: cas
 as String,totalQuestions: null == totalQuestions ? _self.totalQuestions : totalQuestions // ignore: cast_nullable_to_non_nullable
 as int,participants: null == participants ? _self.participants : participants // ignore: cast_nullable_to_non_nullable
 as List<Participant>,participantCount: null == participantCount ? _self.participantCount : participantCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,hostEndedQuiz: null == hostEndedQuiz ? _self.hostEndedQuiz : hostEndedQuiz // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -446,10 +447,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount, @JsonKey(name: 'host_ended_quiz')  bool hostEndedQuiz)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SessionState() when $default != null:
-return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount);case _:
+return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount,_that.hostEndedQuiz);case _:
   return orElse();
 
 }
@@ -467,10 +468,10 @@ return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount, @JsonKey(name: 'host_ended_quiz')  bool hostEndedQuiz)  $default,) {final _that = this;
 switch (_that) {
 case _SessionState():
-return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount);case _:
+return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount,_that.hostEndedQuiz);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -487,10 +488,10 @@ return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.m
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'session_code')  String sessionCode, @JsonKey(name: 'quiz_id')  String quizId, @JsonKey(name: 'host_id')  String hostId,  String status,  String mode, @JsonKey(name: 'current_question_index')  int currentQuestionIndex, @JsonKey(name: 'quiz_title')  String quizTitle, @JsonKey(name: 'total_questions')  int totalQuestions,  List<Participant> participants, @JsonKey(name: 'participant_count')  int participantCount, @JsonKey(name: 'host_ended_quiz')  bool hostEndedQuiz)?  $default,) {final _that = this;
 switch (_that) {
 case _SessionState() when $default != null:
-return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount);case _:
+return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.mode,_that.currentQuestionIndex,_that.quizTitle,_that.totalQuestions,_that.participants,_that.participantCount,_that.hostEndedQuiz);case _:
   return null;
 
 }
@@ -502,7 +503,7 @@ return $default(_that.sessionCode,_that.quizId,_that.hostId,_that.status,_that.m
 @JsonSerializable()
 
 class _SessionState implements SessionState {
-  const _SessionState({@JsonKey(name: 'session_code') required this.sessionCode, @JsonKey(name: 'quiz_id') required this.quizId, @JsonKey(name: 'host_id') required this.hostId, this.status = 'waiting', this.mode = 'live', @JsonKey(name: 'current_question_index') this.currentQuestionIndex = 0, @JsonKey(name: 'quiz_title') this.quizTitle = '', @JsonKey(name: 'total_questions') this.totalQuestions = 0, this.participants = const [], @JsonKey(name: 'participant_count') this.participantCount = 0});
+  const _SessionState({@JsonKey(name: 'session_code') required this.sessionCode, @JsonKey(name: 'quiz_id') required this.quizId, @JsonKey(name: 'host_id') required this.hostId, this.status = 'waiting', this.mode = 'live', @JsonKey(name: 'current_question_index') this.currentQuestionIndex = 0, @JsonKey(name: 'quiz_title') this.quizTitle = '', @JsonKey(name: 'total_questions') this.totalQuestions = 0, this.participants = const [], @JsonKey(name: 'participant_count') this.participantCount = 0, @JsonKey(name: 'host_ended_quiz') this.hostEndedQuiz = false});
   factory _SessionState.fromJson(Map<String, dynamic> json) => _$SessionStateFromJson(json);
 
 @override@JsonKey(name: 'session_code') final  String sessionCode;
@@ -515,6 +516,7 @@ class _SessionState implements SessionState {
 @override@JsonKey(name: 'total_questions') final  int totalQuestions;
 @override@JsonKey() final  List<Participant> participants;
 @override@JsonKey(name: 'participant_count') final  int participantCount;
+@override@JsonKey(name: 'host_ended_quiz') final  bool hostEndedQuiz;
 
 /// Create a copy of SessionState
 /// with the given fields replaced by the non-null parameter values.
@@ -529,16 +531,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionState&&(identical(other.sessionCode, sessionCode) || other.sessionCode == sessionCode)&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.status, status) || other.status == status)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&(identical(other.quizTitle, quizTitle) || other.quizTitle == quizTitle)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&const DeepCollectionEquality().equals(other.participants, participants)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SessionState&&(identical(other.sessionCode, sessionCode) || other.sessionCode == sessionCode)&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.status, status) || other.status == status)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&(identical(other.quizTitle, quizTitle) || other.quizTitle == quizTitle)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&const DeepCollectionEquality().equals(other.participants, participants)&&(identical(other.participantCount, participantCount) || other.participantCount == participantCount)&&(identical(other.hostEndedQuiz, hostEndedQuiz) || other.hostEndedQuiz == hostEndedQuiz));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sessionCode,quizId,hostId,status,mode,currentQuestionIndex,quizTitle,totalQuestions,const DeepCollectionEquality().hash(participants),participantCount);
+int get hashCode => Object.hash(runtimeType,sessionCode,quizId,hostId,status,mode,currentQuestionIndex,quizTitle,totalQuestions,const DeepCollectionEquality().hash(participants),participantCount,hostEndedQuiz);
 
 @override
 String toString() {
-  return 'SessionState(sessionCode: $sessionCode, quizId: $quizId, hostId: $hostId, status: $status, mode: $mode, currentQuestionIndex: $currentQuestionIndex, quizTitle: $quizTitle, totalQuestions: $totalQuestions, participants: $participants, participantCount: $participantCount)';
+  return 'SessionState(sessionCode: $sessionCode, quizId: $quizId, hostId: $hostId, status: $status, mode: $mode, currentQuestionIndex: $currentQuestionIndex, quizTitle: $quizTitle, totalQuestions: $totalQuestions, participants: $participants, participantCount: $participantCount, hostEndedQuiz: $hostEndedQuiz)';
 }
 
 
@@ -549,7 +551,7 @@ abstract mixin class _$SessionStateCopyWith<$Res> implements $SessionStateCopyWi
   factory _$SessionStateCopyWith(_SessionState value, $Res Function(_SessionState) _then) = __$SessionStateCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'session_code') String sessionCode,@JsonKey(name: 'quiz_id') String quizId,@JsonKey(name: 'host_id') String hostId, String status, String mode,@JsonKey(name: 'current_question_index') int currentQuestionIndex,@JsonKey(name: 'quiz_title') String quizTitle,@JsonKey(name: 'total_questions') int totalQuestions, List<Participant> participants,@JsonKey(name: 'participant_count') int participantCount
+@JsonKey(name: 'session_code') String sessionCode,@JsonKey(name: 'quiz_id') String quizId,@JsonKey(name: 'host_id') String hostId, String status, String mode,@JsonKey(name: 'current_question_index') int currentQuestionIndex,@JsonKey(name: 'quiz_title') String quizTitle,@JsonKey(name: 'total_questions') int totalQuestions, List<Participant> participants,@JsonKey(name: 'participant_count') int participantCount,@JsonKey(name: 'host_ended_quiz') bool hostEndedQuiz
 });
 
 
@@ -566,7 +568,7 @@ class __$SessionStateCopyWithImpl<$Res>
 
 /// Create a copy of SessionState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sessionCode = null,Object? quizId = null,Object? hostId = null,Object? status = null,Object? mode = null,Object? currentQuestionIndex = null,Object? quizTitle = null,Object? totalQuestions = null,Object? participants = null,Object? participantCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? sessionCode = null,Object? quizId = null,Object? hostId = null,Object? status = null,Object? mode = null,Object? currentQuestionIndex = null,Object? quizTitle = null,Object? totalQuestions = null,Object? participants = null,Object? participantCount = null,Object? hostEndedQuiz = null,}) {
   return _then(_SessionState(
 sessionCode: null == sessionCode ? _self.sessionCode : sessionCode // ignore: cast_nullable_to_non_nullable
 as String,quizId: null == quizId ? _self.quizId : quizId // ignore: cast_nullable_to_non_nullable
@@ -578,7 +580,8 @@ as int,quizTitle: null == quizTitle ? _self.quizTitle : quizTitle // ignore: cas
 as String,totalQuestions: null == totalQuestions ? _self.totalQuestions : totalQuestions // ignore: cast_nullable_to_non_nullable
 as int,participants: null == participants ? _self.participants : participants // ignore: cast_nullable_to_non_nullable
 as List<Participant>,participantCount: null == participantCount ? _self.participantCount : participantCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,hostEndedQuiz: null == hostEndedQuiz ? _self.hostEndedQuiz : hostEndedQuiz // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

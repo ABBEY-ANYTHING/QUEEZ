@@ -47,9 +47,9 @@ class StudySetDetailsState extends State<StudySetDetails> {
     if (_formKey.currentState!.validate()) {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not authenticated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('User not authenticated')));
         return;
       }
 
@@ -211,8 +211,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
                     value: _selectedLanguage,
                     items: _languages,
                     hintText: 'Select',
-                    validator: (value) =>
-                        value == null ? 'Required' : null,
+                    validator: (value) => value == null ? 'Required' : null,
                     autoValidate: _autoValidate,
                     onChanged: (val) => setState(() => _selectedLanguage = val),
                   ),
@@ -226,8 +225,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
                     value: _selectedTag,
                     items: _tags,
                     hintText: 'Select',
-                    validator: (value) =>
-                        value == null ? 'Required' : null,
+                    validator: (value) => value == null ? 'Required' : null,
                     autoValidate: _autoValidate,
                     onChanged: (val) => setState(() => _selectedTag = val),
                   ),
@@ -242,17 +240,16 @@ class StudySetDetailsState extends State<StudySetDetails> {
               imagePath: _coverImagePath,
               onTap: () async {
                 try {
-                  final imagePath =
-                      await ImagePickerService().pickImageFromGallery();
+                  final imagePath = await ImagePickerService()
+                      .pickImageFromGallery();
                   if (imagePath != null) {
                     setState(() => _coverImagePath = imagePath);
                   }
                 } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $e')),
-                    );
-                  }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               },
             ),

@@ -229,9 +229,12 @@ class SessionNotifier extends Notifier<SessionState?> {
       debugPrint('✅ FLUTTER - State status is now: ${state?.status}');
       // Time settings will be handled by game_provider when it receives the first question
     } else if (type == 'quiz_completed' || type == 'quiz_ended') {
-      debugPrint('🏁 FLUTTER - Quiz completed');
+      debugPrint('🏁 FLUTTER - Quiz completed/ended');
+      final hostEnded = payload['host_ended'] == true;
+      debugPrint('🏁 FLUTTER - Host manually ended: $hostEnded');
+
       if (state != null) {
-        state = state!.copyWith(status: 'completed');
+        state = state!.copyWith(status: 'completed', hostEndedQuiz: hostEnded);
       }
       // Clear active session since quiz is done
       final userId = ref.read(currentUserProvider);
