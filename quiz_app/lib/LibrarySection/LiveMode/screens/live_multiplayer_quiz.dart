@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_results.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/utils/question_type_handler.dart';
@@ -21,6 +24,35 @@ class LiveMultiplayerQuiz extends ConsumerStatefulWidget {
 class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
   bool _hasNavigatedToResults = false;
   bool _isShowingHostEndedDialog = false;
+  StreamSubscription<String>? _errorSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Subscribe to error stream once in initState, not on every build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _errorSubscription = ref
+          .read(sessionProvider.notifier)
+          .errorStream
+          .listen((error) {
+            if (mounted) {
+              AppDialog.show(
+                context: context,
+                title: 'Error',
+                content: error,
+                primaryActionText: 'OK',
+                primaryActionCallback: () => Navigator.pop(context),
+              );
+            }
+          });
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSubscription?.cancel();
+    super.dispose();
+  }
 
   void _navigateToResults() {
     if (_hasNavigatedToResults) {
@@ -87,6 +119,23 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
         '🎮 UI - Game state changed, currentQuestion: ${next.currentQuestion != null ? "SET" : "NULL"}',
       );
 
+      // 🎯 Haptic feedback when answer result is received
+      if (previous?.isCorrect == null && next.isCorrect != null) {
+        if (next.isCorrect == true) {
+          // Correct answer - satisfying medium impact
+          HapticFeedback.mediumImpact();
+          // Double haptic for streak bonus!
+          if (next.streak >= 2) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              HapticFeedback.lightImpact();
+            });
+          }
+        } else {
+          // Wrong answer - heavy impact
+          HapticFeedback.heavyImpact();
+        }
+      }
+
       // Check if quiz completed message received
       if (previous?.currentQuestion != null &&
           next.currentQuestion == null &&
@@ -121,22 +170,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
       }
     });
 
-    ref.listen(sessionProvider.notifier.select((n) => n.errorStream), (
-      previous,
-      next,
-    ) {
-      next.listen((error) {
-        if (context.mounted) {
-          AppDialog.show(
-            context: context,
-            title: 'Error',
-            content: error,
-            primaryActionText: 'OK',
-            primaryActionCallback: () => Navigator.pop(context),
-          );
-        }
-      });
-    });
+    // Error stream is now handled in initState to prevent memory leak
 
     final gameState = ref.watch(gameProvider);
     final currentQuestion = gameState.currentQuestion;
@@ -169,21 +203,73 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              // Sub-header with Question counter, Ranks button, Points
+              // Sub-header with Question counter, Streak, Ranks button, Points
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Question counter
-                      Text(
-                        'Question ${gameState.questionIndex + 1} of ${gameState.totalQuestions}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      // Left side: Question counter + Streak indicator
+                      Row(
+                        children: [
+                          Text(
+                            'Q${gameState.questionIndex + 1}/${gameState.totalQuestions}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          // Streak indicator (show when streak >= 2)
+                          if (gameState.streak >= 2) ...[
+                            const SizedBox(width: 8),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFFF6B35),
+                                    const Color(0xFFFF9500),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFFF6B35,
+                                    ).withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.local_fire_department,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${gameState.streak}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       // Right side: Ranks button + Points
                       Row(
@@ -544,6 +630,89 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFFFF9800),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // Streak bonus indicator (show when streak >= 2 and got points)
+                      if (gameState.hasAnswered &&
+                          gameState.isCorrect == true &&
+                          gameState.streak >= 2 &&
+                          gameState.streakBonus > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(
+                                    0xFFFF6B35,
+                                  ).withValues(alpha: 0.15),
+                                  const Color(
+                                    0xFFFF9500,
+                                  ).withValues(alpha: 0.15),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFF6B35),
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFF6B35),
+                                        Color(0xFFFF9500),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_fire_department,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '🔥 ${gameState.streak}x Streak!',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFFF6B35),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${gameState.streak} correct answers in a row!',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '+${gameState.streakBonus}',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFFF6B35),
                                   ),
                                 ),
                               ],

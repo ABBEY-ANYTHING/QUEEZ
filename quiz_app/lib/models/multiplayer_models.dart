@@ -81,6 +81,9 @@ abstract class GameState with _$GameState {
     // Partial credit properties
     @JsonKey(name: 'is_partial') @Default(false) bool isPartial,
     @JsonKey(name: 'partial_credit') double? partialCredit,
+    // Streak properties
+    @JsonKey(name: 'streak') @Default(0) int streak,
+    @JsonKey(name: 'streak_bonus') @Default(0) int streakBonus,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>

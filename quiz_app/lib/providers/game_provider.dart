@@ -28,22 +28,24 @@ class GameNotifier extends Notifier<GameState> {
 
     return const GameState();
   }
-  
+
   void setTimeSettings(int perQuestionTimeLimit) {
-    debugPrint('⏱️ GAME_PROVIDER - Setting time: perQuestion=${perQuestionTimeLimit}s');
-    state = state.copyWith(
-      timeLimit: perQuestionTimeLimit,
+    debugPrint(
+      '⏱️ GAME_PROVIDER - Setting time: perQuestion=${perQuestionTimeLimit}s',
     );
+    state = state.copyWith(timeLimit: perQuestionTimeLimit);
   }
-  
+
   void _onQuestionTimeout() {
     debugPrint('⏰ GAME_PROVIDER - Question time expired!');
-    
+
     if (state.hasAnswered) {
-      debugPrint('⏰ GAME_PROVIDER - Already answered, skipping timeout handling');
+      debugPrint(
+        '⏰ GAME_PROVIDER - Already answered, skipping timeout handling',
+      );
       return;
     }
-    
+
     // Auto-submit with no answer (will be marked wrong)
     debugPrint('⏰ GAME_PROVIDER - Auto-submitting due to timeout');
     _wsService.sendMessage('submit_answer', {
@@ -51,7 +53,7 @@ class GameNotifier extends Notifier<GameState> {
       'timestamp': state.timeLimit.toDouble(), // Full time elapsed
       'timeout': true,
     });
-    
+
     state = state.copyWith(hasAnswered: true);
   }
 
@@ -64,12 +66,16 @@ class GameNotifier extends Notifier<GameState> {
     // Calculate elapsed time since question was shown
     double elapsedSeconds = 0;
     if (_questionStartTime != null) {
-      elapsedSeconds = DateTime.now().difference(_questionStartTime!).inMilliseconds / 1000.0;
+      elapsedSeconds =
+          DateTime.now().difference(_questionStartTime!).inMilliseconds /
+          1000.0;
     }
 
     debugPrint('📤 GAME_PROVIDER - Submitting answer: $answer');
-    debugPrint('⏱️ GAME_PROVIDER - Elapsed time: ${elapsedSeconds.toStringAsFixed(2)}s');
-    
+    debugPrint(
+      '⏱️ GAME_PROVIDER - Elapsed time: ${elapsedSeconds.toStringAsFixed(2)}s',
+    );
+
     _wsService.sendMessage('submit_answer', {
       'answer': answer,
       'timestamp': elapsedSeconds, // Send elapsed time, not absolute timestamp
@@ -100,7 +106,9 @@ class GameNotifier extends Notifier<GameState> {
   }
 
   void requestLeaderboard() {
-    debugPrint('🏆 GAME_PROVIDER - Requesting real-time leaderboard from backend');
+    debugPrint(
+      '🏆 GAME_PROVIDER - Requesting real-time leaderboard from backend',
+    );
     _wsService.sendMessage('request_leaderboard', {});
   }
 
@@ -112,12 +120,13 @@ class GameNotifier extends Notifier<GameState> {
       // New question received - start tracking time for scoring
       debugPrint('📚 GAME_PROVIDER - Processing question message');
       debugPrint('📦 GAME_PROVIDER - Question payload: $payload');
-      
+
       // Get per-question time limit
-      final questionTimeLimit = payload['time_limit'] ?? payload['time_remaining'] ?? state.timeLimit;
-      
+      final questionTimeLimit =
+          payload['time_limit'] ?? payload['time_remaining'] ?? state.timeLimit;
+
       _questionStartTime = DateTime.now(); // Start timing for score calculation
-      
+
       _startTimer(payload['time_remaining'] ?? questionTimeLimit);
       state = state.copyWith(
         currentQuestion: payload['question'],
@@ -139,7 +148,9 @@ class GameNotifier extends Notifier<GameState> {
       debugPrint(
         '✅ GAME_PROVIDER - State updated, currentQuestion is now: ${state.currentQuestion != null ? "SET" : "NULL"}',
       );
-      debugPrint('⏱️ GAME_PROVIDER - Time limit for this question: ${questionTimeLimit}s');
+      debugPrint(
+        '⏱️ GAME_PROVIDER - Time limit for this question: ${questionTimeLimit}s',
+      );
     } else if (type == 'answer_result') {
       // Handle answer result - update state with user's answer and correctness
       final isCorrect = payload['is_correct'] as bool? ?? false;
@@ -151,16 +162,27 @@ class GameNotifier extends Notifier<GameState> {
       final questionType = payload['question_type'] as String?;
       final isPartial = payload['is_partial'] as bool? ?? false;
       final partialCredit = (payload['partial_credit'] as num?)?.toDouble();
-      
+      final streak = payload['streak'] as int? ?? 0;
+      final streakBonus = payload['streak_bonus'] as int? ?? 0;
+
       // Get the user's submitted answer from the payload if available
       final userAnswer = payload['user_answer'];
 
       if (isPartial && partialCredit != null) {
-        debugPrint('⚠️ GAME_PROVIDER - Partial credit: ${partialCredit.toStringAsFixed(1)}%');
+        debugPrint(
+          '⚠️ GAME_PROVIDER - Partial credit: ${partialCredit.toStringAsFixed(1)}%',
+        );
       } else {
-        debugPrint('✅ GAME_PROVIDER - Answer result: ${isCorrect ? "CORRECT" : "INCORRECT"}');
+        debugPrint(
+          '✅ GAME_PROVIDER - Answer result: ${isCorrect ? "CORRECT" : "INCORRECT"}',
+        );
       }
-      debugPrint('💰 GAME_PROVIDER - Points earned: $points (base: 1000, time bonus: $timeBonus, multiplier: ${multiplier}x)');
+      debugPrint(
+        '💰 GAME_PROVIDER - Points earned: $points (base: 1000, time bonus: $timeBonus, multiplier: ${multiplier}x, streak bonus: $streakBonus)',
+      );
+      if (streak > 0) {
+        debugPrint('🔥 GAME_PROVIDER - Current streak: $streak');
+      }
       debugPrint('🏆 GAME_PROVIDER - New total score: $newScore');
       debugPrint('🎯 GAME_PROVIDER - Correct answer was: $correctAnswer');
       debugPrint('👤 GAME_PROVIDER - User answer was: $userAnswer');
@@ -176,12 +198,16 @@ class GameNotifier extends Notifier<GameState> {
         currentScore: newScore,
         isPartial: isPartial,
         partialCredit: partialCredit,
+        streak: streak,
+        streakBonus: streakBonus,
       );
-      
+
       // Auto-advance for single choice, true/false, and multi-select after delay
       // Reduced delays for faster gameplay (matching single player's 800ms)
       if (questionType == 'singleMcq' || questionType == 'trueFalse') {
-        debugPrint('⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (single/tf)');
+        debugPrint(
+          '⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (single/tf)',
+        );
         Future.delayed(const Duration(milliseconds: 800), () {
           if (state.hasAnswered && state.correctAnswer != null) {
             debugPrint('➡️ GAME_PROVIDER - Auto-requesting next question');
@@ -189,18 +215,26 @@ class GameNotifier extends Notifier<GameState> {
           }
         });
       } else if (questionType == 'multiMcq') {
-        debugPrint('⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (multi-select)');
+        debugPrint(
+          '⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (multi-select)',
+        );
         Future.delayed(const Duration(milliseconds: 800), () {
           if (state.hasAnswered && state.correctAnswer != null) {
-            debugPrint('➡️ GAME_PROVIDER - Auto-requesting next question (multi-select)');
+            debugPrint(
+              '➡️ GAME_PROVIDER - Auto-requesting next question (multi-select)',
+            );
             requestNextQuestion();
           }
         });
       } else if (questionType == 'dragAndDrop') {
-        debugPrint('⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (drag-drop)');
+        debugPrint(
+          '⏱️ GAME_PROVIDER - Auto-advancing to next question in 800ms (drag-drop)',
+        );
         Future.delayed(const Duration(milliseconds: 800), () {
           if (state.hasAnswered && state.correctAnswer != null) {
-            debugPrint('➡️ GAME_PROVIDER - Auto-requesting next question (drag-drop)');
+            debugPrint(
+              '➡️ GAME_PROVIDER - Auto-requesting next question (drag-drop)',
+            );
             requestNextQuestion();
           }
         });
@@ -211,10 +245,9 @@ class GameNotifier extends Notifier<GameState> {
       final pointsEarned = payload['points_earned'] as int? ?? 0;
       final correctAnswer = payload['correct_answer'];
       final yourScore = payload['your_score'] as int? ?? state.currentScore;
-      final answerDistribution =
-          payload['answer_distribution'] != null
-              ? Map<dynamic, int>.from(payload['answer_distribution'])
-              : null;
+      final answerDistribution = payload['answer_distribution'] != null
+          ? Map<dynamic, int>.from(payload['answer_distribution'])
+          : null;
 
       state = state.copyWith(
         lastAnswerCorrect: isCorrect,
@@ -231,25 +264,28 @@ class GameNotifier extends Notifier<GameState> {
       debugPrint('🏆 GAME_PROVIDER - Leaderboard update received');
 
       if (leaderboard != null) {
-        final rankings =
-            leaderboard is List
-                ? List<Map<String, dynamic>>.from(
-                  leaderboard.map((item) => Map<String, dynamic>.from(item)),
-                )
-                : null;
+        final rankings = leaderboard is List
+            ? List<Map<String, dynamic>>.from(
+                leaderboard.map((item) => Map<String, dynamic>.from(item)),
+              )
+            : null;
 
         if (rankings != null) {
-          debugPrint('📊 GAME_PROVIDER - ${rankings.length} participants in leaderboard');
+          debugPrint(
+            '📊 GAME_PROVIDER - ${rankings.length} participants in leaderboard',
+          );
           for (var i = 0; i < rankings.length && i < 3; i++) {
-            debugPrint('   ${i + 1}. ${rankings[i]['username']}: ${rankings[i]['score']} pts');
+            debugPrint(
+              '   ${i + 1}. ${rankings[i]['username']}: ${rankings[i]['score']} pts',
+            );
           }
-          
+
           // Update rankings but DON'T show popup (disabled for now)
           state = state.copyWith(
             rankings: rankings,
             showingLeaderboard: false, // DISABLED
           );
-          
+
           debugPrint('✅ GAME_PROVIDER - Rankings updated (popup disabled)');
         }
       }
@@ -258,21 +294,23 @@ class GameNotifier extends Notifier<GameState> {
       _stopTimer();
 
       final correctAnswer = payload['correct_answer'];
-      final rankings =
-          payload['rankings'] != null
-              ? List<Map<String, dynamic>>.from(
-                payload['rankings'].map(
-                  (item) => Map<String, dynamic>.from(item),
-                ),
-              )
-              : null;
+      final rankings = payload['rankings'] != null
+          ? List<Map<String, dynamic>>.from(
+              payload['rankings'].map(
+                (item) => Map<String, dynamic>.from(item),
+              ),
+            )
+          : null;
 
       state = state.copyWith(correctAnswer: correctAnswer, rankings: rankings);
     } else if (type == 'quiz_started') {
       // Quiz started - set time settings
-      final perQuestionTimeLimit = payload['per_question_time_limit'] as int? ?? 30;
-      debugPrint('🚀 GAME_PROVIDER - Quiz started with time settings: perQuestion=${perQuestionTimeLimit}s');
-      
+      final perQuestionTimeLimit =
+          payload['per_question_time_limit'] as int? ?? 30;
+      debugPrint(
+        '🚀 GAME_PROVIDER - Quiz started with time settings: perQuestion=${perQuestionTimeLimit}s',
+      );
+
       setTimeSettings(perQuestionTimeLimit);
     } else if (type == 'quiz_completed' || type == 'quiz_ended') {
       // Quiz finished
@@ -284,23 +322,29 @@ class GameNotifier extends Notifier<GameState> {
         final rankings = List<Map<String, dynamic>>.from(
           finalRankings.map((item) => Map<String, dynamic>.from(item)),
         );
-        debugPrint('📊 GAME_PROVIDER - Final rankings: ${rankings.length} participants');
+        debugPrint(
+          '📊 GAME_PROVIDER - Final rankings: ${rankings.length} participants',
+        );
         state = state.copyWith(rankings: rankings);
       }
     } else if (type == 'leaderboard_response') {
       // Real-time leaderboard response
       debugPrint('🏆 GAME_PROVIDER - Leaderboard response received');
       final leaderboard = payload['leaderboard'];
-      
+
       if (leaderboard != null) {
         final rankings = List<Map<String, dynamic>>.from(
           leaderboard.map((item) => Map<String, dynamic>.from(item)),
         );
-        debugPrint('📊 GAME_PROVIDER - ${rankings.length} participants in real-time leaderboard');
+        debugPrint(
+          '📊 GAME_PROVIDER - ${rankings.length} participants in real-time leaderboard',
+        );
         for (var i = 0; i < rankings.length && i < 3; i++) {
-          debugPrint('   ${i + 1}. ${rankings[i]['username']}: ${rankings[i]['score']} pts (Q${rankings[i]['answered_count']}/${rankings[i]['total_questions']})');
+          debugPrint(
+            '   ${i + 1}. ${rankings[i]['username']}: ${rankings[i]['score']} pts (Q${rankings[i]['answered_count']}/${rankings[i]['total_questions']})',
+          );
         }
-        
+
         state = state.copyWith(rankings: rankings);
         debugPrint('✅ GAME_PROVIDER - Real-time rankings updated');
       }

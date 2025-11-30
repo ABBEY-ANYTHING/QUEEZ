@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_results.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/podium_widget.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
@@ -63,7 +64,9 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
 
   void _startLeaderboardPolling() {
     _leaderboardPollingTimer?.cancel();
-    _leaderboardPollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Poll every 5 seconds (reduced from 3s) to minimize backend load
+    // With 100 hosts, this reduces requests from 2000/min to 1200/min
+    _leaderboardPollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       final sessionState = ref.read(sessionProvider);
       // Only poll if session is still active
       if (sessionState?.status == 'active') {
@@ -115,6 +118,18 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         ref.read(gameProvider.notifier).requestLeaderboard();
+
+        // Navigate to results page after a short delay to ensure rankings are loaded
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LiveMultiplayerResults(),
+              ),
+            );
+          }
+        });
       }
     });
   }

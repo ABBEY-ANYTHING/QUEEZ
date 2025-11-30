@@ -91,6 +91,8 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
   currentScore: (json['current_score'] as num?)?.toInt() ?? 0,
   isPartial: json['is_partial'] as bool? ?? false,
   partialCredit: (json['partial_credit'] as num?)?.toDouble(),
+  streak: (json['streak'] as num?)?.toInt() ?? 0,
+  streakBonus: (json['streak_bonus'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
@@ -118,6 +120,8 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'current_score': instance.currentScore,
       'is_partial': instance.isPartial,
       'partial_credit': instance.partialCredit,
+      'streak': instance.streak,
+      'streak_bonus': instance.streakBonus,
     };
 
 _LeaderboardEntry _$LeaderboardEntryFromJson(Map<String, dynamic> json) =>

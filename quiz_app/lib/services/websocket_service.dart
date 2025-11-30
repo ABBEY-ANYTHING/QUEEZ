@@ -7,7 +7,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-enum ConnectionStatus { connected, disconnected, reconnecting }
+enum ConnectionStatus { connected, disconnected, reconnecting, failed }
 
 class WebSocketService {
   WebSocketChannel? _channel;
@@ -24,7 +24,9 @@ class WebSocketService {
   bool get isConnected => _isConnected;
 
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
   int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 7;
   final List<int> _backoffDelays = [0, 1, 2, 4, 8, 16, 30];
 
   String? _lastSessionCode;
@@ -57,13 +59,9 @@ class WebSocketService {
       }
 
       // ✅ FIX: Create HttpClient that accepts bad certificates (for emulator)
-      final httpClient =
-          HttpClient()
-            ..badCertificateCallback = ((
-              X509Certificate cert,
-              String host,
-              int port,
-            ) {
+      final httpClient = HttpClient()
+        ..badCertificateCallback =
+            ((X509Certificate cert, String host, int port) {
               // Accept all certificates in development
               debugPrint(
                 '⚠️ Accepting certificate for $host (development mode)',
@@ -72,21 +70,22 @@ class WebSocketService {
             });
 
       // ✅ Create WebSocket with custom HttpClient
-      final socket = await WebSocket.connect(
-        wsUrl,
-        customClient: httpClient,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('WebSocket connection timeout');
-        },
-      );
+      final socket = await WebSocket.connect(wsUrl, customClient: httpClient)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('WebSocket connection timeout');
+            },
+          );
 
       _channel = IOWebSocketChannel(socket);
 
       _isConnected = true;
       _reconnectAttempts = 0;
       _connectionStatusController.add(ConnectionStatus.connected);
+
+      // Start heartbeat to keep connection alive (mobile networks kill idle connections)
+      _startHeartbeat();
 
       debugPrint('✅ WebSocket connected successfully');
 
@@ -129,12 +128,25 @@ class WebSocketService {
 
   void disconnect() {
     _reconnectTimer?.cancel();
+    _heartbeatTimer?.cancel();
     if (_channel != null) {
       _channel!.sink.close(status.goingAway);
       _isConnected = false;
       _channel = null;
       _connectionStatusController.add(ConnectionStatus.disconnected);
     }
+  }
+
+  /// Send ping every 25 seconds to keep connection alive
+  /// Mobile networks kill idle WebSocket connections after 30-60s
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (_isConnected) {
+        sendMessage('ping');
+        debugPrint('💓 Heartbeat ping sent');
+      }
+    });
   }
 
   void _handleDisconnect() {
@@ -149,15 +161,27 @@ class WebSocketService {
   void _scheduleReconnect() {
     if (_reconnectTimer?.isActive ?? false) return;
 
-    if (_reconnectAttempts < _backoffDelays.length) {
-      final delay = _backoffDelays[_reconnectAttempts];
+    if (_reconnectAttempts < _maxReconnectAttempts) {
+      final delay =
+          _backoffDelays[_reconnectAttempts.clamp(
+            0,
+            _backoffDelays.length - 1,
+          )];
       _reconnectAttempts++;
+
+      debugPrint(
+        '🔄 Reconnect attempt $_reconnectAttempts/$_maxReconnectAttempts in ${delay}s',
+      );
 
       _reconnectTimer = Timer(Duration(seconds: delay), () {
         if (_lastSessionCode != null && _lastUserId != null) {
           _connect(_lastSessionCode!, _lastUserId!);
         }
       });
+    } else {
+      // Max retries exceeded - signal permanent failure
+      debugPrint('❌ Max reconnect attempts reached, giving up');
+      _connectionStatusController.add(ConnectionStatus.failed);
     }
   }
 }

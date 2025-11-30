@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_quiz.dart';
@@ -24,6 +26,36 @@ class LiveMultiplayerLobby extends ConsumerStatefulWidget {
 }
 
 class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
+  StreamSubscription<String>? _errorSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Subscribe to error stream once, not on every build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _errorSubscription = ref
+          .read(sessionProvider.notifier)
+          .errorStream
+          .listen((error) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(error),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          });
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSubscription?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(gameProvider);
@@ -34,8 +66,8 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder:
-                  (context) => LiveHostView(sessionCode: widget.sessionCode),
+              builder: (context) =>
+                  LiveHostView(sessionCode: widget.sessionCode),
             ),
           );
         } else {
@@ -47,23 +79,6 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
           );
         }
       }
-    });
-
-    ref.listen(sessionProvider.notifier.select((n) => n.errorStream), (
-      previous,
-      next,
-    ) {
-      next.listen((error) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      });
     });
 
     final sessionState = ref.watch(sessionProvider);
@@ -261,89 +276,88 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
 
                 // Participants List
                 Expanded(
-                  child:
-                      sessionState.participants.isEmpty
-                          ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.person_add_outlined,
-                                  size: 64,
-                                  color: AppColors.textSecondary.withValues(
-                                    alpha: 0.5,
-                                  ),
+                  child: sessionState.participants.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.person_add_outlined,
+                                size: 64,
+                                color: AppColors.textSecondary.withValues(
+                                  alpha: 0.5,
                                 ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Waiting for players to join...',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 16,
-                                  ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Waiting for players to join...',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 16,
                                 ),
-                              ],
-                            ),
-                          )
-                          : ListView.builder(
-                            itemCount: sessionState.participants.length,
-                            itemBuilder: (context, index) {
-                              final participant =
-                                  sessionState.participants[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(
-                                        alpha: 0.08,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: AppColors.primary,
-                                      radius: 20,
-                                      child: Text(
-                                        participant.username[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: AppColors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Text(
-                                        participant.username,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.success,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                              ),
+                            ],
                           ),
+                        )
+                      : ListView.builder(
+                          itemCount: sessionState.participants.length,
+                          // Use cacheExtent for smoother scrolling with many participants
+                          cacheExtent: 200,
+                          itemBuilder: (context, index) {
+                            final participant =
+                                sessionState.participants[index];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                // Removed BoxShadow for better performance with 50+ participants
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: AppColors.primary,
+                                    radius: 20,
+                                    child: Text(
+                                      participant.username[0].toUpperCase(),
+                                      style: const TextStyle(
+                                        color: AppColors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      participant.username,
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.success,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                 ),
 
                 const SizedBox(height: 24),
@@ -351,12 +365,11 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
                 // Action Button
                 if (widget.isHost)
                   ElevatedButton(
-                    onPressed:
-                        sessionState.participants.isNotEmpty
-                            ? () {
-                              ref.read(sessionProvider.notifier).startQuiz();
-                            }
-                            : null,
+                    onPressed: sessionState.participants.isNotEmpty
+                        ? () {
+                            ref.read(sessionProvider.notifier).startQuiz();
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
