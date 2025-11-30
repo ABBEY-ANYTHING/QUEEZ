@@ -43,10 +43,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   bool isSessionExpired = false;
   String? errorMessage;
   Timer? countdownTimer;
-  Timer? participantUpdateTimer;
   final GlobalKey _qrKey = GlobalKey();
   bool _isStartingQuiz = false;
-  
+
   // Time settings for live multiplayer
   int _perQuestionTimeLimit = 30; // Default 30 seconds per question
 
@@ -59,7 +58,6 @@ class _HostingPageState extends ConsumerState<HostingPage> {
   @override
   void dispose() {
     countdownTimer?.cancel();
-    participantUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -70,18 +68,17 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         '🔄 HOST - WebSocket update: ${sessionState.participants.length} participants',
       );
       setState(() {
-        participants =
-            sessionState.participants
-                .map(
-                  (p) => {
-                    'user_id': p.userId,
-                    'username': p.username,
-                    'joined_at': p.joinedAt,
-                    'connected': p.connected,
-                    'score': p.score,
-                  },
-                )
-                .toList();
+        participants = sessionState.participants
+            .map(
+              (p) => {
+                'user_id': p.userId,
+                'username': p.username,
+                'joined_at': p.joinedAt,
+                'connected': p.connected,
+                'score': p.score,
+              },
+            )
+            .toList();
         participantCount = participants.length;
       });
       debugPrint(
@@ -113,8 +110,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         _startCountdownTimer();
 
         if (widget.mode == 'live_multiplayer') {
-          _startParticipantPolling();
-          // Connect host to WebSocket
+          // Connect host to WebSocket for real-time participant updates
+          // Note: WebSocket already broadcasts session_update events,
+          // so HTTP polling is not needed
           await _connectHostToWebSocket();
         }
       }
@@ -131,17 +129,17 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      
+
       // ✅ FIXED: Fetch username from Firestore (same as profile page)
       String username = 'Host';
-      
+
       if (user != null) {
         try {
           final userDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .get();
-          
+
           if (userDoc.exists) {
             final userData = userDoc.data();
             username = userData?['name'] ?? username;
@@ -201,34 +199,8 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         } else {
           isSessionExpired = true;
           timer.cancel();
-          participantUpdateTimer?.cancel();
         }
       });
-    });
-  }
-
-  void _startParticipantPolling() {
-    participantUpdateTimer = Timer.periodic(const Duration(seconds: 3), (
-      timer,
-    ) async {
-      if (sessionCode != null && !isSessionExpired) {
-        try {
-          final result = await SessionService.getParticipants(sessionCode!);
-          setState(() {
-            participantCount = result['participant_count'] ?? 0;
-            participants = List<Map<String, dynamic>>.from(
-              result['participants'] ?? [],
-            );
-          });
-        } catch (e) {
-          if (e.toString().contains('expired')) {
-            setState(() {
-              isSessionExpired = true;
-            });
-            timer.cancel();
-          }
-        }
-      }
     });
   }
 
@@ -248,15 +220,19 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     try {
       debugPrint('🎯 HOST - Starting quiz via WebSocket...');
-      debugPrint('⏱️ HOST - Time settings: perQuestion=${_perQuestionTimeLimit}s');
-      
-      // Use WebSocket to start quiz with time settings
-      ref.read(sessionProvider.notifier).startQuiz(
-        perQuestionTimeLimit: _perQuestionTimeLimit,
+      debugPrint(
+        '⏱️ HOST - Time settings: perQuestion=${_perQuestionTimeLimit}s',
       );
 
-      debugPrint('✅ HOST - Start quiz message sent via WebSocket, waiting for confirmation...');
-      
+      // Use WebSocket to start quiz with time settings
+      ref
+          .read(sessionProvider.notifier)
+          .startQuiz(perQuestionTimeLimit: _perQuestionTimeLimit);
+
+      debugPrint(
+        '✅ HOST - Start quiz message sent via WebSocket, waiting for confirmation...',
+      );
+
       // Don't navigate immediately - wait for WebSocket to confirm status == 'active'
       // The ref.listen above will handle navigation when backend sends quiz_started
     } catch (e) {
@@ -302,71 +278,70 @@ class _HostingPageState extends ConsumerState<HostingPage> {
     showDialog(
       context: context,
       barrierColor: AppColors.primary.withValues(alpha: 0.3),
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(QuizSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(QuizBorderRadius.xl),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(QuizSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(QuizBorderRadius.xl),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Scan to Join',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Scan to Join',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              const SizedBox(height: QuizSpacing.lg),
+              RepaintBoundary(
+                key: _qrKey,
+                child: Container(
+                  padding: const EdgeInsets.all(QuizSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+                  ),
+                  child: QrImageView(
+                    data: sessionCode ?? '',
+                    version: QrVersions.auto,
+                    size: 280,
+                    backgroundColor: AppColors.white,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: AppColors.primary,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: QuizSpacing.lg),
-                  RepaintBoundary(
-                    key: _qrKey,
-                    child: Container(
-                      padding: const EdgeInsets.all(QuizSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
-                      ),
-                      child: QrImageView(
-                        data: sessionCode ?? '',
-                        version: QrVersions.auto,
-                        size: 280,
-                        backgroundColor: AppColors.white,
-                        eyeStyle: const QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: AppColors.primary,
-                        ),
-                        dataModuleStyle: const QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
+                ),
+              ),
+              const SizedBox(height: QuizSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  AppButton.primary(
+                    text: 'Share',
+                    icon: Icons.share,
+                    onPressed: _shareQRCode,
                   ),
-                  const SizedBox(height: QuizSpacing.lg),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      AppButton.primary(
-                        text: 'Share',
-                        icon: Icons.share,
-                        onPressed: _shareQRCode,
-                      ),
-                      AppButton.outlined(
-                        text: 'Close',
-                        icon: Icons.close,
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
+                  AppButton.outlined(
+                    text: 'Close',
+                    icon: Icons.close,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -383,10 +358,12 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       if (next != null && widget.mode == 'live_multiplayer') {
         debugPrint('🔔 HOST - sessionProvider updated in HostingPage');
         _updateParticipantsFromWebSocket();
-        
+
         // ✅ Navigate to LiveHostView when quiz becomes active
         if (next.status == 'active' && _isStartingQuiz) {
-          debugPrint('🎯 HOST - Quiz is now active, navigating to LiveHostView');
+          debugPrint(
+            '🎯 HOST - Quiz is now active, navigating to LiveHostView',
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -442,7 +419,11 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.error,
+                ),
                 const SizedBox(height: QuizSpacing.md),
                 Text(
                   errorMessage!,
@@ -485,7 +466,10 @@ class _HostingPageState extends ConsumerState<HostingPage> {
                 const SizedBox(height: QuizSpacing.sm),
                 const Text(
                   'Please create a new session',
-                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: QuizSpacing.lg),
                 AppButton.primary(
@@ -513,7 +497,10 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         actions: [
           Container(
             margin: const EdgeInsets.only(right: QuizSpacing.md),
-            padding: const EdgeInsets.symmetric(horizontal: QuizSpacing.md, vertical: 6),
+            padding: const EdgeInsets.symmetric(
+              horizontal: QuizSpacing.md,
+              vertical: 6,
+            ),
             decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(QuizBorderRadius.circular),
@@ -720,7 +707,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             ],
           ),
           const SizedBox(height: QuizSpacing.lg),
-          
+
           // Per Question Time Limit
           _buildTimeSetting(
             value: _perQuestionTimeLimit,
@@ -754,11 +741,12 @@ class _HostingPageState extends ConsumerState<HostingPage> {
               onTap: () => onChanged(option),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.background,
+                  color: isSelected ? AppColors.primary : AppColors.background,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
@@ -772,9 +760,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.white
-                        : AppColors.textPrimary,
+                    color: isSelected ? AppColors.white : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -784,8 +770,6 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       ),
     );
   }
-
-
 
   Widget _buildParticipantsSection() {
     return Column(
@@ -831,11 +815,18 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.people_outline, size: 48, color: AppColors.iconInactive),
+                  Icon(
+                    Icons.people_outline,
+                    size: 48,
+                    color: AppColors.iconInactive,
+                  ),
                   const SizedBox(height: QuizSpacing.md),
                   Text(
                     'Waiting for participants...',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
@@ -849,8 +840,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             itemBuilder: (context, index) {
               final participant = participants[index];
               final username = participant['username'] ?? 'Anonymous';
-              final firstLetter =
-                  username.isNotEmpty ? username[0].toUpperCase() : '?';
+              final firstLetter = username.isNotEmpty
+                  ? username[0].toUpperCase()
+                  : '?';
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -909,7 +901,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           const SizedBox(height: QuizSpacing.lg),
           AppButton(
             text: 'START QUIZ',
-            onPressed: (participantCount >= 1 && !_isStartingQuiz) ? _startQuiz : null,
+            onPressed: (participantCount >= 1 && !_isStartingQuiz)
+                ? _startQuiz
+                : null,
             icon: Icons.play_arrow,
             style: AppButtonStyle.success,
             size: AppButtonSize.medium,

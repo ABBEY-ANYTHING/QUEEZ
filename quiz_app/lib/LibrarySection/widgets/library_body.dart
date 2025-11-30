@@ -99,19 +99,18 @@ Widget buildSearchSection({
                   size: 24,
                 ),
               ),
-              suffixIcon:
-                  searchQuery.isNotEmpty
-                      ? IconButton(
-                        icon: const Icon(
-                          Icons.clear_rounded,
-                          color: AppColors.iconInactive,
-                        ),
-                        onPressed: () {
-                          searchController.clear();
-                          onQueryChanged('');
-                        },
-                      )
-                      : null,
+              suffixIcon: searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(
+                        Icons.clear_rounded,
+                        color: AppColors.iconInactive,
+                      ),
+                      onPressed: () {
+                        searchController.clear();
+                        onQueryChanged('');
+                      },
+                    )
+                  : null,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -291,41 +290,32 @@ class _AnimatedItemListState extends State<_AnimatedItemList> {
               onDelete: () async {
                 // Capture context before any async operations
                 final dialogContext = context;
-                
+
                 // Check if context is still valid
                 if (!dialogContext.mounted) return;
-                
+
                 // Show confirmation dialog
                 final confirmed = await showDialog<bool>(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: Text(
-                          'Delete ${item.isQuiz
-                              ? 'Quiz'
-                              : item.isNote
-                              ? 'Note'
-                              : item.isStudySet
-                              ? 'Study Set'
-                              : 'Flashcard Set'}',
-                        ),
-                        content: Text(
-                          'Are you sure you want to delete "${item.title}"?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
+                  barrierDismissible: true,
+                  barrierColor: AppColors.primary.withValues(alpha: 0.3),
+                  builder: (dialogContext) => AppDialog(
+                    title:
+                        'Delete ${item.isQuiz
+                            ? 'Quiz'
+                            : item.isNote
+                            ? 'Note'
+                            : item.isStudySet
+                            ? 'Study Set'
+                            : 'Flashcard Set'}',
+                    content: 'Are you sure you want to delete "${item.title}"?',
+                    primaryActionText: 'Delete',
+                    primaryActionCallback: () =>
+                        Navigator.pop(dialogContext, true),
+                    secondaryActionText: 'Cancel',
+                    secondaryActionCallback: () =>
+                        Navigator.pop(dialogContext, false),
+                  ),
                 );
 
                 if (confirmed == true) {

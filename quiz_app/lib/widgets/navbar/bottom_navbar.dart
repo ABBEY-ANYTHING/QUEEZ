@@ -31,6 +31,10 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
 
   late AnimationController _controller;
   late Animation<double> _animation;
+  late AnimationController _navbarAnimController;
+  late Animation<Offset> _navbarSlideAnimation;
+  late Animation<double> _navbarFadeAnimation;
+  bool _isKeyboardVisible = false;
   final List<Widget> _sections = [LibraryPage(), CreatePage()];
 
   @override
@@ -41,6 +45,22 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
       duration: const Duration(milliseconds: 300),
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+
+    // Navbar show/hide animation
+    _navbarAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _navbarSlideAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, 1)).animate(
+          CurvedAnimation(
+            parent: _navbarAnimController,
+            curve: Curves.easeInOut,
+          ),
+        );
+    _navbarFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _navbarAnimController, curve: Curves.easeInOut),
+    );
 
     _pages = [
       const Center(key: ValueKey("Home"), child: Text("Home Page")),
@@ -72,6 +92,7 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
   @override
   void dispose() {
     _controller.dispose();
+    _navbarAnimController.dispose();
     super.dispose();
   }
 
@@ -103,17 +124,39 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
   @override
   Widget build(BuildContext context) {
     final selectedIndex = ref.watch(bottomNavIndexProvider);
+    final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    // Animate navbar based on keyboard visibility
+    if (keyboardVisible && !_isKeyboardVisible) {
+      _isKeyboardVisible = true;
+      _navbarAnimController.forward();
+    } else if (!keyboardVisible && _isKeyboardVisible) {
+      _isKeyboardVisible = false;
+      _navbarAnimController.reverse();
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: List.generate(_pages.length, _buildTransitioningPage),
       ),
-      floatingActionButton: CreateButton(onPressed: () => _onNavItemTapped(2)),
+      floatingActionButton: SlideTransition(
+        position: _navbarSlideAnimation,
+        child: FadeTransition(
+          opacity: _navbarFadeAnimation,
+          child: CreateButton(onPressed: () => _onNavItemTapped(2)),
+        ),
+      ),
       floatingActionButtonLocation: _fabLocation,
-      bottomNavigationBar: _BottomNavbar(
-        currentIndex: selectedIndex,
-        onTap: _onNavItemTapped,
+      bottomNavigationBar: SlideTransition(
+        position: _navbarSlideAnimation,
+        child: FadeTransition(
+          opacity: _navbarFadeAnimation,
+          child: _BottomNavbar(
+            currentIndex: selectedIndex,
+            onTap: _onNavItemTapped,
+          ),
+        ),
       ),
     );
   }
@@ -201,10 +244,9 @@ class _BottomNavbar extends StatelessWidget {
         curve: Curves.easeOutQuint,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color:
-              isActive
-                  ? AppColors.accentBright.withValues(alpha: 0.15)
-                  : Colors.transparent,
+          color: isActive
+              ? AppColors.accentBright.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: TweenAnimationBuilder<double>(
@@ -219,20 +261,18 @@ class _BottomNavbar extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 28,
-                  color:
-                      isActive
-                          ? AppColors.accentBright
-                          : AppColors.iconInactive,
-                  shadows:
-                      isActive
-                          ? [
-                            const Shadow(
-                              color: Colors.black26,
-                              blurRadius: 6,
-                              offset: Offset(0, 3),
-                            ),
-                          ]
-                          : null,
+                  color: isActive
+                      ? AppColors.accentBright
+                      : AppColors.iconInactive,
+                  shadows: isActive
+                      ? [
+                          const Shadow(
+                            color: Colors.black26,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             );
