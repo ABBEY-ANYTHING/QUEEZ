@@ -57,16 +57,15 @@ class StudySet {
       language: json['language'] ?? '',
       coverImagePath: json['coverImagePath'],
       ownerId: json['ownerId'] ?? json['owner_id'] ?? json['creatorId'] ?? '',
-      quizzes:
-          (json['quizzes'] as List? ?? [])
-              .map((q) => Quiz.fromJson(q))
-              .toList(),
-      flashcardSets:
-          (json['flashcardSets'] as List? ?? [])
-              .map((f) => FlashcardSet.fromJson(f))
-              .toList(),
-      notes:
-          (json['notes'] as List? ?? []).map((n) => Note.fromJson(n)).toList(),
+      quizzes: (json['quizzes'] as List? ?? [])
+          .map((q) => Quiz.fromJson(q))
+          .toList(),
+      flashcardSets: (json['flashcardSets'] as List? ?? [])
+          .map((f) => FlashcardSet.fromJson(f))
+          .toList(),
+      notes: (json['notes'] as List? ?? [])
+          .map((n) => Note.fromJson(n))
+          .toList(),
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
     );
