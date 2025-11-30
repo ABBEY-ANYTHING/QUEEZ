@@ -7,13 +7,39 @@ import 'package:quiz_app/utils/color.dart';
 
 import '../../../models/multiplayer_models.dart';
 
-class LiveHostView extends ConsumerWidget {
+class LiveHostView extends ConsumerStatefulWidget {
   final String sessionCode;
 
   const LiveHostView({super.key, required this.sessionCode});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LiveHostView> createState() => _LiveHostViewState();
+}
+
+class _LiveHostViewState extends ConsumerState<LiveHostView> {
+  bool _hasRequestedLeaderboard = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request leaderboard after frame renders to ensure WebSocket is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestLeaderboardIfNeeded();
+    });
+  }
+
+  void _requestLeaderboardIfNeeded() {
+    if (_hasRequestedLeaderboard) return;
+
+    debugPrint('🏆 LiveHostView - Requesting initial leaderboard');
+    _hasRequestedLeaderboard = true;
+
+    // Request leaderboard from backend
+    ref.read(gameProvider.notifier).requestLeaderboard();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final sessionState = ref.watch(sessionProvider);
     final rankings = gameState.rankings ?? [];

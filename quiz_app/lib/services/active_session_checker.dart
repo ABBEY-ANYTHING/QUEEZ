@@ -173,9 +173,16 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
 
     try {
       if (isHost) {
-        // HOST RECONNECTION: Don't call joinSession - just set user and navigate
-        debugPrint('🔄 HOST RECONNECTION - Skipping join, navigating directly');
+        // HOST RECONNECTION: Connect to WebSocket first, then navigate
+        debugPrint('🔄 HOST RECONNECTION - Connecting to WebSocket first');
         ref.read(currentUserProvider.notifier).setUser(userId);
+
+        // Connect to WebSocket as host
+        await ref
+            .read(sessionProvider.notifier)
+            .joinSession(sessionCode, userId, username, isHost: true);
+
+        debugPrint('✅ HOST RECONNECTION - WebSocket connected');
 
         // Restore active session tracking with quiz info
         await ActiveSessionService.saveActiveSession(
@@ -197,9 +204,12 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       if (!mounted) return;
 
       // Navigate based on session status and role
-      if (sessionStatus == 'active') {
-        // Quiz is in progress
+      if (sessionStatus == 'active' || sessionStatus == 'completed') {
+        // Quiz is in progress OR completed - Host sees LiveHostView (leaderboard/podium)
         if (isHost) {
+          debugPrint(
+            '🔄 HOST RECONNECTION - Navigating to LiveHostView (status: $sessionStatus)',
+          );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => LiveHostView(sessionCode: sessionCode),
@@ -240,8 +250,9 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
           );
         }
       } else {
-        // Session is completed or in unknown state
-        _showError('The session has ended.');
+        // Unknown status - clear and show error
+        debugPrint('❌ ACTIVE_SESSION_CHECKER - Unknown status: $sessionStatus');
+        _showError('Session status unknown. Please start a new quiz.');
         await ActiveSessionService.fullCleanup(userId);
         setState(() => _isChecking = false);
       }
