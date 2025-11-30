@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
@@ -52,9 +53,14 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
     setState(() => _isSaving = true);
 
     try {
-      // Get the document content as JSON
+      // Convert Quill Delta to HTML for storage
       final delta = _controller.document.toDelta();
-      final jsonContent = jsonEncode(delta.toJson());
+      final deltaJson = delta.toJson();
+      final converter = QuillDeltaToHtmlConverter(
+        List<Map<String, dynamic>>.from(deltaJson),
+        ConverterOptions.forEmail(),
+      );
+      final htmlContent = converter.convert();
 
       // If in study set mode, create note and add to cache
       if (widget.isStudySetMode && widget.onSaveForStudySet != null) {
@@ -64,7 +70,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
           title: widget.title,
           description: widget.description,
           category: widget.category,
-          content: jsonContent,
+          content: htmlContent,
           creatorId: widget.creatorId,
           coverImagePath: widget.coverImagePath,
           createdAt: DateTime.now().toIso8601String(),
@@ -99,7 +105,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
         description: widget.description,
         category: widget.category,
         creatorId: widget.creatorId,
-        content: jsonContent,
+        content: htmlContent,
         coverImagePath: widget.coverImagePath,
       );
 

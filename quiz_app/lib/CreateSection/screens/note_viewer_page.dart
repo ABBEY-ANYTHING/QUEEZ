@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -40,9 +41,35 @@ class _NoteViewerPageState extends State<NoteViewerPage> {
 
   void _initializeNote(Note note) {
     try {
-      // Parse the JSON content and create document
-      final List<dynamic> deltaJson = jsonDecode(note.content);
-      final document = Document.fromJson(deltaJson);
+      Document document;
+      
+      // Check if content is HTML (AI-generated) or Quill Delta (manually created)
+      final content = note.content;
+      
+      if (_isHtmlContent(content)) {
+        // Convert HTML to Quill Delta
+        final converter = HtmlToDelta();
+        final delta = converter.convert(content);
+        document = Document.fromDelta(delta);
+      } else {
+        // Try parsing as Quill Delta JSON
+        try {
+          final dynamic parsed = jsonDecode(content);
+          if (parsed is List) {
+            // Legacy format: direct list of ops
+            document = Document.fromJson(parsed);
+          } else if (parsed is Map && parsed.containsKey('ops')) {
+            // Format: {"ops": [...]}
+            document = Document.fromJson(parsed['ops']);
+          } else {
+            // Unknown format, treat as plain text
+            document = Document()..insert(0, content);
+          }
+        } catch (_) {
+          // Not valid JSON, treat as plain text
+          document = Document()..insert(0, content);
+        }
+      }
 
       setState(() {
         _controller = QuillController(
@@ -63,6 +90,13 @@ class _NoteViewerPageState extends State<NoteViewerPage> {
         Navigator.of(context).pop();
       }
     }
+  }
+  
+  bool _isHtmlContent(String content) {
+    // Check if content looks like HTML
+    final trimmed = content.trim();
+    return trimmed.startsWith('<') && 
+           (trimmed.contains('</') || trimmed.contains('/>'));
   }
 
   @override
