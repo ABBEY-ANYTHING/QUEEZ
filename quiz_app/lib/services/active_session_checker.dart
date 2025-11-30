@@ -6,6 +6,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_quiz.d
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
 
 /// Simple Notifier to track if active session check has been performed this app session
 class ActiveSessionCheckNotifier extends Notifier<bool> {
@@ -33,7 +34,8 @@ class ActiveSessionChecker extends ConsumerStatefulWidget {
 }
 
 class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
-  bool _isChecking = true;
+  bool _isChecking =
+      false; // Start false - only show loading when we have something to check
   bool _showRejoinPrompt = false;
   Map<String, dynamic>? _activeSessionInfo;
 
@@ -46,7 +48,6 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
   Future<void> _checkForActiveSession() async {
     // Only check once per app session
     if (ref.read(activeSessionCheckDoneProvider)) {
-      setState(() => _isChecking = false);
       return;
     }
 
@@ -55,9 +56,8 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       final localSession = await ActiveSessionService.getLocalActiveSession();
 
       if (localSession == null) {
-        // No local session, nothing to check
+        // No local session, nothing to check - no loading overlay needed
         ref.read(activeSessionCheckDoneProvider.notifier).markDone();
-        setState(() => _isChecking = false);
         return;
       }
 
@@ -65,8 +65,12 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       if (userId == null) {
         await ActiveSessionService.clearActiveSession();
         ref.read(activeSessionCheckDoneProvider.notifier).markDone();
-        setState(() => _isChecking = false);
         return;
+      }
+
+      // We have a local session - NOW show loading while we verify with backend
+      if (mounted) {
+        setState(() => _isChecking = true);
       }
 
       // Check with backend
@@ -78,6 +82,13 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         // Merge local session info for username etc
         result['username'] = localSession['username'];
         result['is_host'] = localSession['is_host'] ?? result['is_host'];
+        result['user_id'] = userId; // Ensure user_id is set
+
+        debugPrint('🔄 ACTIVE_SESSION_CHECKER - Found active session:');
+        debugPrint('   session_code: ${result['session_code']}');
+        debugPrint('   user_id: ${result['user_id']}');
+        debugPrint('   is_host: ${result['is_host']}');
+        debugPrint('   status: ${result['status']}');
 
         setState(() {
           _activeSessionInfo = result;
@@ -88,25 +99,43 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         // No active session, clear any stale local data
         await ActiveSessionService.clearActiveSession();
         ref.read(activeSessionCheckDoneProvider.notifier).markDone();
-        setState(() => _isChecking = false);
+        if (mounted) {
+          setState(() => _isChecking = false);
+        }
       }
     } catch (e) {
       debugPrint('❌ ACTIVE_SESSION_CHECKER - Error checking: $e');
       ref.read(activeSessionCheckDoneProvider.notifier).markDone();
-      setState(() => _isChecking = false);
+      if (mounted) {
+        setState(() => _isChecking = false);
+      }
     }
   }
 
   Future<void> _rejoinSession() async {
-    if (_activeSessionInfo == null) return;
+    if (_activeSessionInfo == null) {
+      debugPrint('❌ ACTIVE_SESSION_CHECKER - _activeSessionInfo is null');
+      _showError('No session info available. Please start a new quiz.');
+      await _dismissPrompt();
+      return;
+    }
 
     final sessionCode = _activeSessionInfo!['session_code'] as String?;
-    final sessionStatus = _activeSessionInfo!['session_status'] as String?;
+    final sessionStatus = _activeSessionInfo!['status'] as String?;
     final isHost = _activeSessionInfo!['is_host'] as bool? ?? false;
     final userId = _activeSessionInfo!['user_id'] as String?;
     final username = _activeSessionInfo!['username'] as String? ?? 'Player';
 
+    debugPrint('🔄 ACTIVE_SESSION_CHECKER - Rejoin data:');
+    debugPrint('   sessionCode: $sessionCode');
+    debugPrint('   userId: $userId');
+    debugPrint('   isHost: $isHost');
+    debugPrint('   status: $sessionStatus');
+
     if (sessionCode == null || userId == null) {
+      debugPrint('❌ ACTIVE_SESSION_CHECKER - Missing required data');
+      debugPrint('   sessionCode null: ${sessionCode == null}');
+      debugPrint('   userId null: ${userId == null}');
       _showError('Invalid session data. Please start a new quiz.');
       await _dismissPrompt();
       return;
@@ -115,6 +144,7 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
     debugPrint(
       '🔄 ACTIVE_SESSION_CHECKER - Rejoining session $sessionCode as ${isHost ? "host" : "participant"}',
     );
+    debugPrint('📊 Session status: $sessionStatus');
 
     // Mark as done before navigating
     ref.read(activeSessionCheckDoneProvider.notifier).markDone();
@@ -124,10 +154,24 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
     });
 
     try {
-      // Join the session via the provider (positional args)
-      await ref
-          .read(sessionProvider.notifier)
-          .joinSession(sessionCode, userId, username, isHost: isHost);
+      if (isHost) {
+        // HOST RECONNECTION: Don't call joinSession - just set user and navigate
+        debugPrint('🔄 HOST RECONNECTION - Skipping join, navigating directly');
+        ref.read(currentUserProvider.notifier).setUser(userId);
+
+        // Restore active session tracking
+        await ActiveSessionService.saveActiveSession(
+          sessionCode: sessionCode,
+          userId: userId,
+          username: username,
+          isHost: true,
+        );
+      } else {
+        // PARTICIPANT: Join the session via the provider
+        await ref
+            .read(sessionProvider.notifier)
+            .joinSession(sessionCode, userId, username, isHost: false);
+      }
 
       if (!mounted) return;
 
@@ -205,7 +249,7 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         children: [
           widget.child,
           Positioned.fill(
-            child: Container(
+            child: Material(
               color: Colors.black54,
               child: Center(
                 child: Container(
@@ -231,6 +275,7 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
+                          color: Colors.black87,
                         ),
                       ),
                     ],
@@ -243,182 +288,76 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       );
     }
 
-    // If rejoin prompt, show overlay
+    // If rejoin prompt, show AppDialog
     if (_showRejoinPrompt && _activeSessionInfo != null) {
       final sessionCode = _activeSessionInfo!['session_code'] ?? 'Unknown';
       final quizTitle = _activeSessionInfo!['quiz_title'] ?? 'Live Quiz';
-      final sessionStatus = _activeSessionInfo!['session_status'] ?? 'active';
+      final sessionStatus = _activeSessionInfo!['status'] ?? 'active';
       final isHost = _activeSessionInfo!['is_host'] ?? false;
       final participantCount = _activeSessionInfo!['participant_count'] ?? 0;
 
-      return Stack(
-        children: [
-          widget.child,
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.7),
-              child: Center(
-                child: Container(
-                  margin: const EdgeInsets.all(24),
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon
-                      Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.play_circle_outline,
-                          size: 40,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Title
-                      const Text(
-                        'Quiz in Progress!',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Quiz info
-                      Text(
-                        quizTitle,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Session details
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildInfoRow('Session Code', sessionCode),
-                            const SizedBox(height: 8),
-                            _buildInfoRow(
-                              'Status',
-                              _getStatusText(sessionStatus),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildInfoRow(
-                              'Your Role',
-                              isHost ? 'Host' : 'Participant',
-                            ),
-                            if (participantCount > 0) ...[
-                              const SizedBox(height: 8),
-                              _buildInfoRow(
-                                'Players',
-                                participantCount.toString(),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Buttons
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _rejoinSession,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            isHost ? 'REJOIN AS HOST' : 'REJOIN QUIZ',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: _dismissPrompt,
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            "Don't rejoin",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      // Show AppDialog after frame renders
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_showRejoinPrompt && mounted) {
+          AppDialog.show(
+            context: context,
+            title: 'Rejoin Quiz?',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'You have an active session for "$quizTitle".',
+                  style: const TextStyle(fontSize: 14),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Text(
+                  'Session: $sessionCode',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                Text(
+                  'Status: ${_getStatusText(sessionStatus)}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                if (participantCount > 0)
+                  Text(
+                    'Players: $participantCount',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                if (isHost)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'You are the host of this session.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ],
-      );
+            primaryActionText: 'Rejoin',
+            primaryActionCallback: () {
+              Navigator.of(context).pop();
+              _rejoinSession();
+            },
+            secondaryActionText: 'Dismiss',
+            secondaryActionCallback: () {
+              Navigator.of(context).pop();
+              _dismissPrompt();
+            },
+            dismissible: false,
+          );
+          // Prevent showing again
+          setState(() => _showRejoinPrompt = false);
+        }
+      });
     }
 
     // Normal state - just show child
     return widget.child;
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
   }
 
   String _getStatusText(String status) {

@@ -11,6 +11,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_host_view.dart';
 import 'package:quiz_app/LibrarySection/services/session_service.dart';
 import 'package:quiz_app/providers/session_provider.dart';
+import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
@@ -106,6 +107,14 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           remainingSeconds = result['expires_in'] ?? 600;
           isLoading = false;
         });
+
+        // Save active session for host reconnection
+        await ActiveSessionService.saveActiveSession(
+          sessionCode: result['session_code'],
+          userId: widget.hostId,
+          username: 'Host', // Will be updated in _connectHostToWebSocket
+          isHost: true,
+        );
 
         _startCountdownTimer();
 
