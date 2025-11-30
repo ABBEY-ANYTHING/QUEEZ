@@ -37,208 +37,98 @@ class StudySetDetailsState extends State<StudySetDetails> {
   final List<String> _languages = ['English', 'Spanish', 'French', 'Others'];
 
   @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _handleCreate() {
+    if (_formKey.currentState!.validate()) {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not authenticated')),
+        );
+        return;
+      }
+
+      final studySetId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      StudySetCacheManager.instance.initializeStudySet(
+        id: studySetId,
+        name: _titleController.text,
+        description: _descriptionController.text,
+        category: _selectedTag!,
+        language: _selectedLanguage!,
+        ownerId: userId,
+        coverImagePath: _coverImagePath,
+      );
+
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return PageTransition(
+              animation: animation,
+              animationType: AnimationType.slideLeft,
+              child: StudySetDashboard(
+                title: _titleController.text,
+                description: _descriptionController.text,
+                language: _selectedLanguage!,
+                category: _selectedTag!,
+                coverImagePath: _coverImagePath,
+                studySetId: studySetId,
+              ),
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      );
+    } else {
+      setState(() => _autoValidate = true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'Create Study Set',
+          'New Study Set',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.textPrimary,
+        centerTitle: true,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          color: AppColors.textPrimary,
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Fill the details to get started',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Study Set Title Field
-                  SectionTitle(
-                    title: 'Study Set Title',
-                    child: CustomTextField(
-                      controller: _titleController,
-                      hintText: 'Enter the title',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a title';
-                        }
-                        return null;
-                      },
-                      autoValidate: _autoValidate,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Language Dropdown
-                  SectionTitle(
-                    title: 'Language',
-                    child: CustomDropdown(
-                      value: _selectedLanguage,
-                      items: _languages,
-                      hintText: 'Select a language',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a language';
-                        }
-                        return null;
-                      },
-                      autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedLanguage = value),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Cover Image Section
-                  SectionTitle(
-                    title: 'Cover Image',
-                    child: ImagePickerWidget(
-                      imagePath: _coverImagePath,
-                      onTap: () async {
-                        try {
-                          final imagePath = await ImagePickerService().pickImageFromGallery();
-                          if (imagePath != null) {
-                            setState(() {
-                              _coverImagePath = imagePath;
-                            });
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error picking image: $e')),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Description Field
-                  SectionTitle(
-                    title: 'Description',
-                    child: CustomTextField(
-                      controller: _descriptionController,
-                      hintText: 'Describe your study set...',
-                      maxLines: 4,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a description';
-                        }
-                        return null;
-                      },
-                      autoValidate: _autoValidate,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Category Dropdown
-                  SectionTitle(
-                    title: 'Category',
-                    child: CustomDropdown(
-                      value: _selectedTag,
-                      items: _tags,
-                      hintText: 'Select a category',
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a category';
-                        }
-                        return null;
-                      },
-                      autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedTag = value),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Get Started Button
-                  PrimaryButton(
-                    text: 'Get Started',
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        final userId = FirebaseAuth.instance.currentUser?.uid;
-                        if (userId == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('User not authenticated'),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // Generate unique ID for study set
-                        final studySetId =
-                            DateTime.now().millisecondsSinceEpoch.toString();
-
-                        // Initialize study set in cache
-                        StudySetCacheManager.instance.initializeStudySet(
-                          id: studySetId,
-                          name: _titleController.text,
-                          description: _descriptionController.text,
-                          category: _selectedTag!,
-                          language: _selectedLanguage!,
-                          ownerId: userId,
-                          coverImagePath: _coverImagePath,
-                        );
-
-                        // Navigate to dashboard with the details
-                        Navigator.of(context).push(
-                          PageRouteBuilder(
-                            pageBuilder: (
-                              context,
-                              animation,
-                              secondaryAnimation,
-                            ) {
-                              return PageTransition(
-                                animation: animation,
-                                animationType: AnimationType.slideLeft,
-                                child: StudySetDashboard(
-                                  title: _titleController.text,
-                                  description: _descriptionController.text,
-                                  language: _selectedLanguage!,
-                                  category: _selectedTag!,
-                                  coverImagePath: _coverImagePath,
-                                  studySetId: studySetId,
-                                ),
-                              );
-                            },
-                            transitionDuration: const Duration(
-                              milliseconds: 300,
-                            ),
-                          ),
-                        );
-                      } else {
-                        setState(() => _autoValidate = true);
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 40),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 32),
+                _buildFormSection(),
+                const SizedBox(height: 40),
+                PrimaryButton(
+                  text: 'Create Study Set',
+                  onPressed: _handleCreate,
+                ),
+              ],
             ),
           ),
         ),
@@ -246,10 +136,129 @@ class StudySetDetailsState extends State<StudySetDetails> {
     );
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Let\'s build your set',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Fill in the details below to organize your learning materials effectively.',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppColors.textSecondary.withValues(alpha: 0.8),
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SectionTitle(
+            title: 'Title',
+            child: CustomTextField(
+              controller: _titleController,
+              hintText: 'e.g., Biology 101, French Basics',
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter a title' : null,
+              autoValidate: _autoValidate,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SectionTitle(
+            title: 'Description',
+            child: CustomTextField(
+              controller: _descriptionController,
+              hintText: 'What is this study set about?',
+              maxLines: 3,
+              validator: (value) =>
+                  value?.isEmpty ?? true ? 'Please enter a description' : null,
+              autoValidate: _autoValidate,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: SectionTitle(
+                  title: 'Language',
+                  child: CustomDropdown(
+                    value: _selectedLanguage,
+                    items: _languages,
+                    hintText: 'Select',
+                    validator: (value) =>
+                        value == null ? 'Required' : null,
+                    autoValidate: _autoValidate,
+                    onChanged: (val) => setState(() => _selectedLanguage = val),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SectionTitle(
+                  title: 'Category',
+                  child: CustomDropdown(
+                    value: _selectedTag,
+                    items: _tags,
+                    hintText: 'Select',
+                    validator: (value) =>
+                        value == null ? 'Required' : null,
+                    autoValidate: _autoValidate,
+                    onChanged: (val) => setState(() => _selectedTag = val),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SectionTitle(
+            title: 'Cover Image',
+            child: ImagePickerWidget(
+              imagePath: _coverImagePath,
+              onTap: () async {
+                try {
+                  final imagePath =
+                      await ImagePickerService().pickImageFromGallery();
+                  if (imagePath != null) {
+                    setState(() => _coverImagePath = imagePath);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

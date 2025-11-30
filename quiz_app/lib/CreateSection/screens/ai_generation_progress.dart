@@ -25,24 +25,20 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
   @override
   void initState() {
     super.initState();
-    // Animation controller for smooth progress
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
     _animationController.addListener(_animateProgress);
     
-    // Start fake progress animation
     _startFakeProgressAnimation();
     
-    // Start generation when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startGeneration();
     });
   }
 
   void _startFakeProgressAnimation() async {
-    // Smoothly animate progress even when actual progress is static
     while (mounted && _displayProgress < 100) {
       await Future.delayed(const Duration(milliseconds: 150));
       if (!mounted) return;
@@ -50,7 +46,6 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       final state = ref.read(aiStudySetProvider);
       _targetProgress = state.progress;
       
-      // If we're behind target, catch up smoothly
       if (_displayProgress < _targetProgress) {
         setState(() {
           _displayProgress += (_targetProgress - _displayProgress) * 0.3;
@@ -59,10 +54,8 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
           }
         });
       } 
-      // If we're at target but not at a completion point, fake small progress
       else if (_displayProgress < 95 && state.isGenerating) {
         setState(() {
-          // Add tiny increments to make it feel alive
           _displayProgress += 0.1 + (0.2 * (1 - _displayProgress / 100));
           if (_displayProgress > 95) _displayProgress = 95;
         });
@@ -86,128 +79,77 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
     final notifier = ref.read(aiStudySetProvider.notifier);
 
     try {
-      debugPrint('=== STARTING AI GENERATION ===');
-
-      // Generate the study set (this includes upload progress internally)
       final studySet = await notifier.generateStudySet();
 
-      debugPrint('=== GENERATION COMPLETE ===');
-      debugPrint('Study set ID: ${studySet.id}');
-      debugPrint('Study set name: ${studySet.name}');
-      debugPrint('Quizzes: ${studySet.quizzes.length}');
-      debugPrint('Flashcard sets: ${studySet.flashcardSets.length}');
-      debugPrint('Notes: ${studySet.notes.length}');
-
       if (!mounted) return;
 
-      // Save to database
       try {
-        debugPrint('=== SAVING TO DATABASE ===');
         await StudySetService.saveStudySet(studySet);
-        debugPrint('=== SAVE SUCCESSFUL ===');
       } catch (saveError) {
-        debugPrint('=== SAVE ERROR: $saveError ===');
-        // Show error but don't fail the whole process
         if (!mounted) return;
-
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Save Error'),
-            content: Text('Study set generated but failed to save: $saveError'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        _showErrorDialog('Save Error', 'Study set generated but failed to save: $saveError');
         return;
       }
+      
       if (!mounted) return;
-      //Show success dialog
+      
       await QuizSavedDialog.show(
         context,
         title: 'Study Set Generated!',
-        message:
-            'Your AI-powered study set has been created and saved successfully.',
+        message: 'Your AI-powered study set is ready.',
         onDismiss: () async {
           if (mounted) {
-            // Trigger library reload FIRST using the provider directly
             await ref.read(quizLibraryProvider.notifier).reload();
             if (!mounted) return;
-            // Pop back to create page
             Navigator.of(context).popUntil((route) => route.isFirst);
-
-            // Switch to library tab (index 1)
             bottomNavbarKey.currentState?.setIndex(1);
           }
         },
       );
 
-      // Reset provider
       notifier.reset();
     } catch (e) {
       if (!mounted) return;
+      _showErrorDialog('Generation Failed', e.toString().replaceAll('Exception: ', ''));
+    }
+  }
 
-      // Show error dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 28),
-              const SizedBox(width: 12),
-              const Text('Generation Failed'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'An error occurred while generating your study set:',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  e.toString().replaceAll('Exception: ', ''),
-                  style: TextStyle(fontSize: 13, color: Colors.red.shade700),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back to config
-              },
-              child: const Text('Go Back'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _startGeneration(); // Retry
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 28),
+            const SizedBox(width: 12),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-      );
-    }
+        content: Text(message, style: const TextStyle(fontSize: 15)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Go Back', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _startGeneration();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -217,27 +159,25 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
     return PopScope(
       canPop: !state.isGenerating,
       onPopInvokedWithResult: (didPop, result) async {
-        // If already popped or not generating, do nothing
         if (didPop || !state.isGenerating) return;
 
-        // Show confirmation dialog
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text('Cancel Generation?'),
-            content: const Text(
-              'Are you sure you want to cancel? Your progress will be lost.',
-            ),
+            content: const Text('Are you sure you want to cancel? Your progress will be lost.'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Continue Generating'),
+                child: const Text('Continue'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Cancel'),
               ),
@@ -253,165 +193,133 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
         backgroundColor: AppColors.background,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Center(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Generating Your Study Set',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 48),
-
-                    // Lottie loading animation
-                    Lottie.asset(
-                      'assets/animations/loading.json',
-                      width: 200,
-                      height: 200,
-                      repeat: true,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.auto_awesome,
-                          size: 100,
-                          color: AppColors.primary.withValues(alpha: 0.5),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Progress bar with smooth animation
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: _displayProgress / 100),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LinearProgressIndicator(
-                            value: value,
-                            minHeight: 12,
-                            backgroundColor: AppColors.surface,
-                            valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Progress percentage with smooth animation
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: _displayProgress),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return Text(
-                          '${value.toInt()}%',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Status text
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.hourglass_empty,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              state.currentStep.isEmpty
-                                  ? 'Initializing...'
-                                  : state.currentStep,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textPrimary,
-                                height: 1.4,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Fun tip
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.amber.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.lightbulb_outline,
-                            color: Colors.amber.shade700,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'AI is analyzing your documents and creating personalized study materials just for you!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textPrimary,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(),
+                _buildLottieAnimation(),
+                const SizedBox(height: 48),
+                _buildProgressBar(),
+                const SizedBox(height: 24),
+                _buildStatusText(state),
+                const Spacer(),
+                _buildTipBox(),
+              ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLottieAnimation() {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            blurRadius: 40,
+            spreadRadius: 10,
+          ),
+        ],
+      ),
+      child: Lottie.asset(
+        'assets/animations/loading.json',
+        width: 220,
+        height: 220,
+        repeat: true,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.auto_awesome,
+            size: 100,
+            color: AppColors.primary.withValues(alpha: 0.5),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProgressBar() {
+    return Column(
+      children: [
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: _displayProgress / 100),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 16,
+                backgroundColor: AppColors.surface,
+                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: _displayProgress),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Text(
+              '${value.toInt()}%',
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusText(AIStudySetState state) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Text(
+        state.currentStep.isEmpty ? 'Initializing...' : state.currentStep,
+        key: ValueKey(state.currentStep),
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          height: 1.3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lightbulb_rounded, color: Colors.amber.shade700, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Tip: AI analyzes your documents to create the most relevant study materials.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary.withValues(alpha: 0.8),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

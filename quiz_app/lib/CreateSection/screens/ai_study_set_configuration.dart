@@ -17,13 +17,11 @@ class AIStudySetConfiguration extends ConsumerStatefulWidget {
 
 class _AIStudySetConfigurationState
     extends ConsumerState<AIStudySetConfiguration> {
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final _scrollController = ScrollController();
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -60,7 +58,6 @@ class _AIStudySetConfigurationState
             continue;
           }
 
-          // Just add file to pending list (don't upload yet)
           notifier.addPendingFile(File(platformFile.path!));
         }
       }
@@ -73,16 +70,15 @@ class _AIStudySetConfigurationState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-
   void _startGeneration() {
-    // Settings are already stored in the provider state via sliders
-    // Just navigate to progress screen
     Navigator.push(
       context,
       customRoute(const AIGenerationProgress(), AnimationType.slideUp),
@@ -98,208 +94,73 @@ class _AIStudySetConfigurationState
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
-          'AI Study Set Generator',
+          'AI Configuration',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
+        centerTitle: true,
         backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          color: AppColors.textPrimary,
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Upload Section
-            _buildSectionTitle('Upload Documents', Icons.upload_file),
-            const SizedBox(height: 12),
-            Text(
-              'Upload up to 3 documents (PDF, PPT, DOC, TXT) - Max 10MB each',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-
-            // File Upload Slots
-            ...List.generate(3, (index) {
-              if (index < state.pendingFiles.length) {
-                return _buildPendingFileCard(
-                  state.pendingFiles[index],
-                  index,
-                  notifier,
-                );
-              }
-              return _buildEmptyFileSlot(index + 1);
-            }),
-
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: state.pendingFiles.length < 3 ? _pickFiles : null,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Documents'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-
+            _buildHeader(),
             const SizedBox(height: 32),
-
-            // AI Info Box
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.deepPurple.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.deepPurple.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: Colors.deepPurple, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'AI will analyze your documents and automatically create quizzes, flashcards, and notes with the right amount of content!',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Generate Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: state.canGenerate ? _startGeneration : null,
-                icon: const Icon(Icons.auto_awesome, size: 24),
-                label: const Text(
-                  'Generate Study Set',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-            ),
-
+            _buildSectionTitle('Upload Documents', Icons.cloud_upload_outlined),
             const SizedBox(height: 16),
+            _buildUploadSection(state, notifier),
+            const SizedBox(height: 24),
+            _buildAIInfoBox(),
           ],
         ),
       ),
+      floatingActionButton: _buildGenerateButton(state),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primary, size: 24),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyFileSlot(int slotNumber) {
+  Widget _buildHeader() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: AppColors.textSecondary.withValues(alpha: 0.3),
-          width: 2,
-          style: BorderStyle.solid,
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
-        color: AppColors.surface.withValues(alpha: 0.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.textSecondary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.upload_file,
-              color: AppColors.textSecondary,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Document Slot $slotNumber (Empty)',
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPendingFileCard(
-    File file,
-    int index,
-    AIStudySetNotifier notifier,
-  ) {
-    final fileName = file.path.split(Platform.pathSeparator).last;
-    final fileSizeBytes = file.lengthSync();
-    final fileSizeMB = (fileSizeBytes / (1024 * 1024)).toStringAsFixed(2);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1),
-      ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              Icons.description_outlined,
-              color: AppColors.primary,
-              size: 24,
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.white,
+              size: 28,
             ),
           ),
           const SizedBox(width: 16),
@@ -307,34 +168,247 @@ class _AIStudySetConfigurationState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  fileName,
+                const Text(
+                  'AI Assistant',
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$fileSizeMB MB',
+                  'Upload documents and let AI craft your perfect study set.',
                   style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => notifier.removeFile(index),
-            icon: Icon(Icons.close, color: Colors.red[400], size: 20),
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 22),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUploadSection(AIStudySetState state, AIStudySetNotifier notifier) {
+    return Column(
+      children: [
+        ...List.generate(3, (index) {
+          if (index < state.pendingFiles.length) {
+            return _buildFileCard(state.pendingFiles[index], index, notifier);
+          }
+          return const SizedBox.shrink();
+        }),
+        if (state.pendingFiles.length < 3)
+          _buildAddFileButton(state.pendingFiles.length),
+        if (state.pendingFiles.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              '${state.pendingFiles.length}/3 files selected',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFileCard(File file, int index, AIStudySetNotifier notifier) {
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    final size = (file.lengthSync() / (1024 * 1024)).toStringAsFixed(2);
+    final isPdf = fileName.toLowerCase().endsWith('.pdf');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: AppColors.surface),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isPdf
+                ? Colors.red.withValues(alpha: 0.1)
+                : Colors.blue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            isPdf ? Icons.picture_as_pdf : Icons.description,
+            color: isPdf ? Colors.red : Colors.blue,
+            size: 24,
+          ),
+        ),
+        title: Text(
+          fileName,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: AppColors.textPrimary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          '$size MB',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.close, size: 20),
+          color: AppColors.textSecondary,
+          onPressed: () => notifier.removeFile(index),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddFileButton(int currentCount) {
+    return InkWell(
+      onTap: _pickFiles,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            style: BorderStyle.solid,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_circle_outline_rounded,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Add Document ${currentCount + 1}',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIInfoBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.deepPurple.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.deepPurple,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'AI will analyze your documents and automatically create the optimal number of quizzes, flashcards, and notes.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenerateButton(AIStudySetState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: state.canGenerate ? _startGeneration : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          elevation: 8,
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          disabledBackgroundColor: Colors.grey[300],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.auto_awesome, size: 22),
+            const SizedBox(width: 12),
+            const Text(
+              'Generate Study Set',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
