@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/podium_widget.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
+import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
 
 import '../../../models/multiplayer_models.dart';
 
@@ -21,6 +23,8 @@ class LiveHostView extends ConsumerStatefulWidget {
 class _LiveHostViewState extends ConsumerState<LiveHostView> {
   bool _hasRequestedLeaderboard = false;
   Timer? _leaderboardPollingTimer;
+  bool _isEndingSession = false;
+  bool _hasSessionEnded = false;
 
   @override
   void initState() {
@@ -72,11 +76,66 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
     });
   }
 
+  /// Show confirmation dialog before ending the session
+  void _showEndSessionDialog() {
+    AppDialog.show(
+      context: context,
+      title: 'End Session?',
+      content: const Text(
+        'This will end the quiz for all participants. They will see the final results.',
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      ),
+      primaryActionText: 'End Session',
+      primaryActionCallback: () {
+        Navigator.of(context).pop(); // Close dialog
+        _endSession();
+      },
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () {
+        Navigator.of(context).pop(); // Close dialog
+      },
+      dismissible: true,
+    );
+  }
+
+  /// End the session and notify all participants
+  void _endSession() {
+    if (_isEndingSession) return;
+
+    setState(() {
+      _isEndingSession = true;
+    });
+
+    debugPrint('🛑 HOST - Ending session...');
+    ref.read(sessionProvider.notifier).endQuiz();
+  }
+
+  /// Navigate back to home/library after session ends
+  void _navigateToHome() {
+    // Clear any active session data
+    ActiveSessionService.clearActiveSession();
+
+    // Pop all routes and go back to library
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final sessionState = ref.watch(sessionProvider);
     final rankings = gameState.rankings ?? [];
+
+    // Listen for session completion
+    ref.listen(sessionProvider, (previous, next) {
+      if (next != null && next.status == 'completed' && !_hasSessionEnded) {
+        debugPrint('🏁 HOST - Session completed');
+        _hasSessionEnded = true;
+        _leaderboardPollingTimer?.cancel();
+        setState(() {
+          _isEndingSession = false;
+        });
+      }
+    });
 
     // Get ALL participants from session, not just rankings
     final allParticipants = sessionState?.participants ?? [];
@@ -92,7 +151,7 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
           return answeredCount >= totalQuestions;
         });
 
-    // Calculate average score across all participants
+    final isCompleted = sessionState?.status == 'completed' || allCompleted;
 
     return Scaffold(
       backgroundColor: AppColors.white,
@@ -102,18 +161,58 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Live Leaderboard',
-          style: TextStyle(
+        title: Text(
+          isCompleted ? 'Quiz Completed' : 'Live Leaderboard',
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
         centerTitle: true,
+        actions: [
+          // End Session button - always visible
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _isEndingSession
+                ? const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  )
+                : TextButton.icon(
+                    onPressed: isCompleted
+                        ? _navigateToHome
+                        : _showEndSessionDialog,
+                    icon: Icon(
+                      isCompleted ? Icons.home : Icons.stop_circle_outlined,
+                      size: 18,
+                      color: isCompleted ? AppColors.primary : AppColors.error,
+                    ),
+                    label: Text(
+                      isCompleted ? 'Home' : 'End',
+                      style: TextStyle(
+                        color: isCompleted
+                            ? AppColors.primary
+                            : AppColors.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                  ),
+          ),
+        ],
       ),
       body: SafeArea(
-        child: allCompleted
+        child: isCompleted
             ? _buildCompletionView(rankings)
             : _buildLiveLeaderboard(
                 rankings,
