@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_results.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/utils/question_type_handler.dart';
-import 'package:quiz_app/LibrarySection/LiveMode/widgets/countdown_timer.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/question_text_widget.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/reconnection_overlay.dart';
 import 'package:quiz_app/providers/game_provider.dart';
@@ -30,6 +29,10 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
   bool _showStreakToast = false;
   int _streakToastValue = 0;
   bool _isStreakLost = false;
+
+  // Streak bounce animation state
+  bool _showStreakBounce = false;
+  int _previousStreak = 0;
 
   @override
   void initState() {
@@ -74,6 +77,25 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
       if (mounted) {
         setState(() {
           _showStreakToast = false;
+        });
+      }
+    });
+  }
+
+  /// Trigger streak bounce animation on reset
+  void _triggerStreakResetBounce(int previousStreak) {
+    if (!mounted) return;
+
+    setState(() {
+      _previousStreak = previousStreak;
+      _showStreakBounce = true;
+    });
+
+    // Reset bounce state after animation completes
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) {
+        setState(() {
+          _showStreakBounce = false;
         });
       }
     });
@@ -162,6 +184,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
           // Show streak lost if they had a streak before
           if ((previous?.streak ?? 0) >= 2) {
             _showStreakNotification(previous!.streak, true);
+            _triggerStreakResetBounce(previous.streak);
           }
         }
       }
@@ -235,330 +258,161 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
             child: SafeArea(
               child: CustomScrollView(
                 slivers: [
-                  // Sub-header with Question counter, Streak, Ranks button, Points
+                  // Compact unified header bar
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Left side: Question counter + Streak indicator
-                          Row(
-                            children: [
-                              Text(
-                                'Q${gameState.questionIndex + 1}/${gameState.totalQuestions}',
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              // Streak indicator (show when streak >= 2)
-                              if (gameState.streak >= 2) ...[
-                                const SizedBox(width: 8),
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFFFF6B35),
-                                        const Color(0xFFFF9500),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFFFF6B35,
-                                        ).withValues(alpha: 0.4),
-                                        blurRadius: 8,
-                                        spreadRadius: 1,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.local_fire_department,
-                                        color: Colors.white,
-                                        size: 14,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${gameState.streak}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFF0FDF4,
+                          ), // Light green background
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF22C55E,
+                            ).withValues(alpha: 0.3),
+                            width: 1.5,
                           ),
-                          // Right side: Ranks button + Points
-                          Row(
-                            children: [
-                              // Ranks button (only for participants)
-                              if (!isHost)
-                                GestureDetector(
-                                  onTap: () =>
-                                      _showLeaderboardBottomSheet(context, ref),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.white,
-                                      border: Border.all(
-                                        color: AppColors.primaryLight,
-                                        width: 1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Question counter
+                            Text(
+                              'Question ${gameState.questionIndex + 1}/${gameState.totalQuestions}',
+                              style: const TextStyle(
+                                color: Color(0xFF15803D),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+
+                            const Spacer(),
+
+                            // Streak indicator with bounce animation
+                            if (gameState.streak >= 1 || _showStreakBounce) ...[
+                              TweenAnimationBuilder<double>(
+                                key: ValueKey(
+                                  'streak_${gameState.streak}_$_showStreakBounce',
+                                ),
+                                duration: const Duration(milliseconds: 400),
+                                tween: Tween(
+                                  begin: _showStreakBounce ? 1.3 : 0.8,
+                                  end: 1.0,
+                                ),
+                                curve: _showStreakBounce
+                                    ? Curves.elasticOut
+                                    : Curves.easeOutBack,
+                                builder: (context, scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          Icons.bar_chart,
-                                          size: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                        const SizedBox(width: 6),
                                         Text(
-                                          'Ranks',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
+                                          '🔥',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        AnimatedSwitcher(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          transitionBuilder:
+                                              (child, animation) {
+                                                return ScaleTransition(
+                                                  scale: animation,
+                                                  child: child,
+                                                );
+                                              },
+                                          child: Text(
+                                            '${gameState.streak}',
+                                            key: ValueKey(gameState.streak),
+                                            style: TextStyle(
+                                              color: gameState.streak >= 2
+                                                  ? const Color(0xFFEA580C)
+                                                  : const Color(0xFF9CA3AF),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                              if (!isHost) const SizedBox(width: 12),
-                              // Animated Points Badge with floating +points
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  TweenAnimationBuilder<int>(
-                                    key: ValueKey(gameState.currentScore),
-                                    duration: const Duration(milliseconds: 800),
-                                    tween: IntTween(
-                                      begin:
-                                          gameState.currentScore -
-                                          (gameState.pointsEarned ?? 0),
-                                      end: gameState.currentScore,
-                                    ),
-                                    curve: Curves.easeOutCubic,
-                                    builder: (context, value, child) {
-                                      final isAnimating =
-                                          value != gameState.currentScore;
-                                      final pointsEarned =
-                                          gameState.pointsEarned ?? 0;
-                                      final showFloating =
-                                          isAnimating && pointsEarned > 0;
-
-                                      return Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          // Main points badge
-                                          AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 300,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  isAnimating &&
-                                                      pointsEarned > 0
-                                                  ? _getPointsColor(
-                                                      gameState.multiplier ??
-                                                          1.0,
-                                                      gameState.isPartial,
-                                                    )
-                                                  : const Color(0xFFFFD700),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                              boxShadow:
-                                                  isAnimating &&
-                                                      pointsEarned > 0
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: _getPointsColor(
-                                                          gameState
-                                                                  .multiplier ??
-                                                              1.0,
-                                                          gameState.isPartial,
-                                                        ).withValues(alpha: 0.5),
-                                                        blurRadius: 12,
-                                                        spreadRadius: 2,
-                                                      ),
-                                                    ]
-                                                  : null,
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.emoji_events,
-                                                  color: AppColors.white,
-                                                  size: isAnimating ? 16 : 14,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  '$value',
-                                                  style: TextStyle(
-                                                    color: AppColors.white,
-                                                    fontSize: isAnimating
-                                                        ? 16
-                                                        : 14,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          // Floating +points animation
-                                          if (showFloating)
-                                            Positioned(
-                                              right: -10,
-                                              top: -5,
-                                              child: TweenAnimationBuilder<double>(
-                                                duration: const Duration(
-                                                  milliseconds: 1200,
-                                                ),
-                                                tween: Tween(
-                                                  begin: 0.0,
-                                                  end: 1.0,
-                                                ),
-                                                curve: Curves.easeOut,
-                                                builder: (context, progress, child) {
-                                                  return Transform.translate(
-                                                    offset: Offset(
-                                                      0,
-                                                      -progress * 30,
-                                                    ),
-                                                    child: Opacity(
-                                                      opacity: 1.0 - progress,
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 8,
-                                                              vertical: 4,
-                                                            ),
-                                                        decoration: BoxDecoration(
-                                                          color: _getPointsColor(
-                                                            gameState
-                                                                    .multiplier ??
-                                                                1.0,
-                                                            gameState.isPartial,
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                12,
-                                                              ),
-                                                          boxShadow: [
-                                                            BoxShadow(
-                                                              color:
-                                                                  _getPointsColor(
-                                                                    gameState
-                                                                            .multiplier ??
-                                                                        1.0,
-                                                                    gameState
-                                                                        .isPartial,
-                                                                  ).withValues(
-                                                                    alpha: 0.4,
-                                                                  ),
-                                                              blurRadius: 8,
-                                                              spreadRadius: 1,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.add,
-                                                              color: AppColors
-                                                                  .white,
-                                                              size: 12,
-                                                            ),
-                                                            Text(
-                                                              '$pointsEarned',
-                                                              style: const TextStyle(
-                                                                color: AppColors
-                                                                    .white,
-                                                                fontSize: 12,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
+                              const SizedBox(width: 12),
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
 
-                  // Countdown Timer
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      child: CountdownTimer(
-                        timeRemaining: gameState.timeRemaining,
-                        timeLimit: gameState.timeLimit,
-                        hasAnswered: gameState.hasAnswered,
-                      ),
-                    ),
-                  ),
-
-                  // Progress Bar
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value:
-                              (gameState.questionIndex + 1) /
-                              gameState.totalQuestions,
-                          backgroundColor: AppColors.primaryLighter,
-                          color: AppColors.primary,
-                          minHeight: 6,
+                            // Timer badge
+                            _buildCompactTimer(
+                              gameState.timeRemaining,
+                              gameState.timeLimit,
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+
+                  // Secondary row: Ranks + Points (for participants)
+                  if (!isHost)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Ranks button
+                            GestureDetector(
+                              onTap: () =>
+                                  _showLeaderboardBottomSheet(context, ref),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.white,
+                                  border: Border.all(
+                                    color: AppColors.primaryLight,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.leaderboard_rounded,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Ranks',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Animated Points Badge
+                            _buildPointsBadge(gameState),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // Title
                   SliverToBoxAdapter(
@@ -872,7 +726,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                         const SizedBox(width: 8),
                         Text(
                           _isStreakLost
-                              ? 'Streak Lost!'
+                              ? '$_previousStreak Streak Lost!'
                               : '🔥 $_streakToastValue Streak!',
                           style: const TextStyle(
                             color: Colors.white,
@@ -1134,5 +988,212 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
     if (multiplier >= 1.5) return const Color(0xFF4CAF50); // Green for fast
     if (multiplier >= 1.2) return AppColors.primary; // Primary for good
     return const Color(0xFF2196F3); // Blue for normal
+  }
+
+  /// Build animated points badge
+  Widget _buildPointsBadge(dynamic gameState) {
+    return TweenAnimationBuilder<int>(
+      key: ValueKey(gameState.currentScore),
+      duration: const Duration(milliseconds: 800),
+      tween: IntTween(
+        begin: gameState.currentScore - (gameState.pointsEarned ?? 0),
+        end: gameState.currentScore,
+      ),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        final isAnimating = value != gameState.currentScore;
+        final pointsEarned = gameState.pointsEarned ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Main points badge
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isAnimating && pointsEarned > 0
+                    ? _getPointsColor(
+                        gameState.multiplier ?? 1.0,
+                        gameState.isPartial,
+                      )
+                    : const Color(0xFFFFD700),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: isAnimating && pointsEarned > 0
+                    ? [
+                        BoxShadow(
+                          color: _getPointsColor(
+                            gameState.multiplier ?? 1.0,
+                            gameState.isPartial,
+                          ).withValues(alpha: 0.5),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.emoji_events,
+                    color: AppColors.white,
+                    size: isAnimating ? 18 : 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$value',
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: isAnimating ? 16 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Floating +points animation
+            if (isAnimating && pointsEarned > 0)
+              Positioned(
+                right: -8,
+                top: -8,
+                child: TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 1200),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: Curves.easeOut,
+                  builder: (context, progress, child) {
+                    return Transform.translate(
+                      offset: Offset(0, -progress * 25),
+                      child: Opacity(
+                        opacity: (1.0 - progress).clamp(0.0, 1.0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getPointsColor(
+                              gameState.multiplier ?? 1.0,
+                              gameState.isPartial,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getPointsColor(
+                                  gameState.multiplier ?? 1.0,
+                                  gameState.isPartial,
+                                ).withValues(alpha: 0.4),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.add,
+                                color: AppColors.white,
+                                size: 12,
+                              ),
+                              Text(
+                                '$pointsEarned',
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Build compact timer badge for the unified header
+  Widget _buildCompactTimer(int timeRemaining, int timeLimit) {
+    final progress = timeLimit > 0 ? timeRemaining / timeLimit : 0.0;
+    final isLowTime = timeRemaining <= 5;
+    final isCriticalTime = timeRemaining <= 3;
+
+    Color timerColor;
+    if (isLowTime) {
+      timerColor = const Color(0xFFEF4444); // Red
+    } else if (progress > 0.6) {
+      timerColor = const Color(0xFF22C55E); // Green
+    } else if (progress > 0.3) {
+      timerColor = const Color(0xFFF59E0B); // Amber
+    } else {
+      timerColor = const Color(0xFFEF4444); // Red
+    }
+
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('timer_$timeRemaining'),
+      duration: const Duration(milliseconds: 200),
+      tween: Tween(begin: isCriticalTime ? 1.1 : 1.0, end: 1.0),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: isCriticalTime ? scale : 1.0,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: timerColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isCriticalTime
+                  ? [
+                      BoxShadow(
+                        color: timerColor.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.timer_outlined, color: Colors.white, size: 14),
+                const SizedBox(width: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.5),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    '${timeRemaining}s',
+                    key: ValueKey(timeRemaining),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
