@@ -215,12 +215,11 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
       // Extract file URIs
       final fileUris = uploadedFilesList.map((f) => f.fileUri).toList();
 
-      // Call backend to generate
-      _updateProgress(40, 'Generating study materials...');
+      // Call backend to generate (Gemini decides content amounts)
+      _updateProgress(40, 'AI is analyzing your documents...');
 
       final studySet = await AIStudySetService.generateStudySet(
         fileUris: fileUris,
-        settings: state.settings,
       );
 
       // Simulate generation phases

@@ -42,10 +42,10 @@ class _NoteViewerPageState extends State<NoteViewerPage> {
   void _initializeNote(Note note) {
     try {
       Document document;
-      
+
       // Check if content is HTML (AI-generated) or Quill Delta (manually created)
       final content = note.content;
-      
+
       if (_isHtmlContent(content)) {
         // Convert HTML to Quill Delta
         final converter = HtmlToDelta();
@@ -91,12 +91,12 @@ class _NoteViewerPageState extends State<NoteViewerPage> {
       }
     }
   }
-  
+
   bool _isHtmlContent(String content) {
     // Check if content looks like HTML
     final trimmed = content.trim();
-    return trimmed.startsWith('<') && 
-           (trimmed.contains('</') || trimmed.contains('/>'));
+    return trimmed.startsWith('<') &&
+        (trimmed.contains('</') || trimmed.contains('/>'));
   }
 
   @override

@@ -168,7 +168,7 @@ class _AIStudySetConfigurationState
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'AI will automatically generate study set name, description, categories, and language based on your document content!',
+                      'AI will analyze your documents and automatically create quizzes, flashcards, and notes with the right amount of content!',
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textPrimary,
@@ -178,82 +178,6 @@ class _AIStudySetConfigurationState
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Generation Settings
-            _buildSectionTitle('Generation Settings', Icons.settings),
-            const SizedBox(height: 16),
-
-            _buildSliderSetting(
-              'Number of Quizzes',
-              state.settings.quizCount.toDouble(),
-              1,
-              5,
-              (value) => notifier.updateSettings(quizCount: value.toInt()),
-            ),
-
-            _buildSliderSetting(
-              'Number of Flashcard Sets',
-              state.settings.flashcardSetCount.toDouble(),
-              1,
-              3,
-              (value) =>
-                  notifier.updateSettings(flashcardSetCount: value.toInt()),
-            ),
-
-            _buildSliderSetting(
-              'Number of Notes',
-              state.settings.noteCount.toDouble(),
-              1,
-              3,
-              (value) => notifier.updateSettings(noteCount: value.toInt()),
-            ),
-
-            _buildSliderSetting(
-              'Questions per Quiz',
-              state.settings.questionsPerQuiz.toDouble(),
-              5,
-              20,
-              (value) =>
-                  notifier.updateSettings(questionsPerQuiz: value.toInt()),
-              divisions: 15,
-            ),
-
-            _buildSliderSetting(
-              'Cards per Flashcard Set',
-              state.settings.cardsPerSet.toDouble(),
-              10,
-              50,
-              (value) => notifier.updateSettings(cardsPerSet: value.toInt()),
-              divisions: 40,
-            ),
-
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              initialValue: state.settings.difficulty,
-              decoration: InputDecoration(
-                labelText: 'Difficulty Level',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: AppColors.surface,
-              ),
-              items:
-                  ['Easy', 'Medium', 'Hard', 'Mixed'].map((difficulty) {
-                    return DropdownMenuItem(
-                      value: difficulty,
-                      child: Text(difficulty),
-                    );
-                  }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  notifier.updateSettings(difficulty: value);
-                }
-              },
             ),
 
             const SizedBox(height: 32),
@@ -412,60 +336,6 @@ class _AIStudySetConfigurationState
           ),
         ],
       ),
-    );
-  }
-
-
-
-  Widget _buildSliderSetting(
-    String label,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged, {
-    int? divisions,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                value.toInt().toString(),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: divisions ?? (max - min).toInt(),
-          activeColor: AppColors.primary,
-          onChanged: onChanged,
-        ),
-        const SizedBox(height: 8),
-      ],
     );
   }
 }

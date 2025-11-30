@@ -132,7 +132,6 @@ class AIStudySetService {
   /// Generate study set using uploaded file URIs
   static Future<StudySet> generateStudySet({
     required List<String> fileUris,
-    required GenerationSettings settings,
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -151,7 +150,6 @@ class AIStudySetService {
             },
             body: jsonEncode({
               'fileUris': fileUris,
-              'settings': settings.toJson(),
             }),
           )
           .timeout(

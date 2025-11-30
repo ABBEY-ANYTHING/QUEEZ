@@ -16,14 +16,70 @@ class AIGenerationProgress extends ConsumerStatefulWidget {
       _AIGenerationProgressState();
 }
 
-class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
+class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  double _displayProgress = 0.0;
+  double _targetProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
+    // Animation controller for smooth progress
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _animationController.addListener(_animateProgress);
+    
+    // Start fake progress animation
+    _startFakeProgressAnimation();
+    
     // Start generation when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startGeneration();
     });
+  }
+
+  void _startFakeProgressAnimation() async {
+    // Smoothly animate progress even when actual progress is static
+    while (mounted && _displayProgress < 100) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+      
+      final state = ref.read(aiStudySetProvider);
+      _targetProgress = state.progress;
+      
+      // If we're behind target, catch up smoothly
+      if (_displayProgress < _targetProgress) {
+        setState(() {
+          _displayProgress += (_targetProgress - _displayProgress) * 0.3;
+          if (_displayProgress > _targetProgress - 0.5) {
+            _displayProgress = _targetProgress;
+          }
+        });
+      } 
+      // If we're at target but not at a completion point, fake small progress
+      else if (_displayProgress < 95 && state.isGenerating) {
+        setState(() {
+          // Add tiny increments to make it feel alive
+          _displayProgress += 0.1 + (0.2 * (1 - _displayProgress / 100));
+          if (_displayProgress > 95) _displayProgress = 95;
+        });
+      }
+    }
+  }
+
+  void _animateProgress() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _startGeneration() async {
@@ -232,27 +288,41 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress> {
 
                     const SizedBox(height: 48),
 
-                    // Progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: state.progress / 100,
-                        minHeight: 12,
-                        backgroundColor: AppColors.surface,
-                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                      ),
+                    // Progress bar with smooth animation
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: _displayProgress / 100),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: value,
+                            minHeight: 12,
+                            backgroundColor: AppColors.surface,
+                            valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Progress percentage
-                    Text(
-                      '${state.progress.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
+                    // Progress percentage with smooth animation
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: _displayProgress),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Text(
+                          '${value.toInt()}%',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 24),
