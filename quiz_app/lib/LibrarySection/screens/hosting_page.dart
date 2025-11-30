@@ -158,11 +158,14 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       });
 
       // Get session info from backend to verify it still exists
-      final sessionData = await SessionService.getSessionInfo(
+      final response = await SessionService.getSessionInfo(
         widget.existingSessionCode!,
       );
 
-      if (sessionData['session_code'] != null) {
+      // Backend returns: {"success": true, "session": {...}}
+      final sessionData = response['session'] as Map<String, dynamic>? ?? {};
+
+      if (response['success'] == true && sessionData.isNotEmpty) {
         setState(() {
           sessionCode = widget.existingSessionCode;
           // Use remaining time from backend if available
