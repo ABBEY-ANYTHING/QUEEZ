@@ -4,6 +4,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/screens/live_host_view.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_lobby.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_quiz.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
+import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -176,6 +177,11 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         // HOST RECONNECTION: Connect to WebSocket first, then navigate
         debugPrint('🔄 HOST RECONNECTION - Connecting to WebSocket first');
         ref.read(currentUserProvider.notifier).setUser(userId);
+
+        // ✅ FIX: Initialize gameProvider BEFORE joining to ensure it receives messages
+        // This triggers gameProvider.build() which sets up the WebSocket listener
+        ref.read(gameProvider);
+        debugPrint('✅ HOST RECONNECTION - gameProvider initialized');
 
         // Connect to WebSocket as host
         await ref
