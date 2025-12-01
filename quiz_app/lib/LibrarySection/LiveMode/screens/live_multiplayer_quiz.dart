@@ -258,34 +258,39 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
             child: SafeArea(
               child: CustomScrollView(
                 slivers: [
-                  // Compact unified header bar
+                  // Clean compact header bar
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
+                          vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFF0FDF4,
-                          ), // Light green background
-                          borderRadius: BorderRadius.circular(16),
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(
-                              0xFF22C55E,
-                            ).withValues(alpha: 0.3),
-                            width: 1.5,
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.5,
+                            ),
+                            width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
                             // Question counter
                             Text(
-                              'Question ${gameState.questionIndex + 1}/${gameState.totalQuestions}',
-                              style: const TextStyle(
-                                color: Color(0xFF15803D),
+                              'Q ${gameState.questionIndex + 1}/${gameState.totalQuestions}',
+                              style: TextStyle(
+                                color: AppColors.primary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -294,60 +299,56 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                             const Spacer(),
 
                             // Streak indicator with bounce animation
-                            if (gameState.streak >= 1 || _showStreakBounce) ...[
-                              TweenAnimationBuilder<double>(
-                                key: ValueKey(
-                                  'streak_${gameState.streak}_$_showStreakBounce',
-                                ),
-                                duration: const Duration(milliseconds: 400),
-                                tween: Tween(
-                                  begin: _showStreakBounce ? 1.3 : 0.8,
-                                  end: 1.0,
-                                ),
-                                curve: _showStreakBounce
-                                    ? Curves.elasticOut
-                                    : Curves.easeOutBack,
-                                builder: (context, scale, child) {
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          '🔥',
-                                          style: TextStyle(fontSize: 16),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        AnimatedSwitcher(
-                                          duration: const Duration(
-                                            milliseconds: 300,
-                                          ),
-                                          transitionBuilder:
-                                              (child, animation) {
-                                                return ScaleTransition(
-                                                  scale: animation,
-                                                  child: child,
-                                                );
-                                              },
-                                          child: Text(
-                                            '${gameState.streak}',
-                                            key: ValueKey(gameState.streak),
-                                            style: TextStyle(
-                                              color: gameState.streak >= 2
-                                                  ? const Color(0xFFEA580C)
-                                                  : const Color(0xFF9CA3AF),
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                            TweenAnimationBuilder<double>(
+                              key: ValueKey(
+                                'streak_${gameState.streak}_$_showStreakBounce',
                               ),
-                              const SizedBox(width: 12),
-                            ],
+                              duration: const Duration(milliseconds: 400),
+                              tween: Tween(
+                                begin: _showStreakBounce ? 1.3 : 0.8,
+                                end: 1.0,
+                              ),
+                              curve: _showStreakBounce
+                                  ? Curves.elasticOut
+                                  : Curves.easeOutBack,
+                              builder: (context, scale, child) {
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '🔥',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        transitionBuilder: (child, animation) {
+                                          return ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          );
+                                        },
+                                        child: Text(
+                                          '${gameState.streak}',
+                                          key: ValueKey(gameState.streak),
+                                          style: TextStyle(
+                                            color: AppColors.warning,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(width: 12),
 
                             // Timer badge
                             _buildCompactTimer(
@@ -1127,13 +1128,13 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
 
     Color timerColor;
     if (isLowTime) {
-      timerColor = const Color(0xFFEF4444); // Red
+      timerColor = AppColors.error; // Red from theme
     } else if (progress > 0.6) {
-      timerColor = const Color(0xFF22C55E); // Green
+      timerColor = AppColors.success; // Green from theme
     } else if (progress > 0.3) {
-      timerColor = const Color(0xFFF59E0B); // Amber
+      timerColor = AppColors.warning; // Amber from theme
     } else {
-      timerColor = const Color(0xFFEF4444); // Red
+      timerColor = AppColors.error; // Red from theme
     }
 
     return TweenAnimationBuilder<double>(
@@ -1163,7 +1164,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.timer_outlined, color: Colors.white, size: 14),
+                Icon(Icons.schedule_rounded, color: AppColors.white, size: 14),
                 const SizedBox(width: 4),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
