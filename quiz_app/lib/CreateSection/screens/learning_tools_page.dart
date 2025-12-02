@@ -3,6 +3,7 @@ import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class LearningToolsPage extends StatelessWidget {
   const LearningToolsPage({super.key});
@@ -45,7 +46,7 @@ class LearningToolsPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
           child: Column(
             children: [
               CustomCard(

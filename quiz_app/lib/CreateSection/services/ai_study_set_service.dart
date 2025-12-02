@@ -148,9 +148,7 @@ class AIStudySetService {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
-            body: jsonEncode({
-              'fileUris': fileUris,
-            }),
+            body: jsonEncode({'fileUris': fileUris}),
           )
           .timeout(
             const Duration(minutes: 3),

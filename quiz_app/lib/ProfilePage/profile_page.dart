@@ -5,6 +5,7 @@ import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -189,6 +190,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           _buildInterestsCard(),
                         const SizedBox(height: 24),
                         _buildSignOutButton(),
+                        SizedBox(height: kBottomNavbarHeight),
                       ],
                     ],
                   ),

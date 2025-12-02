@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class CreatePage extends StatelessWidget {
   const CreatePage({super.key});
@@ -22,7 +23,7 @@ class CreatePage extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
           child: Column(
             children: [
               _buildCreateCard(

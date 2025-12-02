@@ -10,7 +10,6 @@ import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/custom_navigator.dart';
 import 'package:quiz_app/widgets/navbar/create_button.dart';
-import 'package:quiz_app/widgets/navbar/navbar_shape.dart';
 
 class BottomNavbarController extends ConsumerStatefulWidget {
   const BottomNavbarController({super.key});
@@ -27,7 +26,6 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
     (index) => GlobalKey<NavigatorState>(),
   );
   late final List<Widget> _pages;
-  late FloatingActionButtonLocation _fabLocation;
 
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -70,13 +68,6 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
       const Center(key: ValueKey("Settings"), child: Text("Settings Page")),
     ];
     _controller.forward();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final double offset = MediaQuery.of(context).size.height * 0.030;
-    _fabLocation = CreateButtonLocation(offset: offset);
   }
 
   void _onNavItemTapped(int index) {
@@ -135,29 +126,44 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
       _navbarAnimController.reverse();
     }
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: List.generate(_pages.length, _buildTransitioningPage),
-      ),
-      floatingActionButton: SlideTransition(
-        position: _navbarSlideAnimation,
-        child: FadeTransition(
-          opacity: _navbarFadeAnimation,
-          child: CreateButton(onPressed: () => _onNavItemTapped(2)),
-        ),
-      ),
-      floatingActionButtonLocation: _fabLocation,
-      bottomNavigationBar: SlideTransition(
-        position: _navbarSlideAnimation,
-        child: FadeTransition(
-          opacity: _navbarFadeAnimation,
-          child: _BottomNavbar(
-            currentIndex: selectedIndex,
-            onTap: _onNavItemTapped,
+    return Stack(
+      children: [
+        // Pages
+        ...List.generate(_pages.length, _buildTransitioningPage),
+        // Bottom navbar positioned at bottom
+        if (!keyboardVisible)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SlideTransition(
+              position: _navbarSlideAnimation,
+              child: FadeTransition(
+                opacity: _navbarFadeAnimation,
+                child: _BottomNavbar(
+                  currentIndex: selectedIndex,
+                  onTap: _onNavItemTapped,
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        // FAB centered at bottom
+        if (!keyboardVisible)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: SlideTransition(
+              position: _navbarSlideAnimation,
+              child: FadeTransition(
+                opacity: _navbarFadeAnimation,
+                child: Center(
+                  child: CreateButton(onPressed: () => _onNavItemTapped(2)),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -208,11 +214,8 @@ class _BottomNavbar extends StatelessWidget {
         ),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: BottomAppBar(
-            elevation: 0,
-            color: Colors.transparent,
-            shape: NavbarShape(),
-            notchMargin: 10,
+          child: SafeArea(
+            top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(

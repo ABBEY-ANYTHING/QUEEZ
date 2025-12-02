@@ -9,6 +9,7 @@ import 'package:quiz_app/CreateSection/widgets/image_picker.dart';
 import 'package:quiz_app/CreateSection/widgets/primary_button.dart';
 import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class NoteDetailsPage extends StatefulWidget {
   final bool isStudySetMode;
@@ -177,7 +178,7 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
                     },
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: kBottomNavbarHeight),
                 ],
               ),
             ),

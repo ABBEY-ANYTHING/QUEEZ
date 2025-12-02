@@ -6,6 +6,7 @@ import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
 import 'package:quiz_app/CreateSection/screens/ai_generation_progress.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class AIStudySetConfiguration extends ConsumerStatefulWidget {
   const AIStudySetConfiguration({super.key});
@@ -112,7 +113,7 @@ class _AIStudySetConfigurationState
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
+        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -135,32 +136,29 @@ class _AIStudySetConfigurationState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surface),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome,
-              color: Colors.white,
-              size: 28,
+              color: AppColors.primary,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -171,16 +169,16 @@ class _AIStudySetConfigurationState
                 const Text(
                   'AI Assistant',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Upload documents and let AI craft your perfect study set.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppColors.textSecondary,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -211,7 +209,10 @@ class _AIStudySetConfigurationState
     );
   }
 
-  Widget _buildUploadSection(AIStudySetState state, AIStudySetNotifier notifier) {
+  Widget _buildUploadSection(
+    AIStudySetState state,
+    AIStudySetNotifier notifier,
+  ) {
     return Column(
       children: [
         ...List.generate(3, (index) {
@@ -284,10 +285,7 @@ class _AIStudySetConfigurationState
         ),
         subtitle: Text(
           '$size MB',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
         ),
         trailing: IconButton(
           icon: const Icon(Icons.close, size: 20),
@@ -301,16 +299,16 @@ class _AIStudySetConfigurationState
   Widget _buildAddFileButton(int currentCount) {
     return InkWell(
       onTap: _pickFiles,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        height: 80,
+        height: 64,
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.primary.withOpacity(0.2),
             style: BorderStyle.solid,
-            width: 1.5,
+            width: 1,
           ),
         ),
         child: Row(
@@ -340,23 +338,21 @@ class _AIStudySetConfigurationState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.deepPurple.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.deepPurple.withValues(alpha: 0.2),
-        ),
+        color: AppColors.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.18)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withValues(alpha: 0.15),
+              color: AppColors.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome,
-              color: Colors.deepPurple,
+              color: AppColors.primary,
               size: 24,
             ),
           ),

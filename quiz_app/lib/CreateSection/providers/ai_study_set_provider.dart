@@ -128,13 +128,12 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
     String? language,
     String? coverImagePath,
   }) {
-    final updatedConfig =
-        StudySetConfig()
-          ..name = name ?? state.config.name
-          ..description = description ?? state.config.description
-          ..category = category ?? state.config.category
-          ..language = language ?? state.config.language
-          ..coverImagePath = coverImagePath ?? state.config.coverImagePath;
+    final updatedConfig = StudySetConfig()
+      ..name = name ?? state.config.name
+      ..description = description ?? state.config.description
+      ..category = category ?? state.config.category
+      ..language = language ?? state.config.language
+      ..coverImagePath = coverImagePath ?? state.config.coverImagePath;
 
     state = state.copyWith(config: updatedConfig);
   }
@@ -148,16 +147,14 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
     int? questionsPerQuiz,
     int? cardsPerSet,
   }) {
-    final updatedSettings =
-        GenerationSettings()
-          ..quizCount = quizCount ?? state.settings.quizCount
-          ..flashcardSetCount =
-              flashcardSetCount ?? state.settings.flashcardSetCount
-          ..noteCount = noteCount ?? state.settings.noteCount
-          ..difficulty = difficulty ?? state.settings.difficulty
-          ..questionsPerQuiz =
-              questionsPerQuiz ?? state.settings.questionsPerQuiz
-          ..cardsPerSet = cardsPerSet ?? state.settings.cardsPerSet;
+    final updatedSettings = GenerationSettings()
+      ..quizCount = quizCount ?? state.settings.quizCount
+      ..flashcardSetCount =
+          flashcardSetCount ?? state.settings.flashcardSetCount
+      ..noteCount = noteCount ?? state.settings.noteCount
+      ..difficulty = difficulty ?? state.settings.difficulty
+      ..questionsPerQuiz = questionsPerQuiz ?? state.settings.questionsPerQuiz
+      ..cardsPerSet = cardsPerSet ?? state.settings.cardsPerSet;
 
     state = state.copyWith(settings: updatedSettings);
   }

@@ -5,6 +5,7 @@ import 'package:quiz_app/LibrarySection/widgets/add_quiz_modal.dart';
 import 'package:quiz_app/LibrarySection/widgets/library_body.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
 
 import '../../utils/quiz_design_system.dart';
@@ -175,6 +176,9 @@ class LibraryPageState extends ConsumerState<LibraryPage>
               filteredItems: filteredItems,
               searchQuery: _searchQuery,
               onRetry: _reloadItems,
+            ),
+            const SliverPadding(
+              padding: EdgeInsets.only(bottom: kBottomNavbarHeight),
             ),
           ],
         ),

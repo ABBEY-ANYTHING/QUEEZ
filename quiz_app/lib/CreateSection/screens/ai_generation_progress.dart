@@ -30,9 +30,9 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       duration: const Duration(milliseconds: 100),
     );
     _animationController.addListener(_animateProgress);
-    
+
     _startFakeProgressAnimation();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startGeneration();
     });
@@ -42,10 +42,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
     while (mounted && _displayProgress < 100) {
       await Future.delayed(const Duration(milliseconds: 150));
       if (!mounted) return;
-      
+
       final state = ref.read(aiStudySetProvider);
       _targetProgress = state.progress;
-      
+
       if (_displayProgress < _targetProgress) {
         setState(() {
           _displayProgress += (_targetProgress - _displayProgress) * 0.3;
@@ -53,8 +53,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
             _displayProgress = _targetProgress;
           }
         });
-      } 
-      else if (_displayProgress < 95 && state.isGenerating) {
+      } else if (_displayProgress < 95 && state.isGenerating) {
         setState(() {
           _displayProgress += 0.1 + (0.2 * (1 - _displayProgress / 100));
           if (_displayProgress > 95) _displayProgress = 95;
@@ -87,12 +86,15 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
         await StudySetService.saveStudySet(studySet);
       } catch (saveError) {
         if (!mounted) return;
-        _showErrorDialog('Save Error', 'Study set generated but failed to save: $saveError');
+        _showErrorDialog(
+          'Save Error',
+          'Study set generated but failed to save: $saveError',
+        );
         return;
       }
-      
+
       if (!mounted) return;
-      
+
       await QuizSavedDialog.show(
         context,
         title: 'Study Set Generated!',
@@ -110,7 +112,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       notifier.reset();
     } catch (e) {
       if (!mounted) return;
-      _showErrorDialog('Generation Failed', e.toString().replaceAll('Exception: ', ''));
+      _showErrorDialog(
+        'Generation Failed',
+        e.toString().replaceAll('Exception: ', ''),
+      );
     }
   }
 
@@ -133,7 +138,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Go Back', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Go Back',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -143,7 +151,9 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Retry'),
           ),
@@ -164,9 +174,13 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Text('Cancel Generation?'),
-            content: const Text('Are you sure you want to cancel? Your progress will be lost.'),
+            content: const Text(
+              'Are you sure you want to cancel? Your progress will be lost.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -177,7 +191,9 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Cancel'),
               ),
@@ -193,7 +209,7 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
         backgroundColor: AppColors.background,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -250,10 +266,10 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
           curve: Curves.easeOutCubic,
           builder: (context, value, child) {
             return ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               child: LinearProgressIndicator(
                 value: value,
-                minHeight: 16,
+                minHeight: 12,
                 backgroundColor: AppColors.surface,
                 valueColor: const AlwaysStoppedAnimation(AppColors.primary),
               ),
@@ -301,13 +317,13 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+        color: Colors.amber.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.amber.withOpacity(0.18)),
       ),
       child: Row(
         children: [
-          Icon(Icons.lightbulb_rounded, color: Colors.amber.shade700, size: 24),
+          Icon(Icons.lightbulb_rounded, color: Colors.amber.shade700, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

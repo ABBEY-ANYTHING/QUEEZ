@@ -14,6 +14,7 @@ import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class QuizDetails extends StatefulWidget {
   final QuizLibraryItem? quizItem;
@@ -268,7 +269,7 @@ class QuizDetailsState extends State<QuizDetails> {
                     },
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: kBottomNavbarHeight),
                 ],
               ),
             ),

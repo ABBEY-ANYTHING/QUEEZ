@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class AssessmentPage extends StatelessWidget {
   const AssessmentPage({super.key});
@@ -49,7 +50,7 @@ class AssessmentPage extends StatelessWidget {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
           child: Column(
             children: [
               CustomCard(

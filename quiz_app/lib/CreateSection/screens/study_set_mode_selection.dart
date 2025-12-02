@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/screens/ai_study_set_configuration.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class StudySetModeSelection extends StatelessWidget {
   const StudySetModeSelection({super.key});
@@ -22,7 +23,7 @@ class StudySetModeSelection extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
           child: Column(
             children: [
               CustomCard(

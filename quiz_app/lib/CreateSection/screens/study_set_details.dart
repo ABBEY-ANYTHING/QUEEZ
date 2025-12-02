@@ -10,6 +10,7 @@ import 'package:quiz_app/CreateSection/widgets/primary_button.dart';
 import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class StudySetDetails extends StatefulWidget {
   const StudySetDetails({super.key});
@@ -114,7 +115,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 40),
+          padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight),
           child: Form(
             key: _formKey,
             child: Column(
@@ -143,10 +144,10 @@ class StudySetDetailsState extends State<StudySetDetails> {
         const Text(
           'Let\'s build your set',
           style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
-            letterSpacing: -0.5,
+            letterSpacing: -0.3,
           ),
         ),
         const SizedBox(height: 8),
@@ -167,12 +168,12 @@ class StudySetDetailsState extends State<StudySetDetails> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
