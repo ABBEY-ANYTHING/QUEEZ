@@ -141,7 +141,7 @@ class _AIStudySetConfigurationState
         border: Border.all(color: AppColors.surface),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -152,7 +152,7 @@ class _AIStudySetConfigurationState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -303,10 +303,10 @@ class _AIStudySetConfigurationState
       child: Container(
         height: 64,
         decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.3),
+          color: AppColors.surface.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             style: BorderStyle.solid,
             width: 1,
           ),
@@ -338,16 +338,16 @@ class _AIStudySetConfigurationState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
+        color: AppColors.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.18)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(

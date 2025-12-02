@@ -28,7 +28,6 @@ class ItemCard extends StatefulWidget {
 }
 
 class _ItemCardState extends State<ItemCard> {
-
   @override
   Widget build(BuildContext context) {
     final Color softRed = AppColors.error.withValues(alpha: 0.1);
@@ -69,7 +68,6 @@ class _ItemCardState extends State<ItemCard> {
       ),
     );
   }
-
 
   void _navigateToNote(BuildContext context, String userId) {
     Note? loadedNote;
@@ -193,49 +191,49 @@ class _ItemCardState extends State<ItemCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTypeLabel(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildTypeLabel(),
+              GestureDetector(
+                onTap: () {
+                  // Prevent tap from propagating to parent InkWell
+                },
+                child: IconButton(
+                  onPressed: () {
+                    widget.onDelete();
+                  },
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                    maxWidth: 32,
+                    maxHeight: 32,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildItemCountTag(),
-              Row(
-                children: [
-                  Text(
-                    widget.item.createdAt ?? 'Unknown',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+              Flexible(
+                child: Text(
+                  widget.item.createdAt ?? 'Unknown',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () {
-                      // Prevent tap from propagating to parent InkWell
-                    },
-                    child: Material(
-                      color: softRed,
-                      shape: const CircleBorder(),
-                      child: IconButton(
-                        onPressed: () {
-                          widget.onDelete();
-                        },
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: AppColors.error,
-                          size: 20,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 36,
-                          minHeight: 36,
-                          maxWidth: 36,
-                          maxHeight: 36,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -318,7 +316,6 @@ class _ItemCardState extends State<ItemCard> {
       ),
     );
   }
-
 
   Widget _buildCoverImage() {
     return Container(

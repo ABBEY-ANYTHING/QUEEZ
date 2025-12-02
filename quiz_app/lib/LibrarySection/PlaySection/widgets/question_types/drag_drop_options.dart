@@ -44,7 +44,6 @@ class DragDropOptions extends StatelessWidget {
     }
 
     final hasAnswered = userAnswer != null;
-    debugPrint('🎮 DragDropOptions (SinglePlayer) - hasAnswered: $hasAnswered, dragItems: ${question.dragItems}, dropTargets: ${question.dropTargets}');
 
     return QuizDragDropOptions(
       dragItems: question.dragItems ?? [],

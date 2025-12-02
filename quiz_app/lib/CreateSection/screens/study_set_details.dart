@@ -171,7 +171,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),

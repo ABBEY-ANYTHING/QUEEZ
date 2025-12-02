@@ -93,12 +93,17 @@ class LibraryPageState extends ConsumerState<LibraryPage>
                 value: null,
               ),
               RadioListTile<String?>(
-                title: const Text('Quizzes Only'),
+                title: const Text('Quizzes'),
                 value: 'quiz',
               ),
               RadioListTile<String?>(
-                title: const Text('Flashcards Only'),
+                title: const Text('Flashcards'),
                 value: 'flashcard',
+              ),
+              RadioListTile<String?>(title: const Text('Notes'), value: 'note'),
+              RadioListTile<String?>(
+                title: const Text('Study Sets'),
+                value: 'study_set',
               ),
             ],
           ),

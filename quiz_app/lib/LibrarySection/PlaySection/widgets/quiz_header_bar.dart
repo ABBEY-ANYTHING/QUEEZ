@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/quiz_design_system.dart';
 
-/// Compact quiz header bar with:
-/// - Left: Question progress (e.g., "2/4")
-/// - Right: Streak multiplier (🔥 x2) + Circular timer
-/// Always visible at top while scrolling.
+/// Clean compact quiz header bar with:
+/// - Left: Question counter (e.g., "Q 2/4")
+/// - Right: Streak (🔥 Lottie) + Timer pill
 class QuizHeaderBar extends StatefulWidget {
   final int currentIndex;
   final int totalQuestions;
@@ -14,8 +12,7 @@ class QuizHeaderBar extends StatefulWidget {
   final int timeRemaining;
   final int timeLimit;
   final bool hasAnswered;
-  final int?
-  streakChange; // +1 = gained, -n = lost n streak, null = no change yet
+  final int? streakChange;
 
   const QuizHeaderBar({
     super.key,
@@ -34,32 +31,18 @@ class QuizHeaderBar extends StatefulWidget {
 
 class _QuizHeaderBarState extends State<QuizHeaderBar>
     with TickerProviderStateMixin {
-  late AnimationController _streakAnimController;
   late AnimationController _pulseController;
-  late AnimationController _fireAnimController;
-  late Animation<double> _pulseAnimation;
-  bool _showStreakAnimation = false;
+  int _previousStreak = 0;
+  bool _streakGained = false;
+  bool _streakLost = false;
 
   @override
   void initState() {
     super.initState();
-    _streakAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-
+    _previousStreak = widget.currentStreak;
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    );
-
-    _fireAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 
@@ -67,287 +50,157 @@ class _QuizHeaderBarState extends State<QuizHeaderBar>
   void didUpdateWidget(QuizHeaderBar oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Trigger streak animation when streak changes
-    if (widget.streakChange != null &&
-        widget.streakChange != 0 &&
-        oldWidget.streakChange != widget.streakChange) {
-      _triggerStreakAnimation(widget.streakChange! > 0);
+    // Detect streak change
+    if (widget.currentStreak > _previousStreak) {
+      // Streak gained!
+      _triggerStreakGain();
+    } else if (widget.currentStreak < _previousStreak && _previousStreak >= 1) {
+      // Streak lost (from any positive streak to lower)!
+      _triggerStreakLoss();
     }
-
-    // Pulse animation for low time
-    if (widget.timeRemaining <= 5 && !widget.hasAnswered) {
-      if (!_pulseController.isAnimating) {
-        _pulseController.repeat(reverse: true);
-      }
-    } else {
-      _pulseController.stop();
-      _pulseController.reset();
-    }
-
-    // Fire animation for active streak
-    if (widget.currentStreak >= 2 && !_fireAnimController.isAnimating) {
-      _fireAnimController.repeat();
-    } else if (widget.currentStreak < 2) {
-      _fireAnimController.stop();
-      _fireAnimController.reset();
-    }
+    _previousStreak = widget.currentStreak;
   }
 
-  void _triggerStreakAnimation(bool isGain) {
-    // Only show animation for streak gain, not loss
-    if (!isGain) return;
-
-    setState(() {
-      _showStreakAnimation = true;
+  void _triggerStreakGain() {
+    setState(() => _streakGained = true);
+    _pulseController.forward(from: 0).then((_) {
+      if (mounted) setState(() => _streakGained = false);
     });
+  }
 
-    _streakAnimController.forward(from: 0).then((_) {
-      if (mounted) {
-        setState(() {
-          _showStreakAnimation = false;
-        });
-      }
+  void _triggerStreakLoss() {
+    setState(() => _streakLost = true);
+    _pulseController.forward(from: 0).then((_) {
+      if (mounted) setState(() => _streakLost = false);
     });
   }
 
   @override
   void dispose() {
-    _streakAnimController.dispose();
     _pulseController.dispose();
-    _fireAnimController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: QuizSpacing.md,
-        vertical: QuizSpacing.sm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.5),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Question Progress
-          _buildQuestionProgress(),
-
-          // Right: Streak + Timer
-          Row(
-            children: [
-              _buildStreakIndicator(),
-              const SizedBox(width: QuizSpacing.sm),
-              _buildCircularTimer(),
-            ],
+          // Question counter
+          Text(
+            'Q ${widget.currentIndex + 1}/${widget.totalQuestions}',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+
+          const Spacer(),
+
+          // Streak indicator
+          _buildStreakIndicator(),
+
+          const SizedBox(width: 12),
+
+          // Timer badge
+          _buildTimerBadge(),
         ],
       ),
     );
   }
 
-  Widget _buildQuestionProgress() {
-    final progress = (widget.currentIndex + 1) / widget.totalQuestions;
-
-    return Row(
-      children: [
-        // Circular progress indicator
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 3,
-                backgroundColor: AppColors.primaryLighter,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.primary,
-                ),
-              ),
-              Text(
-                '${widget.currentIndex + 1}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: QuizSpacing.xs),
-        Text(
-          '/${widget.totalQuestions}',
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildStreakIndicator() {
-    final hasStreak = widget.currentStreak >= 2;
-    final multiplierText = _getMultiplierText();
+    final hasActiveStreak = widget.currentStreak >= 2;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        AnimatedContainer(
-          duration: QuizAnimations.normal,
-          padding: const EdgeInsets.symmetric(
-            horizontal: QuizSpacing.sm,
-            vertical: QuizSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: hasStreak
-                ? const Color(0xFFFFF3E0) // Warm orange background
-                : AppColors.background,
-            borderRadius: BorderRadius.circular(QuizBorderRadius.circular),
-            border: Border.all(
-              color: hasStreak
-                  ? const Color(0xFFFF9800)
-                  : AppColors.primaryLighter,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Fire icon/lottie
-              _buildFireIcon(hasStreak),
-              const SizedBox(width: 2),
-              AnimatedDefaultTextStyle(
-                duration: QuizAnimations.normal,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: hasStreak
-                      ? const Color(0xFFE65100)
-                      : AppColors.textSecondary,
-                ),
-                child: Text(multiplierText),
-              ),
-            ],
-          ),
-        ),
-
-        // Streak animation overlay (floating up notification)
-        if (_showStreakAnimation)
-          Positioned(
-            top: -35,
-            left: -15,
-            right: -15,
-            child: _buildStreakAnimationOverlay(),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildFireIcon(bool hasStreak) {
-    if (hasStreak) {
-      // Try to use Lottie fire animation, fallback to emoji
-      return SizedBox(
-        width: 24,
-        height: 24,
-        child: Lottie.asset(
-          'assets/animations/fire_streak.json',
-          controller: _fireAnimController,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            // Fallback to animated emoji
-            return AnimatedBuilder(
-              animation: _fireAnimController,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: 1.0 + 0.1 * _fireAnimController.value,
-                  child: const Text('🔥', style: TextStyle(fontSize: 16)),
-                );
-              },
-            );
-          },
-        ),
-      );
-    } else {
-      return const Text('💫', style: TextStyle(fontSize: 16));
+    // Determine glow color based on state (orange for gain, red for loss)
+    Color? glowColor;
+    if (_streakGained) {
+      glowColor = AppColors.warning; // Orange glow for streak gain
+    } else if (_streakLost) {
+      glowColor = AppColors.error;
     }
-  }
 
-  Widget _buildStreakAnimationOverlay() {
-    return AnimatedBuilder(
-      animation: _streakAnimController,
-      builder: (context, child) {
-        final opacity = (1.0 - _streakAnimController.value).clamp(0.0, 1.0);
-        final translateY = -25 * _streakAnimController.value;
-        final scale = 1.0 + 0.2 * (1.0 - _streakAnimController.value);
-
-        return Transform.translate(
-          offset: Offset(0, translateY),
-          child: Transform.scale(
-            scale: scale,
-            child: Opacity(
-              opacity: opacity,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(
+        'streak_${widget.currentStreak}_${_streakGained}_$_streakLost',
+      ),
+      duration: const Duration(milliseconds: 400),
+      tween: Tween(
+        begin: _streakGained ? 1.4 : (_streakLost ? 0.8 : 1.0),
+        end: 1.0,
+      ),
+      curve: _streakGained ? Curves.elasticOut : Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: (glowColor ?? Colors.transparent).withValues(
+                    alpha: glowColor != null ? 0.6 : 0.0,
                   ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
-                    ),
-                    borderRadius: BorderRadius.circular(QuizBorderRadius.md),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF9800).withValues(alpha: 0.5),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Use Lottie for streak gain if available
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Lottie.asset(
-                          'assets/animations/streak_gain.json',
-                          repeat: false,
-                          errorBuilder: (_, __, ___) =>
-                              const Text('🔥', style: TextStyle(fontSize: 14)),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '+1 Streak!',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
+                  blurRadius: glowColor != null ? 12 : 0,
+                  spreadRadius: glowColor != null ? 2 : 0,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Always show Lottie fire animation
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Lottie.asset(
+                    'assets/animations/fire_streak.json',
+                    fit: BoxFit.contain,
+                    repeat: true,
+                    animate: true,
                   ),
                 ),
-              ),
+                const SizedBox(width: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: Text(
+                    '${widget.currentStreak}',
+                    key: ValueKey(widget.currentStreak),
+                    style: TextStyle(
+                      color: _streakLost
+                          ? AppColors.error
+                          : (hasActiveStreak
+                                ? AppColors.warning
+                                : AppColors.textSecondary),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -355,14 +208,7 @@ class _QuizHeaderBarState extends State<QuizHeaderBar>
     );
   }
 
-  String _getMultiplierText() {
-    if (widget.currentStreak >= 5) return 'x3';
-    if (widget.currentStreak >= 3) return 'x2';
-    if (widget.currentStreak >= 2) return 'x1.5';
-    return 'x1';
-  }
-
-  Widget _buildCircularTimer() {
+  Widget _buildTimerBadge() {
     final progress = widget.timeLimit > 0
         ? widget.timeRemaining / widget.timeLimit
         : 0.0;
@@ -372,65 +218,68 @@ class _QuizHeaderBarState extends State<QuizHeaderBar>
     Color timerColor;
     if (widget.hasAnswered) {
       timerColor = AppColors.primary;
-    } else if (isCriticalTime) {
-      timerColor = QuizColors.incorrect;
     } else if (isLowTime) {
-      timerColor = QuizColors.warning;
-    } else if (progress > 0.5) {
-      timerColor = QuizColors.correct;
+      timerColor = AppColors.error;
+    } else if (progress > 0.6) {
+      timerColor = AppColors.success;
+    } else if (progress > 0.3) {
+      timerColor = AppColors.warning;
     } else {
-      timerColor = QuizColors.warning;
+      timerColor = AppColors.error;
     }
 
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        final scale = (isCriticalTime && !widget.hasAnswered)
-            ? _pulseAnimation.value
-            : 1.0;
-
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('timer_${widget.timeRemaining}'),
+      duration: const Duration(milliseconds: 200),
+      tween: Tween(begin: isCriticalTime ? 1.1 : 1.0, end: 1.0),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
         return Transform.scale(
-          scale: scale,
-          child: Container(
-            width: 48,
-            height: 48,
+          scale: isCriticalTime && !widget.hasAnswered ? scale : 1.0,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: timerColor.withValues(alpha: 0.1),
-              border: Border.all(
-                color: timerColor.withValues(alpha: 0.3),
-                width: 2,
-              ),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Circular progress
-                SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 3.5,
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(timerColor),
-                  ),
-                ),
-                // Timer text
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, size: 10, color: timerColor),
-                    Text(
-                      '${widget.timeRemaining}',
-                      style: TextStyle(
-                        fontSize: isCriticalTime ? 14 : 13,
-                        fontWeight: FontWeight.bold,
-                        color: timerColor,
-                        height: 1.0,
+              color: timerColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isCriticalTime && !widget.hasAnswered
+                  ? [
+                      BoxShadow(
+                        color: timerColor.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                        spreadRadius: 1,
                       ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.schedule_rounded, color: AppColors.white, size: 14),
+                const SizedBox(width: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.5),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    '${widget.timeRemaining}s',
+                    key: ValueKey(widget.timeRemaining),
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

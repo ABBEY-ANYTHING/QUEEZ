@@ -317,9 +317,9 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.06),
+        color: Colors.amber.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.amber.withOpacity(0.18)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
