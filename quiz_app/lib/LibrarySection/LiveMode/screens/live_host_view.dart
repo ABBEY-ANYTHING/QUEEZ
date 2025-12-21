@@ -8,6 +8,7 @@ import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 
 import '../../../models/multiplayer_models.dart';
@@ -143,6 +144,46 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  Widget _buildEndSessionAction(bool isCompleted) {
+    if (_isEndingSession) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppColors.error,
+            ),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: TextButton.icon(
+        onPressed: isCompleted ? _navigateToHome : _showEndSessionDialog,
+        icon: Icon(
+          isCompleted ? Icons.home : Icons.stop_circle_outlined,
+          size: 18,
+          color: isCompleted ? AppColors.primary : AppColors.error,
+        ),
+        label: Text(
+          isCompleted ? 'Home' : 'End',
+          style: TextStyle(
+            color: isCompleted ? AppColors.primary : AppColors.error,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
@@ -179,61 +220,11 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        automaticallyImplyLeading: false,
-        title: Text(
-          isCompleted ? 'Quiz Completed' : 'Live Leaderboard',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          // End Session button - always visible
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _isEndingSession
-                ? const Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.error,
-                      ),
-                    ),
-                  )
-                : TextButton.icon(
-                    onPressed: isCompleted
-                        ? _navigateToHome
-                        : _showEndSessionDialog,
-                    icon: Icon(
-                      isCompleted ? Icons.home : Icons.stop_circle_outlined,
-                      size: 18,
-                      color: isCompleted ? AppColors.primary : AppColors.error,
-                    ),
-                    label: Text(
-                      isCompleted ? 'Home' : 'End',
-                      style: TextStyle(
-                        color: isCompleted
-                            ? AppColors.primary
-                            : AppColors.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                  ),
-          ),
-        ],
+      appBar: UniversalAppBar(
+        title: isCompleted ? 'Quiz Completed' : 'Live Leaderboard',
+        showBackButton: false,
+        showNotificationBell: false,
+        actions: [_buildEndSessionAction(isCompleted)],
       ),
       body: SafeArea(
         child: isCompleted

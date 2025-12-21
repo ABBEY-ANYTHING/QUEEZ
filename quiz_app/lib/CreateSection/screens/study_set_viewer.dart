@@ -1,6 +1,8 @@
 import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/models/quiz.dart';
@@ -12,7 +14,7 @@ import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dar
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:lottie/lottie.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class StudySetViewer extends StatefulWidget {
   final String studySetId;
@@ -139,11 +141,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-        ),
+        appBar: const UniversalAppBar(title: 'Loading...'),
         body: Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -155,11 +153,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
     if (errorMessage != null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-        ),
+        appBar: const UniversalAppBar(title: 'Error'),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -184,18 +178,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          studySet!.name,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-      ),
+      appBar: UniversalAppBar(title: studySet!.name),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -205,20 +188,19 @@ class _StudySetViewerState extends State<StudySetViewer> {
             if (studySet!.coverImagePath != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child:
-                    studySet!.coverImagePath!.startsWith('http')
-                        ? Image.network(
-                          studySet!.coverImagePath!,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        )
-                        : Image.file(
-                          File(studySet!.coverImagePath!),
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                child: studySet!.coverImagePath!.startsWith('http')
+                    ? Image.network(
+                        studySet!.coverImagePath!,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.file(
+                        File(studySet!.coverImagePath!),
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
             if (studySet!.coverImagePath != null) const SizedBox(height: 20),
 

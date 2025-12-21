@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:quiz_app/CreateSection/screens/ai_generation_progress.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class AIStudySetConfiguration extends ConsumerStatefulWidget {
   const AIStudySetConfiguration({super.key});
@@ -93,24 +95,7 @@ class _AIStudySetConfigurationState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'AI Configuration',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          color: AppColors.textPrimary,
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: const UniversalAppBar(title: 'AI Configuration'),
       body: SingleChildScrollView(
         controller: _scrollController,
         padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 80),
@@ -155,11 +140,7 @@ class _AIStudySetConfigurationState
               color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -350,11 +331,7 @@ class _AIStudySetConfigurationState
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
