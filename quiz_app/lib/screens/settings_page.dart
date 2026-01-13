@@ -488,13 +488,85 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
                   subtitle: 'Read our privacy policy',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Privacy policy coming soon'),
-                      ),
-                    );
-                  },
+                 onTap: () {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.65, // 👈 limit height
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    height: 5,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  "Privacy Policy",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      """
+This is the Privacy Policy for Queez.
+
+1) We respect your privacy.
+2) We do not sell your data.
+3) Your account data is stored securely using Firebase.
+4) You can delete your account anytime from Settings.
+""",
+                      style: const TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                     style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFF5E8C61), // dark forest green
+    foregroundColor: Colors.white, // text/icon color
+  ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Close"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+},
                 ),
                 _buildDivider(),
                 _buildSettingItem(
