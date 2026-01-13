@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -20,7 +19,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   final ScrollController _scrollController = ScrollController();
 
   String _userName = '';
-  List<String> _interests = [];
   bool _isLoading = true;
   String _selectedCategory = 'All';
   String _searchQuery = '';
@@ -209,7 +207,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         if (doc.exists) {
           setState(() {
             _userName = doc.data()?['name'] ?? '';
-            _interests = List<String>.from(doc.data()?['interests'] ?? []);
             _isLoading = false;
           });
         }
