@@ -39,6 +39,7 @@ Widget buildSearchSection({
       child: TextField(
         controller: searchController,
         onChanged: onQueryChanged,
+        autofocus: false,
         decoration: InputDecoration(
           hintText: 'Search library...',
           hintStyle: TextStyle(
