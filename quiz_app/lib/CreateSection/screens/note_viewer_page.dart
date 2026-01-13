@@ -7,6 +7,7 @@ import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class NoteViewerPage extends StatefulWidget {
   final String noteId;
@@ -127,10 +128,12 @@ class _NoteViewerPageState extends State<NoteViewerPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: UniversalAppBar(title: _noteTitle ?? 'Note'),
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16),
-        child: QuillEditor.basic(controller: _controller),
+      body: BottomNavAwarePage(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: QuillEditor.basic(controller: _controller),
+        ),
       ),
     );
   }

@@ -442,6 +442,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     AppDialog.show(
                       context: context,
                       title: 'About Queez',
+                      showCloseIcon: true,
                       content: const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -479,7 +480,6 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ],
                       ),
-                      primaryActionText: 'Close',
                     );
                   },
                 ),
