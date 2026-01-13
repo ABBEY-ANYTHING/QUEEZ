@@ -6,6 +6,7 @@ import 'package:quiz_app/LibrarySection/widgets/library_body.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
 
 import '../../utils/quiz_design_system.dart';
@@ -154,6 +155,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: const UniversalAppBar(title: 'Library', showBackButton: false),
       body: RefreshIndicator(
         onRefresh: _reloadItems,
         color: AppColors.primary,

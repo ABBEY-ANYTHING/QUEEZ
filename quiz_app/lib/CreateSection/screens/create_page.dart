@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class CreatePage extends StatelessWidget {
   const CreatePage({super.key});
@@ -20,7 +22,8 @@ class CreatePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.background,
+      appBar: const UniversalAppBar(title: 'Create', showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
@@ -85,11 +88,7 @@ class CreatePage extends StatelessWidget {
                   color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: iconColor,
-                ),
+                child: Icon(icon, size: 32, color: iconColor),
               ),
               const SizedBox(width: 16),
               // Text content
@@ -119,11 +118,7 @@ class CreatePage extends StatelessWidget {
                 ),
               ),
               // Arrow icon
-              Icon(
-                Icons.chevron_right,
-                size: 28,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.chevron_right, size: 28, color: Colors.grey[400]),
             ],
           ),
         ),

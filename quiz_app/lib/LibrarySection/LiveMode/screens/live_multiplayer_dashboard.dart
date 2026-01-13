@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_lobby.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class LiveMultiplayerDashboard extends ConsumerStatefulWidget {
   final String quizId;
@@ -37,14 +38,14 @@ class _LiveMultiplayerDashboardState
 
       // ✅ FIXED: Fetch username from Firestore (same as profile page)
       String username = 'Player_${userId.substring(userId.length - 4)}';
-      
+
       if (user != null) {
         try {
           final userDoc = await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .get();
-          
+
           if (userDoc.exists) {
             final userData = userDoc.data();
             username = userData?['name'] ?? username;
@@ -73,11 +74,10 @@ class _LiveMultiplayerDashboardState
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => LiveMultiplayerLobby(
-                  sessionCode: widget.sessionCode,
-                  isHost: false,
-                ),
+            builder: (context) => LiveMultiplayerLobby(
+              sessionCode: widget.sessionCode,
+              isHost: false,
+            ),
           ),
         );
       }
@@ -124,23 +124,7 @@ class _LiveMultiplayerDashboardState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Live Multiplayer',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      appBar: const UniversalAppBar(title: 'Live Multiplayer'),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -224,17 +208,16 @@ class _LiveMultiplayerDashboardState
                       const SizedBox(height: 32),
                       ElevatedButton.icon(
                         onPressed: _isJoining ? null : _joinSession,
-                        icon:
-                            _isJoining
-                                ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.white,
-                                  ),
-                                )
-                                : const Icon(Icons.login, size: 20),
+                        icon: _isJoining
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
+                              )
+                            : const Icon(Icons.login, size: 20),
                         label: Text(
                           _isJoining ? 'Joining...' : 'Join Session',
                           style: const TextStyle(

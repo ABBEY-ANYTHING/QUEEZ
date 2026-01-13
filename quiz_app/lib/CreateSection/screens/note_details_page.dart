@@ -10,6 +10,7 @@ import 'package:quiz_app/CreateSection/widgets/primary_button.dart';
 import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class NoteDetailsPage extends StatefulWidget {
   final bool isStudySetMode;
@@ -44,20 +45,7 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'Create Note',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-      ),
+      appBar: const UniversalAppBar(title: 'Create Note'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -137,8 +125,8 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
                         return null;
                       },
                       autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedCategory = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedCategory = value),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -160,16 +148,15 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
 
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder:
-                                (context) => NoteEditorPage(
-                                  title: _titleController.text,
-                                  description: _descriptionController.text,
-                                  category: _selectedCategory!,
-                                  creatorId: userId,
-                                  coverImagePath: _coverImagePath,
-                                  isStudySetMode: widget.isStudySetMode,
-                                  onSaveForStudySet: widget.onSaveForStudySet,
-                                ),
+                            builder: (context) => NoteEditorPage(
+                              title: _titleController.text,
+                              description: _descriptionController.text,
+                              category: _selectedCategory!,
+                              creatorId: userId,
+                              coverImagePath: _coverImagePath,
+                              isStudySetMode: widget.isStudySetMode,
+                              onSaveForStudySet: widget.onSaveForStudySet,
+                            ),
                           ),
                         );
                       } else {
@@ -198,9 +185,9 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }

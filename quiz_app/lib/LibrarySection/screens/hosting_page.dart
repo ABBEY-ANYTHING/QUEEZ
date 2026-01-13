@@ -14,6 +14,7 @@ import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -598,13 +599,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     if (errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Error'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: const UniversalAppBar(title: 'Error'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -636,13 +631,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     if (isSessionExpired) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Session Expired'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: const UniversalAppBar(title: 'Session Expired'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -677,15 +666,9 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-        ),
+      appBar: UniversalAppBar(
+        title: '',
+        showNotificationBell: false,
         actions: [
           Container(
             margin: const EdgeInsets.only(right: QuizSpacing.md),

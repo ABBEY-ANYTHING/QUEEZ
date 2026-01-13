@@ -1,10 +1,14 @@
 import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/models/quiz.dart';
+import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
+import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
+import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
 import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
 import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
@@ -16,8 +20,9 @@ import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class StudySetDashboard extends StatefulWidget {
   final String studySetId;
@@ -724,19 +729,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: AppColors.white,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
+      appBar: UniversalAppBar(
+        title: widget.title,
+        showNotificationBell: false,
         actions: [
           if (quizzes.isNotEmpty ||
               flashcardSets.isNotEmpty ||

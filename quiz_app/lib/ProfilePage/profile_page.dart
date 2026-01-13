@@ -6,6 +6,7 @@ import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,8 +33,10 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final User? currentUser = _auth.currentUser;
       if (currentUser != null) {
-        final DocumentSnapshot userDoc =
-            await _firestore.collection('users').doc(currentUser.uid).get();
+        final DocumentSnapshot userDoc = await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
 
         if (userDoc.exists) {
           setState(() {
@@ -134,68 +137,58 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body:
-          _isLoading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
-              : SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      // Header with Profile text and Edit button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Profile',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+      appBar: const UniversalAppBar(title: 'Profile', showBackButton: false),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    // Edit button aligned to the right
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          onPressed: _editProfile,
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: AppColors.primary,
+                            size: 22,
                           ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.background,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: IconButton(
-                              onPressed: _editProfile,
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                color: AppColors.primary,
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 32),
+                    ),
+                    const SizedBox(height: 16),
 
-                      if (_userModel == null)
-                        const Center(
-                          child: Text(
-                            'User data not found',
-                            style: TextStyle(color: AppColors.textPrimary),
-                          ),
-                        )
-                      else ...[
-                        _buildProfileCard(),
-                        const SizedBox(height: 16),
-                        _buildInfoCards(),
-                        const SizedBox(height: 16),
-                        if (_userModel!.interests.isNotEmpty)
-                          _buildInterestsCard(),
-                        const SizedBox(height: 24),
-                        _buildSignOutButton(),
-                        SizedBox(height: kBottomNavbarHeight),
-                      ],
+                    if (_userModel == null)
+                      const Center(
+                        child: Text(
+                          'User data not found',
+                          style: TextStyle(color: AppColors.textPrimary),
+                        ),
+                      )
+                    else ...[
+                      _buildProfileCard(),
+                      const SizedBox(height: 16),
+                      _buildInfoCards(),
+                      const SizedBox(height: 16),
+                      if (_userModel!.interests.isNotEmpty)
+                        _buildInterestsCard(),
+                      const SizedBox(height: 24),
+                      _buildSignOutButton(),
+                      SizedBox(height: kBottomNavbarHeight),
                     ],
-                  ),
+                  ],
                 ),
               ),
+            ),
     );
   }
 
@@ -388,27 +381,26 @@ class _ProfilePageState extends State<ProfilePage> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children:
-                _userModel!.interests.map((interest) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Text(
-                      interest,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  );
-                }).toList(),
+            children: _userModel!.interests.map((interest) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Text(
+                  interest,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/widgets/reconnection_overlay.da
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 import 'live_host_view.dart';
 
@@ -101,16 +102,7 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
+        appBar: const UniversalAppBar(title: 'Connecting...'),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -148,23 +140,8 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.isHost ? 'Host Lobby' : 'Waiting Room',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
+      appBar: UniversalAppBar(
+        title: widget.isHost ? 'Host Lobby' : 'Waiting Room',
       ),
       body: ReconnectionOverlay(
         child: SafeArea(

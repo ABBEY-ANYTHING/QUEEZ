@@ -12,6 +12,7 @@ import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class QuizPlayScreen extends StatefulWidget {
   final QuizLibraryItem quizItem;
@@ -89,7 +90,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
 
   void _startQuestionTimer() {
     _countdownTimer?.cancel();
-    if (_quizAttempt == null || _currentIndex >= _quizAttempt!.questions.length) {
+    if (_quizAttempt == null ||
+        _currentIndex >= _quizAttempt!.questions.length) {
       return;
     }
 
@@ -214,28 +216,22 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     }
   }
 
+  Widget _buildCloseButton() {
+    return IconButton(
+      icon: const Icon(Icons.close, color: AppColors.textPrimary),
+      onPressed: () => Navigator.of(context).pop(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          widget.quizItem.title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
+      appBar: UniversalAppBar(
+        title: widget.quizItem.title,
+        showBackButton: false,
+        showNotificationBell: false,
+        leading: _buildCloseButton(),
       ),
       body: SafeArea(child: _buildBody()),
     );
