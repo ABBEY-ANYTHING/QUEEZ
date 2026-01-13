@@ -12,27 +12,53 @@ part 'library_provider.g.dart';
 class QuizLibrary extends _$QuizLibrary {
   @override
   Future<List<LibraryItem>> build() async {
+    debugPrint('🔵 [LIBRARY_PROVIDER] build() called - starting data fetch');
+
     // Use Firebase Auth directly as the source of truth for user state
     final user = FirebaseAuth.instance.currentUser;
 
-    debugPrint('📚 LIBRARY_PROVIDER - Firebase user: ${user?.uid}');
+    debugPrint('🔵 [LIBRARY_PROVIDER] Firebase user: ${user?.uid}');
 
     // Only fetch if the user is logged in (Firebase user exists)
     if (user != null) {
       debugPrint(
-        '📚 LIBRARY_PROVIDER - Fetching library for user: ${user.uid}',
+        '🔵 [LIBRARY_PROVIDER] Fetching library for user: ${user.uid}',
       );
-      final items = await UnifiedLibraryService.getUnifiedLibrary(user.uid);
 
-      // Fetch usernames from Firestore for items with originalOwner
-      await _fetchUsernames(items);
+      try {
+        final items = await UnifiedLibraryService.getUnifiedLibrary(user.uid);
+        debugPrint(
+          '🟢 [LIBRARY_PROVIDER] UnifiedLibraryService returned ${items.length} items',
+        );
 
-      debugPrint('📚 LIBRARY_PROVIDER - Fetched ${items.length} items');
-      return items;
+        // Log item titles for debugging
+        for (var i = 0; i < items.length && i < 5; i++) {
+          debugPrint(
+            '🔵 [LIBRARY_PROVIDER] Item $i: ${items[i].title} (${items[i].type})',
+          );
+        }
+        if (items.length > 5) {
+          debugPrint(
+            '🔵 [LIBRARY_PROVIDER] ... and ${items.length - 5} more items',
+          );
+        }
+
+        // Fetch usernames from Firestore for items with originalOwner
+        await _fetchUsernames(items);
+
+        debugPrint(
+          '🟢 [LIBRARY_PROVIDER] build() completed with ${items.length} items',
+        );
+        return items;
+      } catch (e, stackTrace) {
+        debugPrint('🔴 [LIBRARY_PROVIDER] ERROR in build(): $e');
+        debugPrint('🔴 [LIBRARY_PROVIDER] Stack trace: $stackTrace');
+        rethrow;
+      }
     } else {
       // Return an empty list if not logged in.
       debugPrint(
-        '📚 LIBRARY_PROVIDER - User not logged in, returning empty list',
+        '🔴 [LIBRARY_PROVIDER] User not logged in, returning empty list',
       );
       return [];
     }
@@ -104,7 +130,10 @@ class QuizLibrary extends _$QuizLibrary {
 
   /// Reload library from server
   Future<void> reload() async {
+    debugPrint('🔵 [LIBRARY_PROVIDER] reload() called');
     state = const AsyncValue.loading();
+    debugPrint('🔵 [LIBRARY_PROVIDER] State set to loading');
     state = await AsyncValue.guard(() => build());
+    debugPrint('🟢 [LIBRARY_PROVIDER] reload() completed, state updated');
   }
 }

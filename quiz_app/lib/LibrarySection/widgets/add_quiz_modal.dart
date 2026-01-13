@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_dashboard.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
@@ -19,20 +21,19 @@ void showAddQuizModal(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: AppColors.primary.withValues(alpha: 0.3),
-    builder: (context) => AddQuizModalContent(onQuizAdded: onQuizAdded),
+    builder: (context) => const AddQuizModalContent(),
   );
 }
 
-class AddQuizModalContent extends StatefulWidget {
-  final Future<void> Function() onQuizAdded;
-
-  const AddQuizModalContent({super.key, required this.onQuizAdded});
+class AddQuizModalContent extends ConsumerStatefulWidget {
+  const AddQuizModalContent({super.key});
 
   @override
-  State<AddQuizModalContent> createState() => _AddQuizModalContentState();
+  ConsumerState<AddQuizModalContent> createState() =>
+      _AddQuizModalContentState();
 }
 
-class _AddQuizModalContentState extends State<AddQuizModalContent> {
+class _AddQuizModalContentState extends ConsumerState<AddQuizModalContent> {
   final TextEditingController _quizCodeController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
@@ -45,8 +46,12 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
 
   Future<void> _handleAddQuiz() async {
     final quizCode = _quizCodeController.text.trim();
+    debugPrint(
+      '🔵 [ADD_QUIZ_MODAL] _handleAddQuiz called with code: $quizCode',
+    );
 
     if (quizCode.isEmpty) {
+      debugPrint('🔴 [ADD_QUIZ_MODAL] Quiz code is empty, showing error');
       setState(() {
         _errorMessage = 'Please enter a quiz code';
       });
@@ -57,19 +62,36 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
       _isLoading = true;
       _errorMessage = null;
     });
+    debugPrint('🔵 [ADD_QUIZ_MODAL] Set loading state to true');
 
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
+      debugPrint('🔵 [ADD_QUIZ_MODAL] Current user ID: $userId');
+
       if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       // Add quiz to user's library via service
+      debugPrint('🔵 [ADD_QUIZ_MODAL] Calling QuizService.addQuizToLibrary...');
       final result = await QuizService.addQuizToLibrary(userId, quizCode);
+      debugPrint(
+        '🟢 [ADD_QUIZ_MODAL] QuizService.addQuizToLibrary returned: $result',
+      );
 
-      if (!mounted) return;
+      if (!mounted) {
+        debugPrint(
+          '🔴 [ADD_QUIZ_MODAL] Widget not mounted after API call, returning',
+        );
+        return;
+      }
+
+      debugPrint('🔵 [ADD_QUIZ_MODAL] Result mode: ${result['mode']}');
 
       if (result['mode'] == 'live_multiplayer') {
+        debugPrint(
+          '🔵 [ADD_QUIZ_MODAL] Live multiplayer mode - navigating to dashboard',
+        );
         // For live multiplayer, open the dashboard without saving
         Navigator.pop(context); // Close the modal
         Navigator.push(
@@ -91,40 +113,80 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
       } else {
         // For self-paced and timed_individual, the quiz is saved
         final quizTitle = result['quiz_title'] ?? 'Quiz';
+        debugPrint(
+          '🟢 [ADD_QUIZ_MODAL] Quiz added successfully! Title: $quizTitle',
+        );
+        debugPrint(
+          '🔵 [ADD_QUIZ_MODAL] Full result details: ${result['quiz_details']}',
+        );
+
+        // Store the navigator and overlay context before closing
+        final navigator = Navigator.of(context);
+        final overlayContext = Overlay.of(context).context;
+        debugPrint('🔵 [ADD_QUIZ_MODAL] Stored navigator and overlay context');
 
         // Close the modal first
-        Navigator.pop(context);
+        debugPrint('🔵 [ADD_QUIZ_MODAL] Closing modal...');
+        navigator.pop();
 
-        // Show success dialog (without auto-dismiss callback)
-        final dialogContext = context;
-        if (context.mounted) {
-          // Show the dialog but don't wait for it
+        // Show success dialog using the main navigator's context
+        if (overlayContext.mounted) {
+          debugPrint('🔵 [ADD_QUIZ_MODAL] Showing success dialog...');
           QuizSavedDialog.show(
-            dialogContext,
+            overlayContext,
             title: 'Success!',
             message: 'Quiz "$quizTitle" has been added to your library!',
             onDismiss: () async {
-              // This will be called when dialog auto-dismisses
+              debugPrint('🔵 [ADD_QUIZ_MODAL] Success dialog dismissed');
             },
+          );
+        } else {
+          debugPrint(
+            '🔴 [ADD_QUIZ_MODAL] Overlay context not mounted, cannot show dialog',
           );
         }
 
-        // Reload quizzes from server in background
-        await widget.onQuizAdded();
+        // Invalidate the library provider to trigger a reload
+        debugPrint('🔵 [ADD_QUIZ_MODAL] Invalidating quizLibraryProvider...');
+        ref.invalidate(quizLibraryProvider);
+        debugPrint('🟢 [ADD_QUIZ_MODAL] quizLibraryProvider invalidated');
 
-        // Sleep for half a second
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Wait for the provider to rebuild with fresh data
+        debugPrint(
+          '🔵 [ADD_QUIZ_MODAL] Waiting 300ms for provider to rebuild...',
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+        debugPrint('🟢 [ADD_QUIZ_MODAL] Wait complete, setting search query');
 
-        // Set the search query to the quiz title
+        // Set the search query to the quiz title so it appears in results
+        debugPrint(
+          '🔵 [ADD_QUIZ_MODAL] Calling LibraryPage.setSearchQuery("$quizTitle")...',
+        );
         LibraryPage.setSearchQuery(quizTitle);
-        if (context.mounted) {
-          // Close the dialog after setting search
-          if (Navigator.canPop(dialogContext)) {
-            Navigator.of(dialogContext).pop();
+        debugPrint('🟢 [ADD_QUIZ_MODAL] Search query set');
+
+        // Close the dialog after a short delay
+        debugPrint(
+          '🔵 [ADD_QUIZ_MODAL] Waiting 1500ms before closing dialog...',
+        );
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (overlayContext.mounted) {
+          if (navigator.canPop()) {
+            debugPrint('🔵 [ADD_QUIZ_MODAL] Closing success dialog...');
+            navigator.pop();
+          } else {
+            debugPrint('🔴 [ADD_QUIZ_MODAL] Navigator cannot pop');
           }
+        } else {
+          debugPrint(
+            '🔴 [ADD_QUIZ_MODAL] Overlay context not mounted after delay',
+          );
         }
+        debugPrint('🟢 [ADD_QUIZ_MODAL] _handleAddQuiz completed successfully');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('🔴 [ADD_QUIZ_MODAL] ERROR: $e');
+      debugPrint('🔴 [ADD_QUIZ_MODAL] Stack trace: $stackTrace');
       setState(() {
         _isLoading = false;
         _errorMessage = e.toString().replaceAll('Exception: ', '');
