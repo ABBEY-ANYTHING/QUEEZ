@@ -7,6 +7,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/widgets/reconnection_overlay.da
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 import 'live_host_view.dart';
@@ -146,7 +147,7 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
       body: ReconnectionOverlay(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.fromLTRB(24, 24, 24, kBottomNavbarHeight + 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -337,7 +338,7 @@ class _LiveMultiplayerLobbyState extends ConsumerState<LiveMultiplayerLobby> {
                         ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // Action Button
                 if (widget.isHost)

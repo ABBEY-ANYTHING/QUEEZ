@@ -135,133 +135,132 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: bottomPadding > 0 ? bottomPadding + 20 : safeAreaBottom + 100,
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(QuizBorderRadius.xl),
-            topRight: Radius.circular(QuizBorderRadius.xl),
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(QuizBorderRadius.xl),
+          topRight: Radius.circular(QuizBorderRadius.xl),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(QuizSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textSecondary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
-                  ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          QuizSpacing.lg,
+          QuizSpacing.lg,
+          QuizSpacing.lg,
+          bottomPadding > 0 ? bottomPadding + QuizSpacing.lg : 120,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
                 ),
               ),
-              const SizedBox(height: QuizSpacing.lg),
+            ),
+            const SizedBox(height: QuizSpacing.lg),
 
-              // Title
-              const Text(
-                'Join a quiz',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+            // Title
+            const Text(
+              'Add a quiz',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: QuizSpacing.sm),
+
+            // Description
+            Text(
+              'Add a quiz made by other users',
+              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: QuizSpacing.lg),
+
+            // Text field
+            TextField(
+              controller: _quizCodeController,
+              enabled: !_isLoading,
+              textCapitalization: TextCapitalization.characters,
+              maxLength: 6,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+              ],
+              onChanged: (value) {
+                // Capitalize the text as user types
+                final capitalizedValue = value.toUpperCase();
+                if (value != capitalizedValue) {
+                  _quizCodeController.value = _quizCodeController.value
+                      .copyWith(
+                        text: capitalizedValue,
+                        selection: TextSelection.collapsed(
+                          offset: capitalizedValue.length,
+                        ),
+                      );
+                }
+
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Enter quiz code',
+                hintStyle: TextStyle(
+                  color: AppColors.textSecondary.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w500,
                 ),
-              ),
-              const SizedBox(height: QuizSpacing.sm),
-
-              // Description
-              Text(
-                'Add a quiz made by other users',
-                style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: QuizSpacing.lg),
-
-              // Text field
-              TextField(
-                controller: _quizCodeController,
-                enabled: !_isLoading,
-                textCapitalization: TextCapitalization.characters,
-                maxLength: 6,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-                ],
-                onChanged: (value) {
-                  // Capitalize the text as user types
-                  final capitalizedValue = value.toUpperCase();
-                  if (value != capitalizedValue) {
-                    _quizCodeController.value = _quizCodeController.value
-                        .copyWith(
-                          text: capitalizedValue,
-                          selection: TextSelection.collapsed(
-                            offset: capitalizedValue.length,
-                          ),
-                        );
-                  }
-
-                  if (_errorMessage != null) {
-                    setState(() {
-                      _errorMessage = null;
-                    });
-                  }
-                },
-                decoration: InputDecoration(
-                  hintText: 'Enter quiz code',
-                  hintStyle: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.6),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(QuizBorderRadius.md),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(QuizBorderRadius.md),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: QuizSpacing.md,
-                    vertical: QuizSpacing.md,
-                  ),
-                  errorText: _errorMessage,
-                  errorStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
                   ),
                 ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: QuizSpacing.md,
+                  vertical: QuizSpacing.md,
                 ),
-                onSubmitted: (_) => _handleAddQuiz(),
+                errorText: _errorMessage,
+                errorStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              const SizedBox(height: QuizSpacing.lg),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              onSubmitted: (_) => _handleAddQuiz(),
+            ),
+            const SizedBox(height: QuizSpacing.lg),
 
-              // Add button
-              AppButton.primary(
-                text: 'Join Quiz',
-                onPressed: _handleAddQuiz,
-                isLoading: _isLoading,
-                fullWidth: true,
-                size: AppButtonSize.large,
-              ),
-            ],
-          ),
+            // Add button
+            AppButton.primary(
+              text: 'Add Quiz',
+              onPressed: _handleAddQuiz,
+              isLoading: _isLoading,
+              fullWidth: true,
+              size: AppButtonSize.medium,
+            ),
+          ],
         ),
       ),
     );
