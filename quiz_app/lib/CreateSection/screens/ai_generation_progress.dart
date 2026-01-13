@@ -7,6 +7,7 @@ import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
 
 class AIGenerationProgress extends ConsumerStatefulWidget {
   const AIGenerationProgress({super.key});
@@ -120,45 +121,34 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
   }
 
   void _showErrorDialog(String title, String message) {
-    showDialog(
+    AppDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 28),
-            const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(message, style: const TextStyle(fontSize: 15)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Go Back',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _startGeneration();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      title: title,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(message, style: const TextStyle(fontSize: 15)),
               ),
-            ),
-            child: const Text('Retry'),
+            ],
           ),
         ],
       ),
+      secondaryActionText: 'Go Back',
+      secondaryActionCallback: () {
+        Navigator.pop(context);
+        Navigator.pop(context);
+      },
+      primaryActionText: 'Retry',
+      primaryActionCallback: () {
+        Navigator.pop(context);
+        _startGeneration();
+      },
     );
   }
 
@@ -171,34 +161,15 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop || !state.isGenerating) return;
 
-        final shouldExit = await showDialog<bool>(
+        final shouldExit = await AppDialog.show<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: const Text('Cancel Generation?'),
-            content: const Text(
+          title: 'Cancel Generation?',
+          content:
               'Are you sure you want to cancel? Your progress will be lost.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Continue'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
+          secondaryActionText: 'Continue',
+          secondaryActionCallback: () => Navigator.pop(context, false),
+          primaryActionText: 'Cancel',
+          primaryActionCallback: () => Navigator.pop(context, true),
         );
 
         if (shouldExit == true && context.mounted) {

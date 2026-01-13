@@ -20,6 +20,7 @@ import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
 
 class StudySetDashboard extends StatefulWidget {
   final String studySetId;
@@ -388,65 +389,55 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
 
       if (!mounted) return;
 
-      showDialog(
+      AppDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Select Quiz'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: quizzes.length,
-              itemBuilder: (context, index) {
-                final quiz = quizzes[index];
-                // Handle both possible field names from API
-                final questionCount =
-                    quiz['questionCount'] ?? quiz['questions_count'] ?? 0;
+        title: 'Select Quiz',
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: quizzes.length,
+            itemBuilder: (context, index) {
+              final quiz = quizzes[index];
+              // Handle both possible field names from API
+              final questionCount =
+                  quiz['questionCount'] ?? quiz['questions_count'] ?? 0;
 
-                return ListTile(
-                  leading: const Icon(Icons.quiz_outlined),
-                  title: Text(quiz['title'] ?? 'Untitled'),
-                  subtitle: Text('$questionCount questions'),
-                  onTap: () {
-                    // Convert the map to Quiz object and add to study set
-                    final quizObj = Quiz(
-                      id:
-                          quiz['id'] ??
-                          quiz['_id'], // Important: include the ID
-                      title: quiz['title'] ?? '',
-                      description: quiz['description'] ?? '',
-                      language: quiz['language'] ?? 'English',
-                      category: quiz['category'] ?? 'Other',
-                      creatorId: userId,
-                      coverImagePath: quiz['coverImagePath'],
-                      questions: [], // Questions will be loaded when needed
+              return ListTile(
+                leading: const Icon(Icons.quiz_outlined),
+                title: Text(quiz['title'] ?? 'Untitled'),
+                subtitle: Text('$questionCount questions'),
+                onTap: () {
+                  // Convert the map to Quiz object and add to study set
+                  final quizObj = Quiz(
+                    id: quiz['id'] ?? quiz['_id'], // Important: include the ID
+                    title: quiz['title'] ?? '',
+                    description: quiz['description'] ?? '',
+                    language: quiz['language'] ?? 'English',
+                    category: quiz['category'] ?? 'Other',
+                    creatorId: userId,
+                    coverImagePath: quiz['coverImagePath'],
+                    questions: [], // Questions will be loaded when needed
+                  );
+                  StudySetCacheManager.instance.addQuizToStudySet(quizObj);
+
+                  Navigator.of(context).pop(); // Close dialog
+
+                  if (mounted) {
+                    setState(() {
+                      _loadCachedItems();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Quiz added to study set')),
                     );
-                    StudySetCacheManager.instance.addQuizToStudySet(quizObj);
-
-                    Navigator.of(context).pop(); // Close dialog
-
-                    if (mounted) {
-                      setState(() {
-                        _loadCachedItems();
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Quiz added to study set'),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
+                  }
+                },
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
+        secondaryActionText: 'Cancel',
+        secondaryActionCallback: () => Navigator.of(context).pop(),
       );
     } catch (e) {
       if (!mounted) return;
@@ -492,65 +483,57 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
 
       if (!mounted) return;
 
-      showDialog(
+      AppDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Select Flashcard Set'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: flashcardSets.length,
-              itemBuilder: (context, index) {
-                final flashcardSet = flashcardSets[index];
-                final cardCount =
-                    flashcardSet['cardCount'] ??
-                    flashcardSet['cards_count'] ??
-                    0;
+        title: 'Select Flashcard Set',
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: flashcardSets.length,
+            itemBuilder: (context, index) {
+              final flashcardSet = flashcardSets[index];
+              final cardCount =
+                  flashcardSet['cardCount'] ?? flashcardSet['cards_count'] ?? 0;
 
-                return ListTile(
-                  leading: const Icon(Icons.style_outlined),
-                  title: Text(flashcardSet['title'] ?? 'Untitled'),
-                  subtitle: Text('$cardCount cards'),
-                  onTap: () {
-                    // Convert the map to FlashcardSet object and add to study set
-                    final flashcardSetObj = FlashcardSet(
-                      id: flashcardSet['id'] ?? flashcardSet['_id'],
-                      title: flashcardSet['title'] ?? '',
-                      description: flashcardSet['description'] ?? '',
-                      category: flashcardSet['category'] ?? 'Other',
-                      creatorId: userId,
-                      coverImagePath: flashcardSet['coverImagePath'],
-                      cards: [], // Cards will be loaded when needed
+              return ListTile(
+                leading: const Icon(Icons.style_outlined),
+                title: Text(flashcardSet['title'] ?? 'Untitled'),
+                subtitle: Text('$cardCount cards'),
+                onTap: () {
+                  // Convert the map to FlashcardSet object and add to study set
+                  final flashcardSetObj = FlashcardSet(
+                    id: flashcardSet['id'] ?? flashcardSet['_id'],
+                    title: flashcardSet['title'] ?? '',
+                    description: flashcardSet['description'] ?? '',
+                    category: flashcardSet['category'] ?? 'Other',
+                    creatorId: userId,
+                    coverImagePath: flashcardSet['coverImagePath'],
+                    cards: [], // Cards will be loaded when needed
+                  );
+                  StudySetCacheManager.instance.addFlashcardSetToStudySet(
+                    flashcardSetObj,
+                  );
+
+                  Navigator.of(context).pop(); // Close dialog
+
+                  if (mounted) {
+                    setState(() {
+                      _loadCachedItems();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Flashcard set added to study set'),
+                      ),
                     );
-                    StudySetCacheManager.instance.addFlashcardSetToStudySet(
-                      flashcardSetObj,
-                    );
-
-                    Navigator.of(context).pop(); // Close dialog
-
-                    if (mounted) {
-                      setState(() {
-                        _loadCachedItems();
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Flashcard set added to study set'),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
+                  }
+                },
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
+        secondaryActionText: 'Cancel',
+        secondaryActionCallback: () => Navigator.of(context).pop(),
       );
     } catch (e) {
       if (!mounted) return;
@@ -592,59 +575,51 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
 
       if (!mounted) return;
 
-      showDialog(
+      AppDialog.show(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Select Note'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: notes.length,
-              itemBuilder: (context, index) {
-                final note = notes[index];
+        title: 'Select Note',
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              final note = notes[index];
 
-                return ListTile(
-                  leading: const Icon(Icons.note_outlined),
-                  title: Text(note['title'] ?? 'Untitled'),
-                  subtitle: Text(note['category'] ?? 'Uncategorized'),
-                  onTap: () {
-                    // Convert the map to Note object and add to study set
-                    final noteObj = Note(
-                      id: note['id'] ?? note['_id'],
-                      title: note['title'] ?? '',
-                      description: note['description'] ?? '',
-                      category: note['category'] ?? 'Other',
-                      creatorId: userId,
-                      content: note['content'] ?? '',
-                      coverImagePath: note['coverImagePath'],
+              return ListTile(
+                leading: const Icon(Icons.note_outlined),
+                title: Text(note['title'] ?? 'Untitled'),
+                subtitle: Text(note['category'] ?? 'Uncategorized'),
+                onTap: () {
+                  // Convert the map to Note object and add to study set
+                  final noteObj = Note(
+                    id: note['id'] ?? note['_id'],
+                    title: note['title'] ?? '',
+                    description: note['description'] ?? '',
+                    category: note['category'] ?? 'Other',
+                    creatorId: userId,
+                    content: note['content'] ?? '',
+                    coverImagePath: note['coverImagePath'],
+                  );
+                  StudySetCacheManager.instance.addNoteToStudySet(noteObj);
+
+                  Navigator.of(context).pop(); // Close dialog
+
+                  if (mounted) {
+                    setState(() {
+                      _loadCachedItems();
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Note added to study set')),
                     );
-                    StudySetCacheManager.instance.addNoteToStudySet(noteObj);
-
-                    Navigator.of(context).pop(); // Close dialog
-
-                    if (mounted) {
-                      setState(() {
-                        _loadCachedItems();
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Note added to study set'),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
-            ),
+                  }
+                },
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
+        secondaryActionText: 'Cancel',
+        secondaryActionCallback: () => Navigator.of(context).pop(),
       );
     } catch (e) {
       if (!mounted) return;

@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
+import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/core/app_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -49,23 +50,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleSignOut() async {
-    final shouldSignOut = await showDialog<bool>(
+    final shouldSignOut = await AppDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
+      title: 'Sign Out',
+      content: 'Are you sure you want to sign out?',
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () => Navigator.pop(context, false),
+      primaryActionText: 'Sign Out',
+      primaryActionCallback: () => Navigator.pop(context, true),
     );
 
     if (shouldSignOut == true && mounted) {
@@ -88,80 +80,50 @@ class _SettingsPageState extends State<SettingsPage> {
     if (_isDeleting) return;
 
     // First confirmation
-    final firstConfirm = await showDialog<bool>(
+    final firstConfirm = await AppDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Delete Account',
-          style: TextStyle(color: AppColors.error),
-        ),
-        content: const Text(
+      title: 'Delete Account',
+      content:
           'This will permanently delete your account and all associated data. This action cannot be undone.\n\nAre you sure you want to continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () => Navigator.pop(context, false),
+      primaryActionText: 'Continue',
+      primaryActionCallback: () => Navigator.pop(context, true),
     );
 
     if (firstConfirm != true || !mounted) return;
 
     // Second confirmation with password
     final TextEditingController passwordController = TextEditingController();
-    final secondConfirm = await showDialog<bool>(
+    final secondConfirm = await AppDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Confirm Deletion',
-          style: TextStyle(color: AppColors.error),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Please enter your password to confirm account deletion:',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.error,
-                    width: 2,
-                  ),
-                ),
+      title: 'Confirm Deletion',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Please enter your password to confirm account deletion:'),
+          const SizedBox(height: 16),
+          TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.error, width: 2),
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete Account'),
           ),
         ],
       ),
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () => Navigator.pop(context, false),
+      primaryActionText: 'Delete Account',
+      primaryActionCallback: () => Navigator.pop(context, true),
     );
 
     if (secondConfirm != true || !mounted) {
@@ -200,19 +162,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
       // Show loading dialog
       if (mounted) {
-        showDialog(
+        AppDialog.show(
           context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Deleting account...'),
-              ],
-            ),
+          title: 'Please Wait',
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Deleting account...'),
+            ],
           ),
+          dismissible: false,
         );
       }
 
@@ -279,24 +240,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleChangePassword() async {
-    final shouldReset = await showDialog<bool>(
+    final shouldReset = await AppDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Change Password'),
-        content: const Text(
+      title: 'Change Password',
+      content:
           'We\'ll send you a password reset link to your email address. Click the link in the email to create a new password.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Send Reset Link'),
-          ),
-        ],
-      ),
+      secondaryActionText: 'Cancel',
+      secondaryActionCallback: () => Navigator.pop(context, false),
+      primaryActionText: 'Send Reset Link',
+      primaryActionCallback: () => Navigator.pop(context, true),
     );
 
     if (shouldReset != true || !mounted) return;
