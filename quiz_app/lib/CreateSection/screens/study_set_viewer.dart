@@ -180,7 +180,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
       backgroundColor: AppColors.background,
       appBar: UniversalAppBar(title: studySet!.name),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

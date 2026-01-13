@@ -98,7 +98,7 @@ class _AIStudySetConfigurationState
       appBar: const UniversalAppBar(title: 'AI Configuration'),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 80),
+        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -109,11 +109,12 @@ class _AIStudySetConfigurationState
             _buildUploadSection(state, notifier),
             const SizedBox(height: 24),
             _buildAIInfoBox(),
+            const SizedBox(height: 32),
+            // Generate Button - now part of scrollable content
+            _buildGenerateButton(state),
           ],
         ),
       ),
-      floatingActionButton: _buildGenerateButton(state),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 

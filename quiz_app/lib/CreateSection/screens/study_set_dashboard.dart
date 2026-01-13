@@ -70,7 +70,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
   void _showAddItemSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -83,7 +83,12 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         builder: (context, scrollController) => SingleChildScrollView(
           controller: scrollController,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 40.0),
+            padding: EdgeInsets.fromLTRB(
+              24.0,
+              24.0,
+              24.0,
+              kBottomNavbarHeight + 24,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

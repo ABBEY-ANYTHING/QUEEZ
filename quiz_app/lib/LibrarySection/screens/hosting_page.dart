@@ -701,7 +701,12 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(QuizSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            QuizSpacing.lg,
+            QuizSpacing.lg,
+            QuizSpacing.lg,
+            120,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

@@ -170,7 +170,7 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
 
               // Title
               const Text(
-                'Add a quiz',
+                'Join a quiz',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -254,7 +254,7 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
 
               // Add button
               AppButton.primary(
-                text: 'Add Quiz',
+                text: 'Join Quiz',
                 onPressed: _handleAddQuiz,
                 isLoading: _isLoading,
                 fullWidth: true,

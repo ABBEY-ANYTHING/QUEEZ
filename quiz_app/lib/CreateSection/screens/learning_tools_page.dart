@@ -3,8 +3,8 @@ import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class LearningToolsPage extends StatelessWidget {
   const LearningToolsPage({super.key});
@@ -27,8 +27,8 @@ class LearningToolsPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: const UniversalAppBar(title: 'Learning Tools'),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
+        child: NavbarAwareScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
               CustomCard(

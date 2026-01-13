@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class CreatePage extends StatelessWidget {
   const CreatePage({super.key});
@@ -25,8 +25,8 @@ class CreatePage extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: const UniversalAppBar(title: 'Create', showBackButton: false),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
+        child: NavbarAwareScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
               _buildCreateCard(

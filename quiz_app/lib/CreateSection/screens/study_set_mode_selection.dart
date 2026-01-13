@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/screens/ai_study_set_configuration.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_card.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
-import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class StudySetModeSelection extends StatelessWidget {
   const StudySetModeSelection({super.key});
@@ -21,9 +23,11 @@ class StudySetModeSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: const UniversalAppBar(title: 'Create Study Set'),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(20.0, 20.0, 20.0, kBottomNavbarHeight),
+        child: NavbarAwareScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
               CustomCard(

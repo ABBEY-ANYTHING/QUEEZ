@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../utils/color.dart';
 import '../../utils/quiz_design_system.dart';
 
@@ -62,10 +63,7 @@ class AppDialog extends StatelessWidget {
         builder: (context, value, child) {
           return Transform.scale(
             scale: 0.8 + (0.2 * value),
-            child: Opacity(
-              opacity: value,
-              child: child,
-            ),
+            child: Opacity(opacity: value, child: child),
           );
         },
         child: Dialog(
@@ -91,7 +89,7 @@ class AppDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: QuizSpacing.md),
-                
+
                 // Content
                 if (content is String)
                   Text(
@@ -104,46 +102,62 @@ class AppDialog extends StatelessWidget {
                   )
                 else if (content is Widget)
                   content,
-                
+
                 const SizedBox(height: QuizSpacing.lg),
-                
+
                 // Actions
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     // Secondary action (if provided)
                     if (secondaryActionText != null) ...[
-                      TextButton(
-                        onPressed: secondaryActionCallback ?? () => Navigator.of(context).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: QuizSpacing.lg,
-                            vertical: QuizSpacing.md,
+                      Flexible(
+                        child: TextButton(
+                          onPressed:
+                              secondaryActionCallback ??
+                              () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textSecondary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: QuizSpacing.md,
+                              vertical: QuizSpacing.md,
+                            ),
+                          ),
+                          child: Text(
+                            secondaryActionText!,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        child: Text(secondaryActionText!),
                       ),
                       const SizedBox(width: QuizSpacing.sm),
                     ],
-                    
+
                     // Primary action (if provided)
                     if (primaryActionText != null)
-                      ElevatedButton(
-                        onPressed: primaryActionCallback ?? () => Navigator.of(context).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: QuizSpacing.lg,
-                            vertical: QuizSpacing.md,
+                      Flexible(
+                        child: ElevatedButton(
+                          onPressed:
+                              primaryActionCallback ??
+                              () => Navigator.of(context).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: QuizSpacing.md,
+                              vertical: QuizSpacing.md,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                QuizBorderRadius.sm,
+                              ),
+                            ),
+                            elevation: 0,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
+                          child: Text(
+                            primaryActionText!,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          elevation: 0,
                         ),
-                        child: Text(primaryActionText!),
                       ),
                   ],
                 ),
