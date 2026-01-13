@@ -23,24 +23,53 @@ class FlashcardPlayScreen extends StatefulWidget {
 }
 
 class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
-  final CardSwiperController _controller = CardSwiperController();
   FlashcardSet? _flashcardSet;
-  int? _currentIndex = 0;
+  List<Flashcard> _cards = [];
+  List<Flashcard> _originalCards = [];
+  int _totalCards = 0;
+  int _correctCount = 0;
+  bool _isCompleted = false;
+
+  // History for undo - stores the card and whether it was correct
+  final List<_SwipeEntry> _history = [];
+
+  // Key to force rebuild of CardSwiper when cards change
+  int _swiperKey = 0;
+  CardSwiperController? _controller;
 
   @override
   void initState() {
     super.initState();
-    // Use preloaded flashcard set if available, otherwise fetch
+    _controller = CardSwiperController();
     if (widget.preloadedFlashcardSet != null) {
       _flashcardSet = widget.preloadedFlashcardSet;
+      _initializeCards();
     } else {
       _loadFlashcardSet();
     }
   }
 
+  void _initializeCards() {
+    if (_flashcardSet != null && _flashcardSet!.cards.isNotEmpty) {
+      _originalCards = List.from(_flashcardSet!.cards);
+      _cards = List.from(_flashcardSet!.cards);
+      _totalCards = _originalCards.length;
+      _correctCount = 0;
+      _isCompleted = false;
+      _history.clear();
+      _swiperKey++;
+      _recreateController();
+    }
+  }
+
+  void _recreateController() {
+    _controller?.dispose();
+    _controller = CardSwiperController();
+  }
+
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -58,9 +87,9 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
 
       setState(() {
         _flashcardSet = flashcardSet;
+        _initializeCards();
       });
     } catch (e) {
-      // Show error in snackbar instead of state
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
@@ -70,93 +99,227 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
     }
   }
 
+  bool _onSwipe(
+    int previousIndex,
+    int? currentIndex,
+    CardSwiperDirection direction,
+  ) {
+    if (previousIndex < 0 || previousIndex >= _cards.length) return false;
+
+    final card = _cards[previousIndex];
+
+    if (direction == CardSwiperDirection.right) {
+      // Correct - remove card permanently
+      setState(() {
+        _history.add(
+          _SwipeEntry(
+            card: card,
+            wasCorrect: true,
+            originalIndex: previousIndex,
+          ),
+        );
+        _cards.removeAt(previousIndex);
+        _correctCount++;
+        _swiperKey++;
+        _recreateController();
+
+        if (_cards.isEmpty) {
+          _isCompleted = true;
+        }
+      });
+      return false; // We handle it ourselves by rebuilding
+    } else if (direction == CardSwiperDirection.left) {
+      // Wrong - move card to back of deck
+      setState(() {
+        _history.add(
+          _SwipeEntry(
+            card: card,
+            wasCorrect: false,
+            originalIndex: previousIndex,
+          ),
+        );
+        _cards.removeAt(previousIndex);
+        _cards.add(card); // Add to back
+        _swiperKey++;
+        _recreateController();
+      });
+      return false; // We handle it ourselves by rebuilding
+    }
+
+    return true;
+  }
+
+  void _handleUndo() {
+    if (_history.isEmpty) return;
+
+    final lastEntry = _history.removeLast();
+
+    setState(() {
+      if (lastEntry.wasCorrect) {
+        // Was a correct swipe - add card back and decrement count
+        _cards.insert(0, lastEntry.card);
+        _correctCount = (_correctCount - 1).clamp(0, _totalCards);
+        _isCompleted = false;
+      } else {
+        // Was a wrong swipe - remove from back and add to front
+        if (_cards.isNotEmpty && _cards.last == lastEntry.card) {
+          _cards.removeLast();
+        }
+        _cards.insert(0, lastEntry.card);
+      }
+      _swiperKey++;
+      _recreateController();
+    });
+  }
+
+  void _resetCards() {
+    setState(() {
+      _cards = List.from(_originalCards);
+      _correctCount = 0;
+      _isCompleted = false;
+      _history.clear();
+      _swiperKey++;
+      _recreateController();
+    });
+  }
+
+  void _shuffleCards() {
+    setState(() {
+      _cards.shuffle();
+      _history.clear();
+      _swiperKey++;
+      _recreateController();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_flashcardSet == null || _flashcardSet!.cards.isEmpty) {
+    if (_flashcardSet == null || _originalCards.isEmpty) {
       return Scaffold(
         appBar: const UniversalAppBar(title: 'Flashcards'),
         body: const Center(child: Text('No flashcards in this set')),
       );
     }
 
+    if (_isCompleted) {
+      return _buildCompletionScreen();
+    }
+
+    if (_cards.isEmpty) {
+      return _buildCompletionScreen();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: UniversalAppBar(
-        title:
-            '${_flashcardSet!.title} (${(_currentIndex ?? 0) + 1}/${_flashcardSet!.cards.length})',
+        title: _flashcardSet!.title,
         showNotificationBell: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.shuffle),
-            onPressed: () {
-              setState(() {
-                _flashcardSet!.cards.shuffle();
-                _currentIndex = 0;
-              });
-            },
+            onPressed: _shuffleCards,
+            tooltip: 'Shuffle cards',
           ),
         ],
       ),
       body: Column(
         children: [
+          _buildProgressCounter(),
           Expanded(
-            child: CardSwiper(
-              controller: _controller,
-              cardsCount: _flashcardSet!.cards.length,
-              onSwipe: (previousIndex, currentIndex, direction) {
-                setState(() {
-                  _currentIndex = currentIndex;
-                });
-                return true;
-              },
-              onUndo: (previousIndex, currentIndex, direction) {
-                setState(() {
-                  _currentIndex = currentIndex;
-                });
-                return true;
-              },
-              numberOfCardsDisplayed: _flashcardSet!.cards.length < 3
-                  ? _flashcardSet!.cards.length
-                  : 3,
-              backCardOffset: const Offset(0, 40),
-              padding: const EdgeInsets.all(24.0),
-              cardBuilder:
-                  (
-                    context,
-                    index,
-                    horizontalThresholdPercentage,
-                    verticalThresholdPercentage,
-                  ) {
-                    return _FlashcardWithOverlay(
-                      flashcard: _flashcardSet!.cards[index],
-                      index: index,
-                      total: _flashcardSet!.cards.length,
-                      horizontalOffset: horizontalThresholdPercentage
-                          .toDouble(),
-                      isTopCard: index == _currentIndex,
-                    );
-                  },
-            ),
+            child: _controller == null
+                ? const Center(child: CircularProgressIndicator())
+                : CardSwiper(
+                    key: ValueKey(_swiperKey),
+                    controller: _controller!,
+                    cardsCount: _cards.length,
+                    onSwipe: _onSwipe,
+                    onUndo: (_, __, ___) => true, // We don't use built-in undo
+                    numberOfCardsDisplayed: _cards.length < 3
+                        ? _cards.length
+                        : 3,
+                    backCardOffset: const Offset(0, 40),
+                    padding: const EdgeInsets.all(24.0),
+                    cardBuilder:
+                        (
+                          context,
+                          index,
+                          horizontalThresholdPercentage,
+                          verticalThresholdPercentage,
+                        ) {
+                          if (index < 0 || index >= _cards.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final card = _cards[index];
+                          return _FlashcardWithOverlay(
+                            // Use unique key based on card content + position in current deck
+                            key: ValueKey(
+                              '${card.front}_${card.back}_${_swiperKey}_$index',
+                            ),
+                            flashcard: card,
+                            horizontalOffset: horizontalThresholdPercentage
+                                .toDouble(),
+                            isTopCard: index == 0,
+                          );
+                        },
+                  ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressCounter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildActionButton(
-                  icon: Icons.undo,
-                  color: Colors.orange,
-                  onPressed: () => _controller.undo(),
+                Icon(Icons.layers, size: 20, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  '${_cards.length} cards left',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
-                _buildActionButton(
-                  icon: Icons.close,
-                  color: Colors.red,
-                  onPressed: () => _controller.swipe(CardSwiperDirection.left),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  width: 1,
+                  height: 20,
+                  color: Colors.grey.shade300,
                 ),
-                _buildActionButton(
-                  icon: Icons.check,
-                  color: Colors.green,
-                  onPressed: () => _controller.swipe(CardSwiperDirection.right),
+                Icon(
+                  Icons.check_circle,
+                  size: 20,
+                  color: Colors.green.shade600,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$_correctCount / $_totalCards correct',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade700,
+                  ),
                 ),
               ],
             ),
@@ -166,65 +329,206 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
     );
   }
 
+  Widget _buildActionButtons() {
+    final bool canUndo = _history.isNotEmpty;
+    final bool hasCards = _cards.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Cross (wrong) button - LEFT - moves card to back
+          _buildActionButton(
+            icon: Icons.close,
+            color: Colors.red,
+            onPressed: hasCards
+                ? () => _controller?.swipe(CardSwiperDirection.left)
+                : null,
+          ),
+          // Undo button - CENTER
+          _buildActionButton(
+            icon: Icons.undo,
+            color: canUndo ? Colors.orange : Colors.grey.shade400,
+            onPressed: canUndo ? _handleUndo : null,
+          ),
+          // Check (correct) button - RIGHT - removes card
+          _buildActionButton(
+            icon: Icons.check,
+            color: Colors.green,
+            onPressed: hasCards
+                ? () => _controller?.swipe(CardSwiperDirection.right)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton({
     required IconData icon,
     required Color color,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
+    final bool isDisabled = onPressed == null;
+
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isDisabled ? Colors.grey.shade200 : Colors.white,
+        boxShadow: isDisabled
+            ? null
+            : [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: IconButton(
-        icon: Icon(icon, color: color, size: 28),
+        icon: Icon(
+          icon,
+          color: isDisabled ? Colors.grey.shade400 : color,
+          size: 28,
+        ),
         onPressed: onPressed,
         padding: EdgeInsets.zero,
       ),
     );
   }
+
+  Widget _buildCompletionScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: UniversalAppBar(
+        title: _flashcardSet!.title,
+        showNotificationBell: false,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.celebration,
+                  size: 80,
+                  color: Colors.green.shade600,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Yay! 🎉',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'You completed the revision!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You got $_correctCount out of $_totalCards cards correct!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 48),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _resetCards,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Practice Again'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6C5CE7),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Go Back'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF6C5CE7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: const BorderSide(color: Color(0xFF6C5CE7)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeEntry {
+  final Flashcard card;
+  final bool wasCorrect;
+  final int originalIndex;
+
+  _SwipeEntry({
+    required this.card,
+    required this.wasCorrect,
+    required this.originalIndex,
+  });
 }
 
 // Wrapper widget that adds swipe overlay effect
 class _FlashcardWithOverlay extends StatelessWidget {
   final Flashcard flashcard;
-  final int index;
-  final int total;
   final double horizontalOffset;
   final bool isTopCard;
 
   const _FlashcardWithOverlay({
+    super.key,
     required this.flashcard,
-    required this.index,
-    required this.total,
     required this.horizontalOffset,
     required this.isTopCard,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Calculate opacity based on swipe progress
     final opacity = (horizontalOffset.abs() * 2).clamp(0.0, 0.6);
 
-    // Determine swipe direction colors
     Color overlayColor;
     IconData overlayIcon;
 
     if (horizontalOffset > 0) {
-      // Swiping right (correct/like)
       overlayColor = Colors.green;
       overlayIcon = Icons.check_circle;
     } else if (horizontalOffset < 0) {
-      // Swiping left (incorrect/dislike)
       overlayColor = Colors.red;
       overlayIcon = Icons.cancel;
     } else {
@@ -234,14 +538,7 @@ class _FlashcardWithOverlay extends StatelessWidget {
 
     return Stack(
       children: [
-        // The actual flashcard widget
-        _FlashcardWidget(
-          flashcard: flashcard,
-          index: index,
-          total: total,
-          isTopCard: isTopCard,
-        ),
-        // Swipe overlay
+        _FlashcardWidget(flashcard: flashcard, isTopCard: isTopCard),
         if (horizontalOffset.abs() > 0.01)
           Positioned.fill(
             child: Container(
@@ -265,16 +562,9 @@ class _FlashcardWithOverlay extends StatelessWidget {
 
 class _FlashcardWidget extends StatefulWidget {
   final Flashcard flashcard;
-  final int index;
-  final int total;
   final bool isTopCard;
 
-  const _FlashcardWidget({
-    required this.flashcard,
-    required this.index,
-    required this.total,
-    required this.isTopCard,
-  });
+  const _FlashcardWidget({required this.flashcard, required this.isTopCard});
 
   @override
   State<_FlashcardWidget> createState() => _FlashcardWidgetState();
@@ -282,53 +572,58 @@ class _FlashcardWidget extends StatefulWidget {
 
 class _FlashcardWidgetState extends State<_FlashcardWidget>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  late AnimationController _animController;
   late Animation<double> _animation;
-  bool _isFront = true;
+  bool _showingFront = true;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 400),
     );
-    _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _animation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    );
+    _showingFront = true;
   }
 
   @override
   void didUpdateWidget(_FlashcardWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Reset to front when flashcard changes
-    if (oldWidget.flashcard != widget.flashcard) {
-      _controller.reset();
-      setState(() {
-        _isFront = true;
-      });
+    // Reset flip state when the card content changes
+    if (oldWidget.flashcard.front != widget.flashcard.front ||
+        oldWidget.flashcard.back != widget.flashcard.back) {
+      _animController.reset();
+      _showingFront = true;
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
   void _flipCard() {
-    if (_isFront) {
-      _controller.forward();
+    if (!widget.isTopCard) return;
+
+    if (_showingFront) {
+      _animController.forward();
     } else {
-      _controller.reverse();
+      _animController.reverse();
     }
     setState(() {
-      _isFront = !_isFront;
+      _showingFront = !_showingFront;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.isTopCard ? _flipCard : null, // Only allow tap on top card
+      onTap: widget.isTopCard ? _flipCard : null,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
@@ -394,10 +689,18 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Tap to flip',
-            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-          ),
+          if (widget.isTopCard)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.touch_app, size: 16, color: Colors.grey[400]),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to flip',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -443,6 +746,22 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
               ),
             ),
           ),
+          const SizedBox(height: 24),
+          if (widget.isTopCard)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.touch_app, size: 16, color: Colors.white70),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to flip back',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
