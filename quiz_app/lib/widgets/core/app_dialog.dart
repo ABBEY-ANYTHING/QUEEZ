@@ -13,6 +13,7 @@ class AppDialog extends StatelessWidget {
   final String? secondaryActionText;
   final VoidCallback? secondaryActionCallback;
   final bool dismissible;
+  final bool showCloseIcon;
 
   const AppDialog({
     super.key,
@@ -23,6 +24,7 @@ class AppDialog extends StatelessWidget {
     this.secondaryActionText,
     this.secondaryActionCallback,
     this.dismissible = true,
+    this.showCloseIcon = false,
   });
 
   /// Show dialog with custom barrier color and animation
@@ -35,6 +37,7 @@ class AppDialog extends StatelessWidget {
     String? secondaryActionText,
     VoidCallback? secondaryActionCallback,
     bool dismissible = true,
+    bool showCloseIcon = false,
   }) {
     return showDialog<T>(
       context: context,
@@ -48,6 +51,7 @@ class AppDialog extends StatelessWidget {
         secondaryActionText: secondaryActionText,
         secondaryActionCallback: secondaryActionCallback,
         dismissible: dismissible,
+        showCloseIcon: showCloseIcon,
       ),
     );
   }
@@ -80,13 +84,32 @@ class AppDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (showCloseIcon)
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppColors.textSecondary,
+                          size: 24,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: QuizSpacing.md),
 
@@ -106,61 +129,62 @@ class AppDialog extends StatelessWidget {
                 const SizedBox(height: QuizSpacing.lg),
 
                 // Actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Secondary action (if provided)
-                    if (secondaryActionText != null) ...[
-                      Flexible(
-                        child: TextButton(
-                          onPressed:
-                              secondaryActionCallback ??
-                              () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: QuizSpacing.md,
-                              vertical: QuizSpacing.md,
-                            ),
-                          ),
-                          child: Text(
-                            secondaryActionText!,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: QuizSpacing.sm),
-                    ],
-
-                    // Primary action (if provided)
-                    if (primaryActionText != null)
-                      Flexible(
-                        child: ElevatedButton(
-                          onPressed:
-                              primaryActionCallback ??
-                              () => Navigator.of(context).pop(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: QuizSpacing.md,
-                              vertical: QuizSpacing.md,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                QuizBorderRadius.sm,
+                if (primaryActionText != null || secondaryActionText != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Secondary action (if provided)
+                      if (secondaryActionText != null) ...[
+                        Flexible(
+                          child: TextButton(
+                            onPressed:
+                                secondaryActionCallback ??
+                                () => Navigator.of(context).pop(),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.textSecondary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: QuizSpacing.md,
+                                vertical: QuizSpacing.md,
                               ),
                             ),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            primaryActionText!,
-                            overflow: TextOverflow.ellipsis,
+                            child: Text(
+                              secondaryActionText!,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                        const SizedBox(width: QuizSpacing.sm),
+                      ],
+
+                      // Primary action (if provided)
+                      if (primaryActionText != null)
+                        Flexible(
+                          child: ElevatedButton(
+                            onPressed:
+                                primaryActionCallback ??
+                                () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: QuizSpacing.md,
+                                vertical: QuizSpacing.md,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  QuizBorderRadius.sm,
+                                ),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              primaryActionText!,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
               ],
             ),
           ),
