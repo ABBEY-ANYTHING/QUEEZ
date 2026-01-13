@@ -11,6 +11,12 @@ import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
 import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
 import 'package:quiz_app/CreateSection/services/study_set_service.dart';
+import 'package:quiz_app/CreateSection/services/quiz_service.dart';
+import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
+import 'package:quiz_app/CreateSection/services/note_service.dart';
+import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
+import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
+import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
@@ -72,14 +78,14 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
         maxChildSize: 0.9,
         expand: false,
         builder: (context, scrollController) => SingleChildScrollView(
           controller: scrollController,
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 40.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -101,41 +107,106 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // Quiz Section
+                _buildItemTypeHeader('Quiz'),
+                const SizedBox(height: 12),
                 _buildAddItemOption(
-                  icon: Icons.quiz_outlined,
-                  title: 'Quiz',
+                  icon: Icons.add_circle_outline,
+                  title: 'Create New Quiz',
                   description: 'Create multiple choice questions',
                   onTap: () {
                     Navigator.pop(context);
                     _navigateToQuizCreation();
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildAddItemOption(
-                  icon: Icons.style_outlined,
-                  title: 'Flashcard',
+                  icon: Icons.library_add_outlined,
+                  title: 'Select Existing Quiz',
+                  description: 'Choose from your saved quizzes',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSelectQuizDialog();
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Flashcard Section
+                _buildItemTypeHeader('Flashcard'),
+                const SizedBox(height: 12),
+                _buildAddItemOption(
+                  icon: Icons.add_circle_outline,
+                  title: 'Create New Flashcard Set',
                   description: 'Create flashcard sets for memorization',
                   onTap: () {
                     Navigator.pop(context);
                     _navigateToFlashcardCreation();
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 _buildAddItemOption(
-                  icon: Icons.note_outlined,
-                  title: 'Note',
+                  icon: Icons.library_add_outlined,
+                  title: 'Select Existing Flashcard Set',
+                  description: 'Choose from your saved flashcard sets',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSelectFlashcardDialog();
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Note Section
+                _buildItemTypeHeader('Note'),
+                const SizedBox(height: 12),
+                _buildAddItemOption(
+                  icon: Icons.add_circle_outline,
+                  title: 'Create New Note',
                   description: 'Write detailed notes and explanations',
                   onTap: () {
                     Navigator.pop(context);
                     _navigateToNoteCreation();
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                _buildAddItemOption(
+                  icon: Icons.library_add_outlined,
+                  title: 'Select Existing Note',
+                  description: 'Choose from your saved notes',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showSelectNoteDialog();
+                  },
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildItemTypeHeader(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -293,6 +364,305 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         });
   }
 
+  // Methods to select existing items
+  void _showSelectQuizDialog() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final quizzes = await QuizService.fetchQuizzesByCreator(userId);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+
+      if (quizzes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No quizzes found. Create one first!')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Quiz'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: quizzes.length,
+              itemBuilder: (context, index) {
+                final quiz = quizzes[index];
+                // Handle both possible field names from API
+                final questionCount =
+                    quiz['questionCount'] ?? quiz['questions_count'] ?? 0;
+
+                return ListTile(
+                  leading: const Icon(Icons.quiz_outlined),
+                  title: Text(quiz['title'] ?? 'Untitled'),
+                  subtitle: Text('$questionCount questions'),
+                  onTap: () {
+                    // Convert the map to Quiz object and add to study set
+                    final quizObj = Quiz(
+                      id:
+                          quiz['id'] ??
+                          quiz['_id'], // Important: include the ID
+                      title: quiz['title'] ?? '',
+                      description: quiz['description'] ?? '',
+                      language: quiz['language'] ?? 'English',
+                      category: quiz['category'] ?? 'Other',
+                      creatorId: userId,
+                      coverImagePath: quiz['coverImagePath'],
+                      questions: [], // Questions will be loaded when needed
+                    );
+                    StudySetCacheManager.instance.addQuizToStudySet(quizObj);
+
+                    Navigator.of(context).pop(); // Close dialog
+
+                    if (mounted) {
+                      setState(() {
+                        _loadCachedItems();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Quiz added to study set'),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Try to close loading dialog if it's still open
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (_) {
+        // Dialog already closed
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading quizzes: $e')));
+    }
+  }
+
+  void _showSelectFlashcardDialog() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final flashcardSets = await FlashcardService.fetchFlashcardSetsByCreator(
+        userId,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+
+      if (flashcardSets.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No flashcard sets found. Create one first!'),
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Flashcard Set'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: flashcardSets.length,
+              itemBuilder: (context, index) {
+                final flashcardSet = flashcardSets[index];
+                final cardCount =
+                    flashcardSet['cardCount'] ??
+                    flashcardSet['cards_count'] ??
+                    0;
+
+                return ListTile(
+                  leading: const Icon(Icons.style_outlined),
+                  title: Text(flashcardSet['title'] ?? 'Untitled'),
+                  subtitle: Text('$cardCount cards'),
+                  onTap: () {
+                    // Convert the map to FlashcardSet object and add to study set
+                    final flashcardSetObj = FlashcardSet(
+                      id: flashcardSet['id'] ?? flashcardSet['_id'],
+                      title: flashcardSet['title'] ?? '',
+                      description: flashcardSet['description'] ?? '',
+                      category: flashcardSet['category'] ?? 'Other',
+                      creatorId: userId,
+                      coverImagePath: flashcardSet['coverImagePath'],
+                      cards: [], // Cards will be loaded when needed
+                    );
+                    StudySetCacheManager.instance.addFlashcardSetToStudySet(
+                      flashcardSetObj,
+                    );
+
+                    Navigator.of(context).pop(); // Close dialog
+
+                    if (mounted) {
+                      setState(() {
+                        _loadCachedItems();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Flashcard set added to study set'),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Try to close loading dialog if it's still open
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (_) {
+        // Dialog already closed
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading flashcard sets: $e')),
+      );
+    }
+  }
+
+  void _showSelectNoteDialog() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final notes = await NoteService.fetchNotesByCreator(userId);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+
+      if (notes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No notes found. Create one first!')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Note'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                final note = notes[index];
+
+                return ListTile(
+                  leading: const Icon(Icons.note_outlined),
+                  title: Text(note['title'] ?? 'Untitled'),
+                  subtitle: Text(note['category'] ?? 'Uncategorized'),
+                  onTap: () {
+                    // Convert the map to Note object and add to study set
+                    final noteObj = Note(
+                      id: note['id'] ?? note['_id'],
+                      title: note['title'] ?? '',
+                      description: note['description'] ?? '',
+                      category: note['category'] ?? 'Other',
+                      creatorId: userId,
+                      content: note['content'] ?? '',
+                      coverImagePath: note['coverImagePath'],
+                    );
+                    StudySetCacheManager.instance.addNoteToStudySet(noteObj);
+
+                    Navigator.of(context).pop(); // Close dialog
+
+                    if (mounted) {
+                      setState(() {
+                        _loadCachedItems();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Note added to study set'),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Try to close loading dialog if it's still open
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (_) {
+        // Dialog already closed
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading notes: $e')));
+    }
+  }
+
   Future<void> _saveStudySet() async {
     if (_isSaving) return;
 
@@ -393,7 +763,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

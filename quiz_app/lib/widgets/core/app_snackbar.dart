@@ -73,15 +73,14 @@ class AppSnackBar {
     IconData? icon,
     Duration? duration,
   }) {
+    // Capture the ScaffoldMessengerState before creating the snackbar
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     final snackBar = SnackBar(
       content: Row(
         children: [
           if (icon != null) ...[
-            Icon(
-              icon,
-              color: textColor ?? AppColors.white,
-              size: 20,
-            ),
+            Icon(icon, color: textColor ?? AppColors.white, size: 20),
             const SizedBox(width: QuizSpacing.md),
           ],
           Expanded(
@@ -112,12 +111,13 @@ class AppSnackBar {
         label: 'Dismiss',
         textColor: textColor ?? AppColors.white,
         onPressed: () {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          // Use the captured scaffoldMessenger instead of looking it up again
+          scaffoldMessenger.hideCurrentSnackBar();
         },
       ),
     );
 
-    ScaffoldMessenger.of(context)
+    scaffoldMessenger
       ..hideCurrentSnackBar()
       ..showSnackBar(snackBar);
   }

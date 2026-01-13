@@ -10,7 +10,6 @@ import 'package:quiz_app/CreateSection/widgets/primary_button.dart';
 import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class StudySetDetails extends StatefulWidget {
@@ -99,7 +98,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight),
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 120),
           child: Form(
             key: _formKey,
             child: Column(

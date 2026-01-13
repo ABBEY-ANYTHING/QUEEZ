@@ -15,12 +15,12 @@ class BasicInfoScreen extends StatefulWidget {
 class _BasicInfoScreenState extends State<BasicInfoScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _selectedRole;
+  DateTime? _selectedDate;
 
   @override
   void initState() {
@@ -41,15 +41,33 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
   void dispose() {
     _nameController.dispose();
     _usernameController.dispose();
-    _ageController.dispose();
     _dobController.dispose();
     super.dispose();
   }
 
+  int _calculateAge(DateTime birthDate) {
+    final today = DateTime.now();
+    int age = today.year - birthDate.year;
+    if (today.month < birthDate.month ||
+        (today.month == birthDate.month && today.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
   void _onNextStep() {
     if (_formKey.currentState!.validate()) {
+      if (_selectedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select your date of birth')),
+        );
+        return;
+      }
+
+      final age = _calculateAge(_selectedDate!);
+
       // Save basic info to Firestore
-      _saveBasicInfo();
+      _saveBasicInfo(age);
 
       // Navigate to preferences screen with the collected data
       customNavigate(
@@ -59,7 +77,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
         arguments: {
           'name': _nameController.text,
           'username': _usernameController.text,
-          'age': int.parse(_ageController.text),
+          'age': age,
           'dateOfBirth': _dobController.text,
           'role': _selectedRole,
         },
@@ -67,7 +85,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
     }
   }
 
-  Future<void> _saveBasicInfo() async {
+  Future<void> _saveBasicInfo(int age) async {
     try {
       final User? currentUser = _auth.currentUser;
       if (currentUser != null) {
@@ -76,7 +94,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
           'uid': currentUser.uid,
           'name': _nameController.text,
           'username': _usernameController.text,
-          'age': int.parse(_ageController.text),
+          'age': age,
           'dateOfBirth': _dobController.text,
           'role': _selectedRole,
         }, SetOptions(merge: true));
@@ -108,6 +126,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
 
     if (picked != null) {
       setState(() {
+        _selectedDate = picked;
         _dobController.text =
             '${picked.day.toString().padLeft(2, '0')} - '
             '${picked.month.toString().padLeft(2, '0')} - '
@@ -184,31 +203,6 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
                             }
                             if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
                               return 'Username can only contain letters, numbers, and underscores';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Age',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _ageController,
-                          hintText: 'Enter your age',
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your age';
-                            }
-                            final age = int.tryParse(value);
-                            if (age == null || age <= 0 || age > 120) {
-                              return 'Please enter a valid age';
                             }
                             return null;
                           },

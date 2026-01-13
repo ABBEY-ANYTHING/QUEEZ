@@ -50,7 +50,7 @@ class FlashcardDetailsPageState extends State<FlashcardDetailsPage> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
             child: Form(
               key: _formKey,
               child: Column(

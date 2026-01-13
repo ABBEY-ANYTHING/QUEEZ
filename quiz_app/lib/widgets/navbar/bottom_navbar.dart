@@ -1,15 +1,14 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/screens/create_page.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/ProfilePage/profile_page.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
+import 'package:quiz_app/screens/home_page.dart';
+import 'package:quiz_app/screens/settings_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/custom_navigator.dart';
-import 'package:quiz_app/widgets/navbar/create_button.dart';
 
 class BottomNavbarController extends ConsumerStatefulWidget {
   const BottomNavbarController({super.key});
@@ -61,11 +60,11 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
     );
 
     _pages = [
-      const Center(key: ValueKey("Home"), child: Text("Home Page")),
+      const HomePage(),
       CreateNavigator(navigatorKey: navigatorKeys[1], widget: _sections[0]),
       CreateNavigator(navigatorKey: navigatorKeys[2], widget: _sections[1]),
       const ProfilePage(),
-      const Center(key: ValueKey("Settings"), child: Text("Settings Page")),
+      const SettingsPage(),
     ];
     _controller.forward();
   }
@@ -147,22 +146,6 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
               ),
             ),
           ),
-        // FAB centered at bottom
-        if (!keyboardVisible)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 12,
-            child: SlideTransition(
-              position: _navbarSlideAnimation,
-              child: FadeTransition(
-                opacity: _navbarFadeAnimation,
-                child: Center(
-                  child: CreateButton(onPressed: () => _onNavItemTapped(2)),
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -192,94 +175,84 @@ class _BottomNavbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight.withValues(alpha: 0.65),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              offset: const Offset(0, -4),
-              blurRadius: 16,
-              spreadRadius: 1,
-            ),
-          ],
-          border: Border(
-            top: BorderSide(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 0.8,
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            offset: const Offset(0, -2),
+            blurRadius: 12,
           ),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  _navIcon(Icons.dashboard_rounded, 0, 'Home'),
-                  _navIcon(Icons.menu_book_rounded, 1, 'Library'),
-                  const SizedBox(width: 40), // FAB space
-                  _navIcon(Icons.person_rounded, 3, 'Profile'),
-                  _navIcon(Icons.settings_rounded, 4, 'Settings'),
-                ],
-              ),
-            ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              _navItem(Icons.home_rounded, 0, 'Home'),
+              _navItem(Icons.library_books_rounded, 1, 'Library'),
+              _navItem(Icons.add_circle_rounded, 2, 'Create'),
+              _navItem(Icons.person_rounded, 3, 'Profile'),
+              _navItem(Icons.settings_rounded, 4, 'Settings'),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _navIcon(IconData icon, int index, String tooltip) {
+  Widget _navItem(IconData icon, int index, String label) {
     final bool isActive = currentIndex == index;
+    final bool isCreateButton = index == 2;
 
     return GestureDetector(
       onTap: () {
         if (!isActive) onTap(index);
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeOutQuint,
-        padding: const EdgeInsets.all(8),
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCreateButton ? 16 : 12,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.accentBright.withValues(alpha: 0.15)
+              ? isCreateButton
+                    ? AppColors.primary
+                    : AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: isActive ? 1.0 : 0.9, end: isActive ? 1.25 : 1.0),
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOutBack,
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: Tooltip(
-                message: tooltip,
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: isActive
-                      ? AppColors.accentBright
-                      : AppColors.iconInactive,
-                  shadows: isActive
-                      ? [
-                          const Shadow(
-                            color: Colors.black26,
-                            blurRadius: 6,
-                            offset: Offset(0, 3),
-                          ),
-                        ]
-                      : null,
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: isCreateButton ? 28 : 24,
+              color: isActive
+                  ? isCreateButton
+                        ? AppColors.white
+                        : AppColors.primary
+                  : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive
+                    ? isCreateButton
+                          ? AppColors.white
+                          : AppColors.primary
+                    : AppColors.textSecondary,
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );

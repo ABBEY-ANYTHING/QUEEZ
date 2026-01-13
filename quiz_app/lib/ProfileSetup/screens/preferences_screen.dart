@@ -13,21 +13,12 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  final TextEditingController _subjectController = TextEditingController();
-  String _selectedExperience = 'Beginner';
-  final _formKey = GlobalKey<FormState>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // User data from previous screen
   Map<String, dynamic> _userData = {};
   final List<String> _selectedInterests = [];
-  final List<String> _experienceLevels = [
-    'Beginner',
-    'Intermediate',
-    'Advanced',
-    'Expert',
-  ];
 
   @override
   void initState() {
@@ -46,30 +37,25 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
   @override
   void dispose() {
-    _subjectController.dispose();
     super.dispose();
   }
 
   void _onComplete() {
-    if (_formKey.currentState!.validate()) {
-      // Save preferences to Firestore
-      _savePreferences();
+    // Save preferences to Firestore
+    _savePreferences();
 
-      // Navigate to completion screen with all user data
-      final Map<String, dynamic> completeUserData = {
-        ..._userData,
-        'subjectArea': _subjectController.text,
-        'experienceLevel': _selectedExperience,
-        'interests': _selectedInterests,
-      };
+    // Navigate to completion screen with all user data
+    final Map<String, dynamic> completeUserData = {
+      ..._userData,
+      'interests': _selectedInterests,
+    };
 
-      customNavigate(
-        context,
-        '/profile_complete',
-        AnimationType.slideLeft,
-        arguments: completeUserData,
-      );
-    }
+    customNavigate(
+      context,
+      '/profile_complete',
+      AnimationType.slideLeft,
+      arguments: completeUserData,
+    );
   }
 
   Future<void> _savePreferences() async {
@@ -78,8 +64,6 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       if (currentUser != null) {
         // Update user document with preferences
         await _firestore.collection('users').doc(currentUser.uid).update({
-          'subjectArea': _subjectController.text,
-          'experienceLevel': _selectedExperience,
           'interests': _selectedInterests,
         });
       }
@@ -110,7 +94,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               const ProfileProgressIndicator(currentStep: 4, totalSteps: 4),
               const SizedBox(height: 32),
               const Text(
-                'Almost Done!',
+                'Select Your Interests',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
@@ -119,54 +103,13 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Just a few more details to complete your profile',
+                'Choose topics you\'re interested in learning',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 32),
               Expanded(
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Preferred Subject Area',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _subjectController,
-                          hintText: 'e.g., Mathematics, Science, History',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your preferred subject';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Experience Level',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildExperienceDropdown(),
-                        const SizedBox(height: 24),
-                        _buildInterestsSection(),
-                      ],
-                    ),
-                  ),
-                ),
+                child: SingleChildScrollView(child: _buildInterestsSection()),
               ),
               Container(
                 width: double.infinity,
@@ -209,168 +152,43 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     );
   }
 
-  Widget _buildExperienceDropdown() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: DropdownButtonFormField<String>(
-        initialValue: _selectedExperience,
-        items:
-            _experienceLevels
-                .map(
-                  (level) => DropdownMenuItem(value: level, child: Text(level)),
-                )
-                .toList(),
-        onChanged: (value) {
-          if (value != null) {
-            setState(() {
-              _selectedExperience = value;
-            });
-          }
-        },
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Please select your experience level';
-          }
-          return null;
-        },
-        decoration: InputDecoration(
-          hintText: 'Select your experience level',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.error, width: 2),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.error, width: 2),
-          ),
-          filled: true,
-          fillColor: AppColors.white,
-          contentPadding: const EdgeInsets.all(16),
-          hintStyle: TextStyle(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        decoration: InputDecoration(
-          hintText: hintText,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.error, width: 2),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.error, width: 2),
-          ),
-          filled: true,
-          fillColor: AppColors.white,
-          contentPadding: const EdgeInsets.all(16),
-          hintStyle: TextStyle(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildInterestsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Interests',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Select topics you are interested in',
+          'Select at least one topic',
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Wrap(
-          spacing: 8,
-          runSpacing: 12,
+          spacing: 10,
+          runSpacing: 14,
           children: [
             _buildInterestChip('Mathematics'),
             _buildInterestChip('Science'),
+            _buildInterestChip('Physics'),
+            _buildInterestChip('Chemistry'),
+            _buildInterestChip('Biology'),
             _buildInterestChip('History'),
+            _buildInterestChip('Geography'),
             _buildInterestChip('Literature'),
+            _buildInterestChip('English'),
             _buildInterestChip('Arts'),
+            _buildInterestChip('Music'),
             _buildInterestChip('Technology'),
+            _buildInterestChip('Computer Science'),
             _buildInterestChip('Languages'),
+            _buildInterestChip('Economics'),
+            _buildInterestChip('Business'),
+            _buildInterestChip('Psychology'),
+            _buildInterestChip('Philosophy'),
             _buildInterestChip('Physical Education'),
           ],
         ),
       ],
     );
   }
-
 
   Widget _buildInterestChip(String label) {
     final bool isSelected = _selectedInterests.contains(label);

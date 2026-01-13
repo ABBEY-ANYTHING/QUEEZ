@@ -176,4 +176,38 @@ class NoteService {
       throw Exception('Error deleting note: $e');
     }
   }
+
+  static Future<List<Map<String, dynamic>>> fetchNotesByCreator(
+    String creatorId,
+  ) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/notes/creator/$creatorId'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Request timed out. Please check your internet connection.',
+              );
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        } else {
+          throw Exception('Failed to fetch notes');
+        }
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['detail'] ?? 'Failed to fetch notes');
+      }
+    } catch (e) {
+      throw Exception('Error fetching notes: $e');
+    }
+  }
 }

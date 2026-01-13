@@ -115,7 +115,9 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
                 });
                 return true;
               },
-              numberOfCardsDisplayed: 3,
+              numberOfCardsDisplayed: _flashcardSet!.cards.length < 3
+                  ? _flashcardSet!.cards.length
+                  : 3,
               backCardOffset: const Offset(0, 40),
               padding: const EdgeInsets.all(24.0),
               cardBuilder:
@@ -125,16 +127,19 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
                     horizontalThresholdPercentage,
                     verticalThresholdPercentage,
                   ) {
-                    return _FlashcardWidget(
+                    return _FlashcardWithOverlay(
                       flashcard: _flashcardSet!.cards[index],
                       index: index,
                       total: _flashcardSet!.cards.length,
+                      horizontalOffset: horizontalThresholdPercentage
+                          .toDouble(),
+                      isTopCard: index == _currentIndex,
                     );
                   },
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -189,15 +194,86 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen> {
   }
 }
 
+// Wrapper widget that adds swipe overlay effect
+class _FlashcardWithOverlay extends StatelessWidget {
+  final Flashcard flashcard;
+  final int index;
+  final int total;
+  final double horizontalOffset;
+  final bool isTopCard;
+
+  const _FlashcardWithOverlay({
+    required this.flashcard,
+    required this.index,
+    required this.total,
+    required this.horizontalOffset,
+    required this.isTopCard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate opacity based on swipe progress
+    final opacity = (horizontalOffset.abs() * 2).clamp(0.0, 0.6);
+
+    // Determine swipe direction colors
+    Color overlayColor;
+    IconData overlayIcon;
+
+    if (horizontalOffset > 0) {
+      // Swiping right (correct/like)
+      overlayColor = Colors.green;
+      overlayIcon = Icons.check_circle;
+    } else if (horizontalOffset < 0) {
+      // Swiping left (incorrect/dislike)
+      overlayColor = Colors.red;
+      overlayIcon = Icons.cancel;
+    } else {
+      overlayColor = Colors.transparent;
+      overlayIcon = Icons.circle;
+    }
+
+    return Stack(
+      children: [
+        // The actual flashcard widget
+        _FlashcardWidget(
+          flashcard: flashcard,
+          index: index,
+          total: total,
+          isTopCard: isTopCard,
+        ),
+        // Swipe overlay
+        if (horizontalOffset.abs() > 0.01)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: overlayColor.withValues(alpha: opacity),
+              ),
+              child: Center(
+                child: Icon(
+                  overlayIcon,
+                  size: 100,
+                  color: Colors.white.withValues(alpha: opacity),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _FlashcardWidget extends StatefulWidget {
   final Flashcard flashcard;
   final int index;
   final int total;
+  final bool isTopCard;
 
   const _FlashcardWidget({
     required this.flashcard,
     required this.index,
     required this.total,
+    required this.isTopCard,
   });
 
   @override
@@ -221,6 +297,18 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
   }
 
   @override
+  void didUpdateWidget(_FlashcardWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset to front when flashcard changes
+    if (oldWidget.flashcard != widget.flashcard) {
+      _controller.reset();
+      setState(() {
+        _isFront = true;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -240,19 +328,19 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _flipCard,
+      onTap: widget.isTopCard ? _flipCard : null, // Only allow tap on top card
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           final angle = _animation.value * pi;
-          final transform = Matrix4.identity()
-            ..setEntry(3, 2, 0.001)
-            ..rotateY(angle);
+          final isFrontVisible = angle < pi / 2;
 
           return Transform(
-            transform: transform,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
             alignment: Alignment.center,
-            child: _isFront
+            child: isFrontVisible
                 ? _buildFront()
                 : Transform(
                     transform: Matrix4.identity()..rotateY(pi),
