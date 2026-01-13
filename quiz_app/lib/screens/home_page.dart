@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -31,6 +32,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       final user = _auth.currentUser;
       if (user != null) {
         final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (!mounted) return;
         if (doc.exists) {
           setState(() {
             _userName = doc.data()?['name'] ?? '';
@@ -41,6 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -64,8 +67,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+        child: NavbarAwareScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

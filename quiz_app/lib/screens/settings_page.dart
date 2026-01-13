@@ -5,6 +5,7 @@ import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +36,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final user = _auth.currentUser;
       if (user != null) {
         final doc = await _firestore.collection('users').doc(user.uid).get();
+        if (!mounted) return;
         if (doc.exists) {
           setState(() {
             _userEmail = user.email ?? '';
@@ -45,6 +47,7 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -309,8 +312,8 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+        child: NavbarAwareScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -399,19 +402,6 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 12),
               _buildSettingsCard([
                 _buildSettingItem(
-                  icon: Icons.notifications_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notifications settings coming soon'),
-                      ),
-                    );
-                  },
-                ),
-                _buildDivider(),
-                _buildSettingItem(
                   icon: Icons.language_rounded,
                   title: 'Language',
                   subtitle: 'English (US)',
@@ -449,21 +439,47 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: 'About Queez',
                   subtitle: 'Version 1.0.0',
                   onTap: () {
-                    showAboutDialog(
+                    AppDialog.show(
                       context: context,
-                      applicationName: 'Queez',
-                      applicationVersion: '1.0.0',
-                      applicationIcon: const Icon(
-                        Icons.quiz_rounded,
-                        size: 48,
-                        color: AppColors.primary,
+                      title: 'About Queez',
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.quiz_rounded,
+                            size: 64,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Queez',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Version 1.0.0',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Learn Smarter. Score Higher.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      children: [
-                        const Text(
-                          'Learn Smarter. Score Higher.',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                      primaryActionText: 'Close',
                     );
                   },
                 ),

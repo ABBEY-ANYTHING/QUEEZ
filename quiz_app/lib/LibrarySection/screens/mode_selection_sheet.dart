@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:quiz_app/utils/color.dart';
-import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/quiz_design_system.dart';
 
-/// Example widget showing how to select a mode and navigate to HostingPage
-/// You can integrate this into your existing quiz creation/selection flow
+/// Clean, minimalistic mode selection sheet with 2x2 grid layout
 class ModeSelectionSheet extends StatelessWidget {
   final String quizId;
   final String quizTitle;
@@ -23,14 +22,16 @@ class ModeSelectionSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(QuizSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(QuizBorderRadius.xl)),
+        color: AppColors.background,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(QuizBorderRadius.xl),
+        ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Handle bar
               Center(
@@ -43,79 +44,97 @@ class ModeSelectionSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: QuizSpacing.lg),
+              const SizedBox(height: QuizSpacing.xl),
 
+              // Title - left aligned
               Text(
                 'Select Quiz Mode',
                 style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: QuizSpacing.sm),
+              const SizedBox(height: QuizSpacing.xs),
+              // Subtitle
               Text(
                 'Choose how participants will take this quiz',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
-              const SizedBox(height: QuizSpacing.lg),
+              const SizedBox(height: QuizSpacing.xl),
 
-              // Share Mode
-              _buildModeCard(
-                context: context,
-                icon: Icons.share,
-                title: 'Share',
-                description:
-                    'Share this quiz with others and add it to their library for later access',
-                color: AppColors.primary,
-                mode: 'share',
+              // 2x2 Grid of mode cards
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _buildModeCard(
+                        context: context,
+                        icon: Icons.share_outlined,
+                        title: 'Share',
+                        mode: 'share',
+                      ),
+                    ),
+                    const SizedBox(width: QuizSpacing.md),
+                    Expanded(
+                      child: _buildModeCard(
+                        context: context,
+                        icon: Icons.groups_outlined,
+                        title: 'Live Multiplayer',
+                        mode: 'live_multiplayer',
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: QuizSpacing.md),
-
-              // Live Multiplayer Mode
-              _buildModeCard(
-                context: context,
-                icon: Icons.group,
-                title: 'Live Multiplayer',
-                description:
-                    'Host a live quiz session where all participants answer together in real-time',
-                color: AppColors.secondary,
-                mode: 'live_multiplayer',
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _buildModeCard(
+                        context: context,
+                        icon: Icons.person_outline,
+                        title: 'Self-Paced',
+                        mode: 'self_paced',
+                      ),
+                    ),
+                    const SizedBox(width: QuizSpacing.md),
+                    Expanded(
+                      child: _buildModeCard(
+                        context: context,
+                        icon: Icons.schedule_outlined,
+                        title: 'Timed Individual',
+                        mode: 'timed_individual',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: QuizSpacing.md),
-
-              // Self-Paced Mode
-              _buildModeCard(
-                context: context,
-                icon: Icons.person,
-                title: 'Self-Paced',
-                description:
-                    'Play the quiz at your own pace without time pressure',
-                color: AppColors.accentBright,
-                mode: 'self_paced',
-              ),
-              const SizedBox(height: QuizSpacing.md),
-
-              // Timed Individual Mode
-              _buildModeCard(
-                context: context,
-                icon: Icons.timer,
-                title: 'Timed Individual',
-                description:
-                    'Challenge yourself to complete the quiz within a time limit',
-                color: AppColors.warning,
-                mode: 'timed_individual',
-              ),
-              const SizedBox(height: QuizSpacing.md),
+              const SizedBox(height: QuizSpacing.xl),
 
               // Cancel button
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: AppColors.textSecondary),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: QuizSpacing.xl,
+                      vertical: QuizSpacing.sm,
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
               const SizedBox(height: QuizSpacing.sm),
@@ -130,72 +149,66 @@ class ModeSelectionSheet extends StatelessWidget {
     required BuildContext context,
     required IconData icon,
     required String title,
-    required String description,
-    required Color color,
     required String mode,
   }) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context); // Close bottom sheet
-
-        // Navigate to HostingPage with slide up animation
-        Navigator.push(
-          context,
-          customRoute(
-            HostingPage(
-              quizId: quizId,
-              quizTitle: quizTitle,
-              mode: mode,
-              hostId: hostId,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            customRoute(
+              HostingPage(
+                quizId: quizId,
+                quizTitle: quizTitle,
+                mode: mode,
+                hostId: hostId,
+              ),
+              AnimationType.slideUp,
             ),
-            AnimationType.slideUp,
+          );
+        },
+        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.all(QuizSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        );
-      },
-      borderRadius: BorderRadius.circular(QuizBorderRadius.md),
-      child: Container(
-        padding: const EdgeInsets.all(QuizSpacing.md),
-        decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
-          borderRadius: BorderRadius.circular(QuizBorderRadius.md),
-          color: color.withValues(alpha: 0.05),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(QuizSpacing.md),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(QuizBorderRadius.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon with subtle background
+              Container(
+                padding: const EdgeInsets.all(QuizSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+                ),
+                child: Icon(icon, color: AppColors.textPrimary, size: 26),
               ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: QuizSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: QuizSpacing.xs),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: QuizSpacing.md),
+              // Title
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: color, size: 16),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -214,12 +227,11 @@ void showModeSelection({
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: AppColors.primary.withValues(alpha: 0.3),
-    builder:
-        (context) => ModeSelectionSheet(
-          quizId: quizId,
-          quizTitle: quizTitle,
-          hostId: hostId,
-        ),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
+    builder: (context) => ModeSelectionSheet(
+      quizId: quizId,
+      quizTitle: quizTitle,
+      hostId: hostId,
+    ),
   );
 }
