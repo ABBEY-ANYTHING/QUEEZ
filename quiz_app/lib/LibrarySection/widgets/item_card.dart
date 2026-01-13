@@ -114,8 +114,8 @@ class _ItemCardState extends State<ItemCard>
                 child: ClipPath(
                   clipper: _AccentShapeClipper(),
                   child: Container(
-                    width: 100,
-                    height: 80,
+                    width: 150,
+                    height: 120,
                     color: _getAccentColor().withValues(alpha: 0.3),
                   ),
                 ),
