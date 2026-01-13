@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -128,6 +129,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
         await prefs.setBool('profileSetupCompleted', true);
         await prefs.setString('lastRoute', '/dashboard');
 
+        // Finish autofill context to trigger password save prompt
+        TextInput.finishAutofillContext();
+
         // Navigate to dashboard
         if (mounted) {
           customNavigateReplacement(context, '/dashboard', AnimationType.fade);
@@ -137,6 +141,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
         debugPrint('Navigating to profile setup - profile incomplete');
         await prefs.setBool('profileSetupCompleted', false);
         await prefs.setString('lastRoute', '/profile_welcome');
+
+        // Finish autofill context to trigger password save prompt
+        TextInput.finishAutofillContext();
 
         // Navigate to profile setup
         if (mounted) {
@@ -199,6 +206,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
       await prefs.setBool('profileSetupCompleted', false);
       await prefs.setString('lastRoute', '/profile_welcome');
       if (!mounted) return;
+
+      // Finish autofill context to trigger password save prompt
+      TextInput.finishAutofillContext();
+
       // Use customNavigateReplacement directly instead of callback
       customNavigateReplacement(
         context,
@@ -227,6 +238,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
     required IconData icon,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    Iterable<String>? autofillHints,
   }) {
     return AppTextField(
       controller: controller,
@@ -234,6 +246,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       prefixIcon: icon,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      autofillHints: autofillHints,
     );
   }
 
@@ -297,35 +310,55 @@ class _LoginPageState extends ConsumerState<LoginPage>
                   ),
                   const SizedBox(height: QuizSpacing.xl),
 
-                  _buildInputField(
-                    controller: _emailController,
-                    hint: 'Enter your email',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: QuizSpacing.md),
+                  // Wrap form fields in AutofillGroup for password save functionality
+                  AutofillGroup(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildInputField(
+                          controller: _emailController,
+                          hint: 'Enter your email',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [
+                            AutofillHints.email,
+                            AutofillHints.username,
+                          ],
+                        ),
+                        const SizedBox(height: QuizSpacing.md),
 
-                  _buildInputField(
-                    controller: _passwordController,
-                    hint: 'Enter your password',
-                    icon: Icons.lock_outline,
-                    obscureText: true,
-                  ),
-
-                  SizeTransition(
-                    sizeFactor: _slideController,
-                    axisAlignment: -1.0,
-                    child: SlideTransition(
-                      position: _confirmPassOffsetAnimation,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: QuizSpacing.md),
-                        child: _buildInputField(
-                          controller: _confirmPasswordController,
-                          hint: 'Confirm your password',
+                        _buildInputField(
+                          controller: _passwordController,
+                          hint: 'Enter your password',
                           icon: Icons.lock_outline,
                           obscureText: true,
+                          autofillHints: _isSignUpMode
+                              ? const [AutofillHints.newPassword]
+                              : const [AutofillHints.password],
                         ),
-                      ),
+
+                        SizeTransition(
+                          sizeFactor: _slideController,
+                          axisAlignment: -1.0,
+                          child: SlideTransition(
+                            position: _confirmPassOffsetAnimation,
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top: QuizSpacing.md,
+                              ),
+                              child: _buildInputField(
+                                controller: _confirmPasswordController,
+                                hint: 'Confirm your password',
+                                icon: Icons.lock_outline,
+                                obscureText: true,
+                                autofillHints: const [
+                                  AutofillHints.newPassword,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
