@@ -98,7 +98,7 @@ class _AIStudySetConfigurationState
       appBar: const UniversalAppBar(title: 'AI Configuration'),
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 80),
+        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -109,11 +109,11 @@ class _AIStudySetConfigurationState
             _buildUploadSection(state, notifier),
             const SizedBox(height: 24),
             _buildAIInfoBox(),
+            const SizedBox(height: 24),
+            _buildGenerateButton(state),
           ],
         ),
       ),
-      floatingActionButton: _buildGenerateButton(state),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -351,38 +351,55 @@ class _AIStudySetConfigurationState
   }
 
   Widget _buildGenerateButton(AIStudySetState state) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: state.canGenerate ? _startGeneration : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          elevation: 8,
-          shadowColor: AppColors.primary.withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          disabledBackgroundColor: Colors.grey[300],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.auto_awesome, size: 22),
-            const SizedBox(width: 12),
-            const Text(
-              'Generate Study Set',
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!state.canGenerate)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Upload at least 1 document to continue',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ],
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: state.canGenerate ? _startGeneration : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              elevation: state.canGenerate ? 8 : 2,
+              shadowColor: AppColors.primary.withValues(alpha: 0.4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              disabledBackgroundColor: Colors.grey[300],
+              disabledForegroundColor: Colors.grey[600],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.auto_awesome, size: 22),
+                const SizedBox(width: 12),
+                const Text(
+                  'Generate Study Set',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
