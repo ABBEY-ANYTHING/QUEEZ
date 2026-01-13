@@ -27,46 +27,508 @@ class ItemCard extends StatefulWidget {
   State<ItemCard> createState() => _ItemCardState();
 }
 
-class _ItemCardState extends State<ItemCard> {
+class _ItemCardState extends State<ItemCard>
+    with SingleTickerProviderStateMixin {
+  bool _showOptions = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleOptions() {
+    setState(() {
+      _showOptions = !_showOptions;
+      if (_showOptions) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+
+  void _hideOptions() {
+    if (_showOptions) {
+      setState(() {
+        _showOptions = false;
+        _animationController.reverse();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color softRed = AppColors.error.withValues(alpha: 0.1);
+    return TapRegion(
+      onTapOutside: (_) => _hideOptions(),
+      child: GestureDetector(
+        onTap: () {
+          if (_showOptions) {
+            _hideOptions();
+          } else {
+            _handleTap(context);
+          }
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: _getCardBackgroundColor(),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(28),
+              topRight: const Radius.circular(16),
+              bottomLeft: const Radius.circular(16),
+              bottomRight: const Radius.circular(28),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _getCardBackgroundColor().withValues(alpha: 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Decorative accent shape
+              Positioned(
+                top: 0,
+                right: 0,
+                child: ClipPath(
+                  clipper: _AccentShapeClipper(),
+                  child: Container(
+                    width: 100,
+                    height: 80,
+                    color: _getAccentColor().withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              // Main content
+              Row(
+                children: [
+                  // Thumbnail with unique shape
+                  _buildThumbnail(),
+                  // Content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(4, 18, 50, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Type Badge
+                          _buildTypeBadge(),
+                          const SizedBox(height: 12),
+                          // Title
+                          Text(
+                            widget.item.title,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: _getTextColor(),
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (widget.item.description.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.item.description,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _getTextColor().withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w400,
+                                height: 1.4,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 14),
+                          // Stats Row
+                          _buildStatsRow(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Action buttons (share + more)
+              Positioned(
+                top: 14,
+                right: 14,
+                child: _buildActionButtons(context),
+              ),
+              // Options bubbles
+              if (_showOptions) _buildOptionsBubbles(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    // Check if this item was shared in a restrictive mode (only for quizzes)
-    final isRestrictiveMode =
-        widget.item.isQuiz &&
-        (widget.item.sharedMode == 'self_paced' ||
-            widget.item.sharedMode == 'timed_individual');
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Share button
+        GestureDetector(
+          onTap: () => _handleShare(context),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.share_outlined,
+              size: 18,
+              color: _getAccentColor(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // More button
+        GestureDetector(
+          onTap: _toggleOptions,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(Icons.more_horiz, size: 20, color: _getTextColor()),
+          ),
+        ),
+      ],
+    );
+  }
 
-    // Show full features if not in restrictive mode
-    final showFullFeatures = !isRestrictiveMode;
+  void _handleShare(BuildContext context) {
+    if (widget.item.isQuiz) {
+      final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+      showModeSelection(
+        context: context,
+        quizId: widget.item.id,
+        quizTitle: widget.item.title,
+        hostId: hostId,
+      );
+    } else {
+      // For other types, show a simple share message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Share ${_getTypeLabel()} coming soon!'),
+          backgroundColor: _getAccentColor(),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
+  Widget _buildOptionsBubbles() {
+    return Positioned(
+      top: 52,
+      right: 12,
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              alignment: Alignment.topRight,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildOptionItem(
+                      icon: Icons.edit_outlined,
+                      label: 'Edit',
+                      color: AppColors.primary,
+                      onTap: () {
+                        _hideOptions();
+                        // TODO: Implement edit functionality
+                      },
+                    ),
+                    Container(height: 1, color: AppColors.surface),
+                    _buildOptionItem(
+                      icon: Icons.delete_outline,
+                      label: 'Delete',
+                      color: AppColors.error,
+                      onTap: () {
+                        _hideOptions();
+                        widget.onDelete();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOptionItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 20, color: color),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail() {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+      width: 105,
+      height: 140,
+      margin: const EdgeInsets.all(16),
+      child: ClipPath(
+        clipper: _ThumbnailShapeClipper(),
+        child: Container(
+          decoration: BoxDecoration(color: _getAccentColor()),
+          child: widget.item.coverImagePath != null
+              ? Image.network(
+                  widget.item.coverImagePath!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildDefaultThumbnailIcon(),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildDefaultThumbnailIcon();
+                  },
+                )
+              : _buildDefaultThumbnailIcon(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultThumbnailIcon() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _getTypeIcon(),
+            size: 42,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _getTypeLabel(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    );
+  }
+
+  Widget _buildTypeBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getAccentColor(),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(4),
+          topRight: const Radius.circular(12),
+          bottomLeft: const Radius.circular(12),
+          bottomRight: const Radius.circular(4),
+        ),
+      ),
+      child: Text(
+        _getTypeLabel().toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsRow() {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      children: [
+        // Item count
+        _buildStatChip(icon: _getTypeIcon(), text: _getItemCountText()),
+        // Author (if available)
+        if (widget.item.originalOwnerUsername != null &&
+            widget.item.originalOwnerUsername!.isNotEmpty)
+          _buildStatChip(
+            icon: Icons.person_outline_rounded,
+            text: widget.item.originalOwnerUsername!,
+          ),
+        // Date (if available)
+        if (widget.item.createdAt != null)
+          _buildStatChip(
+            icon: Icons.access_time_rounded,
+            text: widget.item.createdAt!,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStatChip({required IconData icon, required String text}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _getAccentColor().withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeader(softRed),
-          _buildCoverImage(),
-          _buildTitle(),
-          if (widget.item.originalOwnerUsername != null &&
-              widget.item.originalOwnerUsername!.isNotEmpty)
-            _buildAuthorInfo(),
-          _buildDescription(),
-          _buildActionButtons(context, showFullFeatures),
+          Icon(icon, size: 13, color: _getTextColor()),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _getTextColor(),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  // Earth tone background colors
+  Color _getCardBackgroundColor() {
+    if (widget.item.isQuiz) return const Color(0xFFF5F0E8); // Warm cream
+    if (widget.item.isNote) return const Color(0xFFFDF6E3); // Soft sand
+    if (widget.item.isStudySet) return const Color(0xFFE8F0E8); // Sage mist
+    return const Color(0xFFF0EDE8); // Warm stone - Flashcard
+  }
+
+  // Accent colors (darker earth tones)
+  Color _getAccentColor() {
+    if (widget.item.isQuiz) return const Color(0xFF5E8C61); // Forest green
+    if (widget.item.isNote) return const Color(0xFFB8860B); // Dark goldenrod
+    if (widget.item.isStudySet) return const Color(0xFF6B8E7B); // Eucalyptus
+    return const Color(0xFF8B7355); // Warm brown - Flashcard
+  }
+
+  // Text colors
+  Color _getTextColor() {
+    if (widget.item.isQuiz) return const Color(0xFF3D5940); // Deep forest
+    if (widget.item.isNote) return const Color(0xFF6B4423); // Saddle brown
+    if (widget.item.isStudySet) return const Color(0xFF4A6B5A); // Deep sage
+    return const Color(0xFF5C4A3A); // Dark brown - Flashcard
+  }
+
+  IconData _getTypeIcon() {
+    if (widget.item.isQuiz) return Icons.quiz_outlined;
+    if (widget.item.isNote) return Icons.description_outlined;
+    if (widget.item.isStudySet) return Icons.collections_bookmark_outlined;
+    return Icons.style_outlined; // Flashcard
+  }
+
+  String _getTypeLabel() {
+    if (widget.item.isQuiz) return 'Quiz';
+    if (widget.item.isNote) return 'Note';
+    if (widget.item.isStudySet) return 'Study Set';
+    return 'Flashcards';
+  }
+
+  String _getItemCountText() {
+    if (widget.item.isNote) return 'Note';
+    if (widget.item.isStudySet) return '${widget.item.itemCount} Items';
+    if (widget.item.isQuiz) return '${widget.item.itemCount} Questions';
+    return '${widget.item.itemCount} Cards';
+  }
+
+  void _handleTap(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (widget.item.isNote) {
+      _navigateToNote(context, user.uid);
+    } else if (widget.item.isStudySet) {
+      _navigateToStudySet(context);
+    } else if (widget.item.isFlashcard) {
+      _navigateToFlashcard(context, user.uid);
+    } else if (widget.item.isQuiz) {
+      _navigateToQuiz(context, user.uid);
+    }
   }
 
   void _navigateToNote(BuildContext context, String userId) {
@@ -184,406 +646,53 @@ class _ItemCardState extends State<ItemCard> {
       ),
     );
   }
+}
 
-  Widget _buildHeader(Color softRed) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildTypeLabel(),
-              GestureDetector(
-                onTap: () {
-                  // Prevent tap from propagating to parent InkWell
-                },
-                child: IconButton(
-                  onPressed: () {
-                    widget.onDelete();
-                  },
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: AppColors.error,
-                    size: 20,
-                  ),
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                    maxWidth: 32,
-                    maxHeight: 32,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildItemCountTag(),
-              Flexible(
-                child: Text(
-                  widget.item.createdAt ?? 'Unknown',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+// Custom clipper for the thumbnail with organic shape
+class _ThumbnailShapeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final w = size.width;
+    final h = size.height;
+
+    // Create an organic blob-like shape
+    path.moveTo(w * 0.1, h * 0.05);
+    path.quadraticBezierTo(w * 0.5, 0, w * 0.9, h * 0.08);
+    path.quadraticBezierTo(w, h * 0.15, w * 0.95, h * 0.4);
+    path.quadraticBezierTo(w, h * 0.6, w * 0.92, h * 0.85);
+    path.quadraticBezierTo(w * 0.85, h, w * 0.5, h * 0.95);
+    path.quadraticBezierTo(w * 0.15, h, w * 0.08, h * 0.85);
+    path.quadraticBezierTo(0, h * 0.7, 0, h * 0.5);
+    path.quadraticBezierTo(0, h * 0.2, w * 0.1, h * 0.05);
+    path.close();
+
+    return path;
   }
 
-  Widget _buildTypeLabel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: widget.item.isQuiz
-            ? AppColors.primary.withValues(alpha: 0.15)
-            : widget.item.isNote
-            ? AppColors.warning.withValues(alpha: 0.15)
-            : widget.item.isStudySet
-            ? AppColors.secondary.withValues(alpha: 0.15)
-            : AppColors.accentBright.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        widget.item.isQuiz
-            ? 'QUIZ'
-            : widget.item.isNote
-            ? 'NOTE'
-            : widget.item.isStudySet
-            ? 'STUDY SET'
-            : 'FLASHCARD SET',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: widget.item.isQuiz
-              ? AppColors.primary
-              : widget.item.isNote
-              ? AppColors.warning
-              : widget.item.isStudySet
-              ? AppColors.secondary
-              : AppColors.accentBright,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+// Custom clipper for the decorative accent shape
+class _AccentShapeClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final w = size.width;
+    final h = size.height;
+
+    // Create a flowing wave shape
+    path.moveTo(w * 0.3, 0);
+    path.lineTo(w, 0);
+    path.lineTo(w, h * 0.6);
+    path.quadraticBezierTo(w * 0.7, h * 0.8, w * 0.4, h * 0.5);
+    path.quadraticBezierTo(w * 0.1, h * 0.2, w * 0.3, 0);
+    path.close();
+
+    return path;
   }
 
-  Widget _buildItemCountTag() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            widget.item.isQuiz
-                ? Icons.quiz_outlined
-                : widget.item.isNote
-                ? Icons.description_outlined
-                : widget.item.isStudySet
-                ? Icons.collections_bookmark_outlined
-                : Icons.style_outlined,
-            size: 18,
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            widget.item.isNote
-                ? 'Note'
-                : widget.item.isStudySet
-                ? '${widget.item.itemCount} Items'
-                : '${widget.item.itemCount} ${widget.item.isQuiz ? 'Questions' : 'Cards'}',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCoverImage() {
-    return Container(
-      height: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: widget.item.coverImagePath != null
-            ? Image.network(
-                widget.item.coverImagePath!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildDefaultIcon(),
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: AppColors.surface,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  );
-                },
-              )
-            : _buildDefaultIcon(),
-      ),
-    );
-  }
-
-  Widget _buildTitle() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Text(
-        widget.item.title,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Widget _buildAuthorInfo() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      child: Row(
-        children: [
-          Icon(
-            Icons.person_outline_rounded,
-            size: 16,
-            color: AppColors.textSecondary.withValues(alpha: 0.7),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              widget.item.originalOwnerUsername!,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDescription() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: Text(
-        widget.item.description,
-        style: const TextStyle(
-          fontSize: 15,
-          color: AppColors.textSecondary,
-          height: 1.4,
-        ),
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, bool showFullFeatures) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: widget.item.isNote
-          ? _buildNoteButton(context)
-          : widget.item.isStudySet
-          ? _buildStudySetButton(context)
-          : widget.item.isFlashcard
-          ? _buildFlashcardButton(context)
-          : _buildQuizButtons(context, showFullFeatures),
-    );
-  }
-
-  Widget _buildNoteButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            _navigateToNote(context, user.uid);
-          }
-        },
-        icon: const Icon(Icons.visibility, size: 20, color: AppColors.white),
-        label: const Text(
-          'View',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.warning,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStudySetButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: () => _navigateToStudySet(context),
-        icon: const Icon(Icons.visibility, size: 20, color: AppColors.white),
-        label: const Text(
-          'View',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.secondary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFlashcardButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            _navigateToFlashcard(context, user.uid);
-          }
-        },
-        icon: const Icon(Icons.play_arrow, size: 20, color: AppColors.white),
-        label: const Text(
-          'Play',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuizButtons(BuildContext context, bool showFullFeatures) {
-    if (showFullFeatures) {
-      return Row(
-        children: [
-          Expanded(child: _buildShareButton(context)),
-          const SizedBox(width: 12),
-          Expanded(child: _buildPlayButton(context)),
-        ],
-      );
-    } else {
-      return SizedBox(
-        width: double.infinity,
-        height: 48,
-        child: _buildPlayButton(context),
-      );
-    }
-  }
-
-  Widget _buildShareButton(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
-          showModeSelection(
-            context: context,
-            quizId: widget.item.id,
-            quizTitle: widget.item.title,
-            hostId: hostId,
-          );
-        },
-        icon: const Icon(Icons.share, size: 20, color: AppColors.white),
-        label: const Text(
-          'Share',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.secondary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlayButton(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            _navigateToQuiz(context, user.uid);
-          }
-        },
-        icon: const Icon(Icons.play_arrow, size: 20, color: AppColors.white),
-        label: const Text(
-          'Play',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDefaultIcon() {
-    return Container(
-      color: AppColors.surface,
-      child: const Center(
-        child: Icon(
-          Icons.quiz_rounded,
-          size: 64,
-          color: AppColors.iconInactive,
-        ),
-      ),
-    );
-  }
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
