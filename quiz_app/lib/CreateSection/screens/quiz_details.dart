@@ -158,8 +158,8 @@ class QuizDetailsState extends State<QuizDetails> {
                         return null;
                       },
                       autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedLanguage = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedLanguage = value),
                       enabled: !_isLocked,
                     ),
                   ),
@@ -172,8 +172,8 @@ class QuizDetailsState extends State<QuizDetails> {
                       imagePath: _coverImagePath,
                       onTap: () async {
                         try {
-                          final imagePath =
-                              await ImagePickerService().pickImageFromGallery();
+                          final imagePath = await ImagePickerService()
+                              .pickImageFromGallery();
                           if (imagePath != null) {
                             setState(() {
                               _coverImagePath = imagePath;
@@ -226,8 +226,8 @@ class QuizDetailsState extends State<QuizDetails> {
                         return null;
                       },
                       autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedTag = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedTag = value),
                       enabled: !_isLocked,
                     ),
                   ),

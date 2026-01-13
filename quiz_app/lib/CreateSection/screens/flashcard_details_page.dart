@@ -137,8 +137,8 @@ class FlashcardDetailsPageState extends State<FlashcardDetailsPage> {
                         return null;
                       },
                       autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedCategory = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedCategory = value),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -160,15 +160,14 @@ class FlashcardDetailsPageState extends State<FlashcardDetailsPage> {
 
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder:
-                                (context) => FlashcardCreationPage(
-                                  title: _titleController.text,
-                                  description: _descriptionController.text,
-                                  category: _selectedCategory!,
-                                  creatorId: userId,
-                                  isStudySetMode: widget.isStudySetMode,
-                                  onSaveForStudySet: widget.onSaveForStudySet,
-                                ),
+                            builder: (context) => FlashcardCreationPage(
+                              title: _titleController.text,
+                              description: _descriptionController.text,
+                              category: _selectedCategory!,
+                              creatorId: userId,
+                              isStudySetMode: widget.isStudySetMode,
+                              onSaveForStudySet: widget.onSaveForStudySet,
+                            ),
                           ),
                         );
                       } else {
@@ -197,9 +196,9 @@ class FlashcardDetailsPageState extends State<FlashcardDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }

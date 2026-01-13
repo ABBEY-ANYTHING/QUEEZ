@@ -137,8 +137,8 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
                         return null;
                       },
                       autoValidate: _autoValidate,
-                      onChanged:
-                          (value) => setState(() => _selectedCategory = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedCategory = value),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -160,16 +160,15 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
 
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder:
-                                (context) => NoteEditorPage(
-                                  title: _titleController.text,
-                                  description: _descriptionController.text,
-                                  category: _selectedCategory!,
-                                  creatorId: userId,
-                                  coverImagePath: _coverImagePath,
-                                  isStudySetMode: widget.isStudySetMode,
-                                  onSaveForStudySet: widget.onSaveForStudySet,
-                                ),
+                            builder: (context) => NoteEditorPage(
+                              title: _titleController.text,
+                              description: _descriptionController.text,
+                              category: _selectedCategory!,
+                              creatorId: userId,
+                              coverImagePath: _coverImagePath,
+                              isStudySetMode: widget.isStudySetMode,
+                              onSaveForStudySet: widget.onSaveForStudySet,
+                            ),
                           ),
                         );
                       } else {
@@ -198,9 +197,9 @@ class NoteDetailsPageState extends State<NoteDetailsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }

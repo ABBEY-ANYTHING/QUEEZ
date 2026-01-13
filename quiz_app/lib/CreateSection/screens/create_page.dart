@@ -85,11 +85,7 @@ class CreatePage extends StatelessWidget {
                   color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: iconColor,
-                ),
+                child: Icon(icon, size: 32, color: iconColor),
               ),
               const SizedBox(width: 16),
               // Text content
@@ -119,11 +115,7 @@ class CreatePage extends StatelessWidget {
                 ),
               ),
               // Arrow icon
-              Icon(
-                Icons.chevron_right,
-                size: 28,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.chevron_right, size: 28, color: Colors.grey[400]),
             ],
           ),
         ),

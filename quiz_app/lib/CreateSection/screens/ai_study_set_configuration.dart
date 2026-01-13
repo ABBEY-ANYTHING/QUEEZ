@@ -155,11 +155,7 @@ class _AIStudySetConfigurationState
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -350,11 +346,7 @@ class _AIStudySetConfigurationState
               color: AppColors.primary.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.auto_awesome,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
