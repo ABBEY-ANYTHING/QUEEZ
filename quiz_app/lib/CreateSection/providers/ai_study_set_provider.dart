@@ -176,7 +176,12 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
         error: null,
         generatedStudySet: null,
       );
-      _updateProgress(0, 'Preparing your documents...');
+      _updateProgress(0, 'Waking up server...');
+
+      // Wake up the server first (handles Render cold start)
+      await AIStudySetService.wakeUpServer();
+      
+      _updateProgress(5, 'Preparing your documents...');
 
       // Upload pending files first
       final uploadedFilesList = <UploadedFile>[];

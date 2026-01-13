@@ -207,7 +207,12 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
         backgroundColor: AppColors.background,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 32,
+              bottom: 32 + kBottomNavbarHeight,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
