@@ -5,14 +5,17 @@ import 'package:quiz_app/ProfileSetup/widgets/profile_progress_indicator.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 
-class BasicInfoScreen extends StatefulWidget {
-  const BasicInfoScreen({super.key});
+class BasicInfoStep extends StatefulWidget {
+  final String? selectedRole;
+  final Function(Map<String, dynamic>) onNext;
+
+  const BasicInfoStep({super.key, this.selectedRole, required this.onNext});
 
   @override
-  State<BasicInfoScreen> createState() => _BasicInfoScreenState();
+  State<BasicInfoStep> createState() => _BasicInfoStepState();
 }
 
-class _BasicInfoScreenState extends State<BasicInfoScreen> {
+class _BasicInfoStepState extends State<BasicInfoStep> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
@@ -25,16 +28,7 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
   @override
   void initState() {
     super.initState();
-    // Get the selected role from the previous screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final Map<String, dynamic>? args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null && args.containsKey('role')) {
-        setState(() {
-          _selectedRole = args['role'];
-        });
-      }
-    });
+    _selectedRole = widget.selectedRole;
   }
 
   @override
@@ -69,19 +63,14 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
       // Save basic info to Firestore
       _saveBasicInfo(age);
 
-      // Navigate to preferences screen with the collected data
-      customNavigate(
-        context,
-        '/profile_preferences',
-        AnimationType.slideLeft,
-        arguments: {
-          'name': _nameController.text,
-          'username': _usernameController.text,
-          'age': age,
-          'dateOfBirth': _dobController.text,
-          'role': _selectedRole,
-        },
-      );
+      // Pass data to next step
+      widget.onNext({
+        'name': _nameController.text,
+        'username': _usernameController.text,
+        'age': age,
+        'dateOfBirth': _dobController.text,
+        'role': _selectedRole,
+      });
     }
   }
 
@@ -137,129 +126,123 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const ProfileProgressIndicator(currentStep: 3, totalSteps: 4),
-              const SizedBox(height: 32),
-              const Text(
-                'Basic Information',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Full Name',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _nameController,
-                          hintText: 'Enter your full name',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your name';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Username',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildTextField(
-                          controller: _usernameController,
-                          hintText: 'Enter your username',
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a username';
-                            }
-                            if (value.length < 3) {
-                              return 'Username must be at least 3 characters';
-                            }
-                            if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
-                              return 'Username can only contain letters, numbers, and underscores';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Date of Birth',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildDateField(),
-                      ],
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 32),
+          const Text(
+            'Basic Information',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Full Name',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-              Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accentShadow,
-                      spreadRadius: 1,
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                    const SizedBox(height: 8),
+                    _buildTextField(
+                      controller: _nameController,
+                      hintText: 'Enter your full name',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        return null;
+                      },
                     ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Username',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildTextField(
+                      controller: _usernameController,
+                      hintText: 'Enter your username',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a username';
+                        }
+                        if (value.length < 3) {
+                          return 'Username must be at least 3 characters';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                          return 'Username can only contain letters, numbers, and underscores';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Date of Birth',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDateField(),
                   ],
                 ),
-                child: ElevatedButton(
-                  onPressed: _onNextStep,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Next Step',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
-                    ),
-                  ),
+              ),
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentShadow,
+                  spreadRadius: 1,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: _onNextStep,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
+              child: const Text(
+                'Next Step',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -13,30 +13,41 @@ class ProfileProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            totalSteps,
-            (index) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: index + 1 == currentStep ? 24.0 : 12.0,
-                height: 12.0,
-                decoration: BoxDecoration(
-                  color:
-                      index + 1 <= currentStep
-                          ? AppColors.primary
-                          : AppColors.primaryLighter,
-                  borderRadius: BorderRadius.circular(6.0),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double progress = currentStep / totalSteps;
+        
+        return Container(
+          height: 8,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Stack(
+            children: [
+              AnimatedFractionallySizedBox(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                widthFactor: progress,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -1,38 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:quiz_app/CreateSection/widgets/custom_dropdown.dart';
 import 'package:quiz_app/ProfileSetup/widgets/profile_progress_indicator.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 
-class PreferencesScreen extends StatefulWidget {
-  const PreferencesScreen({super.key});
+class PreferencesStep extends StatefulWidget {
+  final Map<String, dynamic> userData;
+  final Function(Map<String, dynamic>) onFinish;
+
+  const PreferencesStep({
+    super.key,
+    required this.userData,
+    required this.onFinish,
+  });
 
   @override
-  State<PreferencesScreen> createState() => _PreferencesScreenState();
+  State<PreferencesStep> createState() => _PreferencesStepState();
 }
 
-class _PreferencesScreenState extends State<PreferencesScreen> {
+class _PreferencesStepState extends State<PreferencesStep> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // User data from previous screen
   Map<String, dynamic> _userData = {};
   final List<String> _selectedInterests = [];
+  final List<String> _allInterests = [
+    'Mathematics',
+    'Science',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'History',
+    'Geography',
+    'Literature',
+    'English',
+    'Arts',
+    'Music',
+    'Technology',
+    'Computer Science',
+    'Languages',
+    'Economics',
+    'Business',
+    'Psychology',
+    'Philosophy',
+    'Physical Education'
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Get user data from previous screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final Map<String, dynamic>? args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null) {
-        setState(() {
-          _userData = args;
-        });
-      }
-    });
+    _userData = widget.userData;
   }
 
   @override
@@ -50,12 +70,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
       'interests': _selectedInterests,
     };
 
-    customNavigate(
-      context,
-      '/profile_complete',
-      AnimationType.slideLeft,
-      arguments: completeUserData,
-    );
+    widget.onFinish(completeUserData);
   }
 
   Future<void> _savePreferences() async {
@@ -84,75 +99,72 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              const ProfileProgressIndicator(currentStep: 4, totalSteps: 4),
-              const SizedBox(height: 32),
-              const Text(
-                'Select Your Interests',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Choose topics you\'re interested in learning',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 32),
-              Expanded(
-                child: SingleChildScrollView(child: _buildInterestsSection()),
-              ),
-              Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accentShadow,
-                      spreadRadius: 1,
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _onComplete,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Complete Setup',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 32),
+          const Text(
+            'Select Your Interests',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          const Text(
+            'Choose topics you\'re interested in learning',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 32),
+          Expanded(
+            child: SingleChildScrollView(child: _buildInterestsSection()),
+          ),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accentShadow,
+                  spreadRadius: 1,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ElevatedButton(
+              onPressed: _onComplete,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Complete Setup',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInterestsSection() {
+    final availableInterests =
+        _allInterests.where((i) => !_selectedInterests.contains(i)).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -161,52 +173,47 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 10,
-          runSpacing: 14,
-          children: [
-            _buildInterestChip('Mathematics'),
-            _buildInterestChip('Science'),
-            _buildInterestChip('Physics'),
-            _buildInterestChip('Chemistry'),
-            _buildInterestChip('Biology'),
-            _buildInterestChip('History'),
-            _buildInterestChip('Geography'),
-            _buildInterestChip('Literature'),
-            _buildInterestChip('English'),
-            _buildInterestChip('Arts'),
-            _buildInterestChip('Music'),
-            _buildInterestChip('Technology'),
-            _buildInterestChip('Computer Science'),
-            _buildInterestChip('Languages'),
-            _buildInterestChip('Economics'),
-            _buildInterestChip('Business'),
-            _buildInterestChip('Psychology'),
-            _buildInterestChip('Philosophy'),
-            _buildInterestChip('Physical Education'),
-          ],
+        CustomDropdown(
+          key: ValueKey(availableInterests.length), // Force rebuild to prevent state issues
+          value: null,
+          items: availableInterests,
+          hintText: availableInterests.isEmpty
+              ? 'All topics selected'
+              : 'Choose a topic...',
+          enabled: availableInterests.isNotEmpty,
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              _toggleInterest(newValue);
+            }
+          },
         ),
+        const SizedBox(height: 24),
+        if (_selectedInterests.isNotEmpty)
+          Wrap(
+            spacing: 10,
+            runSpacing: 14,
+            children:
+                _selectedInterests.map((interest) {
+                  return Chip(
+                    label: Text(interest),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () => _toggleInterest(interest),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    labelStyle: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    deleteIconColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                      ),
+                    ),
+                  );
+                }).toList(),
+          ),
       ],
-    );
-  }
-
-  Widget _buildInterestChip(String label) {
-    final bool isSelected = _selectedInterests.contains(label);
-
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) => _toggleInterest(label),
-      backgroundColor: AppColors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
-      labelStyle: TextStyle(
-        color: isSelected ? AppColors.primary : AppColors.textPrimary,
-      ),
-      selectedColor: AppColors.primary.withValues(alpha: 0.2),
-      checkmarkColor: AppColors.primary,
     );
   }
 }
