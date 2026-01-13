@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/screens/create_page.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
@@ -132,9 +133,9 @@ class BottomNavbarControllerState extends ConsumerState<BottomNavbarController>
         // Bottom navbar positioned at bottom
         if (!keyboardVisible)
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
+            left: 16,
+            right: 16,
+            bottom: 20,
             child: SlideTransition(
               position: _navbarSlideAnimation,
               child: FadeTransition(
@@ -176,84 +177,367 @@ class _BottomNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.white,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            offset: const Offset(0, -2),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.06),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            offset: const Offset(0, 1),
+            blurRadius: 6,
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              _navItem(Icons.home_rounded, 0, 'Home'),
-              _navItem(Icons.library_books_rounded, 1, 'Library'),
-              _navItem(Icons.add_circle_rounded, 2, 'Create'),
-              _navItem(Icons.person_rounded, 3, 'Profile'),
-              _navItem(Icons.settings_rounded, 4, 'Settings'),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          _NavItem(
+            icon: Icons.home_rounded,
+            label: 'Home',
+            index: 0,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+          _NavItem(
+            icon: Icons.library_books_rounded,
+            label: 'Library',
+            index: 1,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+          _CreateButton(
+            index: 2,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+          _NavItem(
+            icon: Icons.person_rounded,
+            label: 'Profile',
+            index: 3,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+          _NavItem(
+            icon: Icons.settings_rounded,
+            label: 'Settings',
+            index: 4,
+            currentIndex: currentIndex,
+            onTap: onTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Individual nav item with spring animation and haptics
+class _NavItem extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final int index;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    _scaleController.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _scaleController.reverse();
+  }
+
+  void _handleTapCancel() {
+    _scaleController.reverse();
+  }
+
+  void _handleTap() {
+    if (widget.index != widget.currentIndex) {
+      // Trigger haptic feedback
+      HapticFeedback.lightImpact();
+      widget.onTap(widget.index);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isActive = widget.currentIndex == widget.index;
+
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated icon with scale effect
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(
+                  begin: isActive ? 1.0 : 1.15,
+                  end: isActive ? 1.15 : 1.0,
+                ),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.elasticOut,
+                builder: (context, scale, child) {
+                  return Transform.scale(
+                    scale: scale,
+                    child: child,
+                  );
+                },
+                child: TweenAnimationBuilder<Color?>(
+                  tween: ColorTween(
+                    begin: isActive ? AppColors.textSecondary : AppColors.primary,
+                    end: isActive ? AppColors.primary : AppColors.textSecondary,
+                  ),
+                  duration: const Duration(milliseconds: 200),
+                  builder: (context, color, _) {
+                    return Icon(
+                      widget.icon,
+                      size: 24,
+                      color: color,
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+              // Label with animated color
+              TweenAnimationBuilder<Color?>(
+                tween: ColorTween(
+                  begin: isActive ? AppColors.textSecondary : AppColors.primary,
+                  end: isActive ? AppColors.primary : AppColors.textSecondary,
+                ),
+                duration: const Duration(milliseconds: 200),
+                builder: (context, color, _) {
+                  return Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                      color: color,
+                      letterSpacing: 0.2,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              // Animated indicator dot
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: isActive ? 1.0 : 0.0,
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  scale: isActive ? 1.0 : 0.0,
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _navItem(IconData icon, int index, String label) {
-    final bool isActive = currentIndex == index;
-    final bool isCreateButton = index == 2;
+// Special Create button with floating effect
+class _CreateButton extends StatefulWidget {
+  final int index;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _CreateButton({
+    required this.index,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  State<_CreateButton> createState() => _CreateButtonState();
+}
+
+class _CreateButtonState extends State<_CreateButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _elevationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _elevationAnimation = Tween<double>(begin: 8.0, end: 2.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _controller.reverse();
+  }
+
+  void _handleTapCancel() {
+    _controller.reverse();
+  }
+
+  void _handleTap() {
+    // Trigger medium haptic for create button
+    HapticFeedback.mediumImpact();
+    widget.onTap(widget.index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isActive = widget.currentIndex == widget.index;
 
     return GestureDetector(
-      onTap: () {
-        if (!isActive) onTap(index);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: isCreateButton ? 16 : 12,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: isActive
-              ? isCreateButton
-                    ? AppColors.primary
-                    : AppColors.primary.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: isCreateButton ? 28 : 24,
-              color: isActive
-                  ? isCreateButton
-                        ? AppColors.white
-                        : AppColors.primary
-                  : AppColors.textSecondary,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                color: isActive
-                    ? isCreateButton
-                          ? AppColors.white
-                          : AppColors.primary
-                    : AppColors.textSecondary,
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      onTap: _handleTap,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.primaryDark : AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    offset: Offset(0, _elevationAnimation.value / 2),
+                    blurRadius: _elevationAnimation.value,
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Subtle ring animation when active
+                  if (isActive)
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 300),
+                      builder: (context, value, _) {
+                        return Container(
+                          width: 52 + (value * 8),
+                          height: 52 + (value * 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary.withValues(
+                                alpha: 0.2 * (1 - value * 0.5),
+                              ),
+                              width: 2,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  // Animated plus icon with rotation
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: isActive ? 0.0 : 0.125,
+                      end: isActive ? 0.125 : 0.0,
+                    ),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutBack,
+                    builder: (context, rotation, child) {
+                      return Transform.rotate(
+                        angle: rotation * 3.14159,
+                        child: child,
+                      );
+                    },
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: 28,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
