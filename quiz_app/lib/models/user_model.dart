@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserModel {
   final String uid;
   final String name;
+  final String username;
   final String role;
   final int age;
   final String dateOfBirth;
@@ -14,6 +15,7 @@ class UserModel {
   UserModel({
     required this.uid,
     required this.name,
+    required this.username,
     required this.role,
     required this.age,
     required this.dateOfBirth,
@@ -28,6 +30,7 @@ class UserModel {
     return {
       'uid': uid,
       'name': name,
+      'username': username,
       'role': role,
       'age': age,
       'dateOfBirth': dateOfBirth,
@@ -44,6 +47,7 @@ class UserModel {
     return UserModel(
       uid: data['uid'] ?? '',
       name: data['name'] ?? '',
+      username: data['username'] ?? '',
       role: data['role'] ?? '',
       age: data['age'] ?? 0,
       dateOfBirth: data['dateOfBirth'] ?? '',
@@ -58,6 +62,7 @@ class UserModel {
   UserModel copyWith({
     String? uid,
     String? name,
+    String? username,
     String? role,
     int? age,
     String? dateOfBirth,
@@ -69,6 +74,7 @@ class UserModel {
     return UserModel(
       uid: uid ?? this.uid,
       name: name ?? this.name,
+      username: username ?? this.username,
       role: role ?? this.role,
       age: age ?? this.age,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,

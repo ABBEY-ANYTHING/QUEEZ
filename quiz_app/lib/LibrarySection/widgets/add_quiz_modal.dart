@@ -134,9 +134,12 @@ class _AddQuizModalContentState extends State<AddQuizModalContent> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: bottomPadding > 0 ? bottomPadding + 20 : safeAreaBottom + 100,
       ),
       child: Container(
         decoration: const BoxDecoration(

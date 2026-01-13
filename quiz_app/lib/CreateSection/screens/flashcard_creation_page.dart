@@ -245,6 +245,29 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
                     ),
                   ),
                 ),
+                // Add Card Button - Always visible
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _addNewCard,
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('Add Another Card'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 _FlashcardNavigationBar(
                   currentIndex: currentCardIndex,
                   totalCards: _cards.length,

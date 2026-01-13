@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/color.dart';
 
@@ -5,11 +6,7 @@ class ImagePickerWidget extends StatelessWidget {
   final String? imagePath;
   final VoidCallback onTap;
 
-  const ImagePickerWidget({
-    super.key,
-    this.imagePath,
-    required this.onTap,
-  });
+  const ImagePickerWidget({super.key, this.imagePath, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -43,26 +40,58 @@ class ImagePickerWidget extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(8),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Tap to select image',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+            child: imagePath != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(File(imagePath!), fit: BoxFit.cover),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.edit,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: AppColors.textSecondary,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap to select image',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'JPG, PNG up to 5MB',
+                        style: TextStyle(
+                          color: AppColors.iconInactive,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'JPG, PNG up to 5MB',
-                  style: TextStyle(
-                    color: AppColors.iconInactive,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

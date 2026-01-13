@@ -20,63 +20,72 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late TextEditingController _nameController;
-  late TextEditingController _ageController;
+  late TextEditingController _usernameController;
   late TextEditingController _dobController;
   late String _selectedRole;
-  late String _selectedSubjectArea;
-  late String _selectedExperienceLevel;
   late List<String> _selectedInterests;
+  DateTime? _selectedDate;
 
   bool _isSaving = false;
 
   final List<String> _roles = ['Student', 'Teacher', 'Professional', 'Other'];
-  final List<String> _subjectAreas = [
-    'Mathematics',
-    'Science',
-    'History',
-    'Literature',
-    'Technology',
-    'Arts',
-    'Business',
-    'Other'
-  ];
-  final List<String> _experienceLevels = [
-    'Beginner',
-    'Intermediate',
-    'Advanced',
-    'Expert'
-  ];
   final List<String> _availableInterests = [
-    'Reading',
-    'Writing',
-    'Coding',
+    'Math',
+    'Science',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'History',
+    'Geography',
+    'Literature',
+    'Languages',
+    'Programming',
+    'Art',
     'Music',
     'Sports',
-    'Art',
-    'Gaming',
-    'Travel',
-    'Cooking',
-    'Photography'
+    'Technology',
+    'Business',
+    'Economics',
+    'Philosophy',
+    'Psychology',
+    'Engineering',
   ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.userModel.name);
-    _ageController = TextEditingController(text: widget.userModel.age.toString());
+    _usernameController = TextEditingController(
+      text: widget.userModel.username,
+    );
     _dobController = TextEditingController(text: widget.userModel.dateOfBirth);
-    
-    // Ensure selected values exist in the lists, otherwise use first item
-    _selectedRole = _roles.contains(widget.userModel.role) ? widget.userModel.role : _roles.first;
-    _selectedSubjectArea = _subjectAreas.contains(widget.userModel.subjectArea) ? widget.userModel.subjectArea : _subjectAreas.first;
-    _selectedExperienceLevel = _experienceLevels.contains(widget.userModel.experienceLevel) ? widget.userModel.experienceLevel : _experienceLevels.first;
+
+    // Parse existing DOB to set _selectedDate
+    if (widget.userModel.dateOfBirth.isNotEmpty) {
+      try {
+        final parts = widget.userModel.dateOfBirth.split('-');
+        if (parts.length == 3) {
+          _selectedDate = DateTime(
+            int.parse(parts[2]), // year
+            int.parse(parts[1]), // month
+            int.parse(parts[0]), // day
+          );
+        }
+      } catch (e) {
+        debugPrint('Error parsing DOB: $e');
+      }
+    }
+
+    _selectedRole = _roles.contains(widget.userModel.role)
+        ? widget.userModel.role
+        : _roles.first;
     _selectedInterests = List.from(widget.userModel.interests);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _ageController.dispose();
+    _usernameController.dispose();
     _dobController.dispose();
     super.dispose();
   }
@@ -84,7 +93,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+      initialDate:
+          _selectedDate ??
+          DateTime.now().subtract(const Duration(days: 365 * 18)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
@@ -103,17 +114,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (picked != null) {
       setState(() {
-        _dobController.text = '${picked.day.toString().padLeft(2, '0')} - '
-            '${picked.month.toString().padLeft(2, '0')} - '
+        _selectedDate = picked;
+        _dobController.text =
+            '${picked.day.toString().padLeft(2, '0')}-'
+            '${picked.month.toString().padLeft(2, '0')}-'
             '${picked.year}';
       });
     }
+  }
+
+  int _calculateAge(DateTime birthDate) {
+    final today = DateTime.now();
+    int age = today.year - birthDate.year;
+    if (today.month < birthDate.month ||
+        (today.month == birthDate.month && today.day < birthDate.day)) {
+      age--;
+    }
+    return age;
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_isSaving) return;
+
+    // Only require DOB if it hasn't been set before
+    if (_selectedDate == null && widget.userModel.dateOfBirth.isEmpty) {
+      AppSnackBar.showError(context, 'Please select your date of birth');
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -125,21 +154,51 @@ class _EditProfilePageState extends State<EditProfilePage> {
         throw Exception('User not authenticated');
       }
 
+      final newUsername = _usernameController.text.trim().toLowerCase();
+
+      // Check if username has changed
+      if (newUsername != widget.userModel.username.toLowerCase()) {
+        // Check if username is already taken
+        final usernameQuery = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: newUsername)
+            .get();
+
+        if (usernameQuery.docs.isNotEmpty) {
+          if (mounted) {
+            AppSnackBar.showError(
+              context,
+              'Username "$newUsername" is already taken',
+            );
+          }
+          return;
+        }
+      }
+
+      // Calculate age from selected date or use existing age
+      final age = _selectedDate != null
+          ? _calculateAge(_selectedDate!)
+          : widget.userModel.age;
+
+      final dobString = _selectedDate != null
+          ? _dobController.text
+          : widget.userModel.dateOfBirth;
+
       // Update Firestore
       await _firestore.collection('users').doc(currentUser.uid).update({
         'name': _nameController.text.trim(),
-        'age': int.parse(_ageController.text),
-        'dateOfBirth': _dobController.text,
+        'username': newUsername,
+        'dateOfBirth': dobString,
+        'age': age,
         'role': _selectedRole,
-        'subjectArea': _selectedSubjectArea,
-        'experienceLevel': _selectedExperienceLevel,
         'interests': _selectedInterests,
       });
 
       if (!mounted) return;
 
-      AppSnackBar.showSuccess(context, 'Profile updated successfully!');
-      Navigator.pop(context, true); // Return true to indicate success
+      // Don't show snackbar here - just pop with success result
+      // The parent screen will handle showing feedback if needed
+      Navigator.pop(context, true);
     } catch (e) {
       debugPrint('Error updating profile: $e');
       if (!mounted) return;
@@ -204,17 +263,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
-                        label: 'Age',
-                        controller: _ageController,
-                        hintText: 'Enter your age',
-                        keyboardType: TextInputType.number,
+                        label: 'Username',
+                        controller: _usernameController,
+                        hintText: 'Enter your username',
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your age';
-                          }
-                          final age = int.tryParse(value);
-                          if (age == null || age <= 0 || age > 120) {
-                            return 'Please enter a valid age';
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your username';
                           }
                           return null;
                         },
@@ -222,7 +276,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       const SizedBox(height: 16),
                       _buildDateField(),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Role & Experience'),
+                      _buildSectionTitle('Role'),
                       const SizedBox(height: 16),
                       _buildDropdown(
                         label: 'Role',
@@ -231,28 +285,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onChanged: (value) {
                           setState(() {
                             _selectedRole = value!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDropdown(
-                        label: 'Subject Area',
-                        value: _selectedSubjectArea,
-                        items: _subjectAreas,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSubjectArea = value!;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDropdown(
-                        label: 'Experience Level',
-                        value: _selectedExperienceLevel,
-                        items: _experienceLevels,
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedExperienceLevel = value!;
                           });
                         },
                       ),
@@ -351,7 +383,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -423,7 +458,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -440,7 +478,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
-              suffixIcon: const Icon(Icons.calendar_today, color: AppColors.primary),
+              suffixIcon: const Icon(
+                Icons.calendar_today,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ),
@@ -492,17 +533,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               filled: true,
               fillColor: AppColors.white,
               contentPadding: const EdgeInsets.all(16),
             ),
             items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
+              return DropdownMenuItem<String>(value: item, child: Text(item));
             }).toList(),
             onChanged: onChanged,
           ),
@@ -533,7 +574,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
               color: isSelected ? AppColors.primary : AppColors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.primaryLighter,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.primaryLighter,
                 width: 2,
               ),
               boxShadow: [
