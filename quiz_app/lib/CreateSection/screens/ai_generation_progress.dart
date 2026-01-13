@@ -121,34 +121,61 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
   }
 
   void _showErrorDialog(String title, String message) {
-    AppDialog.show(
+    // Store navigator reference before showing dialog
+    final parentNavigator = Navigator.of(context);
+
+    showDialog(
       context: context,
-      title: title,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(message, style: const TextStyle(fontSize: 15)),
-              ),
-            ],
-          ),
-        ],
+      barrierDismissible: false,
+      barrierColor: AppColors.primary.withValues(alpha: 0.3),
+      builder: (dialogContext) => AppDialog(
+        title: title,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(message, style: const TextStyle(fontSize: 15)),
+                ),
+              ],
+            ),
+          ],
+        ),
+        dismissible: false,
+        secondaryActionText: 'Go Back',
+        secondaryActionCallback: () {
+          // Close dialog first using its own context
+          Navigator.of(dialogContext).pop();
+          // Then go back to previous screen after frame completes
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (parentNavigator.canPop()) {
+              parentNavigator.pop();
+            }
+          });
+        },
+        primaryActionText: 'Retry',
+        primaryActionCallback: () {
+          // Close dialog using its own context
+          Navigator.of(dialogContext).pop();
+          // Reset and retry after frame completes
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _displayProgress = 0.0;
+                _targetProgress = 0.0;
+              });
+              // Restart the fake progress animation
+              _startFakeProgressAnimation();
+              // Retry generation
+              _startGeneration();
+            }
+          });
+        },
       ),
-      secondaryActionText: 'Go Back',
-      secondaryActionCallback: () {
-        Navigator.pop(context);
-        Navigator.pop(context);
-      },
-      primaryActionText: 'Retry',
-      primaryActionCallback: () {
-        Navigator.pop(context);
-        _startGeneration();
-      },
     );
   }
 
