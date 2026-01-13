@@ -28,7 +28,7 @@ class CustomDropdown extends StatefulWidget {
 }
 
 class _CustomDropdownState extends State<CustomDropdown> {
-  bool _isOpen = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,16 +93,12 @@ class _CustomDropdownState extends State<CustomDropdown> {
             fontWeight: FontWeight.w400,
           ),
         ),
-        initialValue: widget.value,
+        initialValue: widget.value, // Explicitly pass value to make it controlled
         isExpanded: true,
-        icon: AnimatedRotation(
-          turns: _isOpen ? 0.5 : 0,
-          duration: const Duration(milliseconds: 200),
-          child: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: widget.enabled ? AppColors.textSecondary : AppColors.textDisabled,
-            size: 24,
-          ),
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: widget.enabled ? AppColors.textSecondary : AppColors.textDisabled,
+          size: 24,
         ),
         iconSize: 24,
         elevation: 2,
@@ -146,13 +142,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
         }).toList(),
         onChanged: widget.enabled ? widget.onChanged : null, // Disable when not enabled
         validator: widget.validator,
-        onTap: widget.enabled
-            ? () {
-                setState(() {
-                  _isOpen = true;
-                });
-              }
-            : null, // Disable tap when not enabled
+        onTap: null,
         selectedItemBuilder: (BuildContext context) {
           return widget.items.map<Widget>((String item) {
             return Text(

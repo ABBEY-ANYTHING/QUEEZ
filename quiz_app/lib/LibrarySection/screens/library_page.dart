@@ -56,18 +56,33 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
   /// 🔁 Reload items from server
   Future<void> _reloadItems() async {
+    debugPrint('🔵 [LIBRARY_PAGE] _reloadItems called');
     await ref.read(quizLibraryProvider.notifier).reload();
+    debugPrint('🟢 [LIBRARY_PAGE] _reloadItems completed');
   }
 
-  /// 🔍 Set search query
+  /// 🔍 Set search query (also refreshes data if needed)
   void _setSearchQuery(String query) {
+    debugPrint('🔵 [LIBRARY_PAGE] _setSearchQuery called with: "$query"');
+
+    // First invalidate to ensure fresh data is fetched
+    debugPrint('🔵 [LIBRARY_PAGE] Invalidating quizLibraryProvider...');
+    ref.invalidate(quizLibraryProvider);
+    debugPrint('🟢 [LIBRARY_PAGE] quizLibraryProvider invalidated');
+
+    // Then update the search query UI
+    debugPrint('🔵 [LIBRARY_PAGE] Updating search query state...');
     setState(() {
       _searchQuery = query;
       _searchController.text = query;
     });
+    debugPrint(
+      '🟢 [LIBRARY_PAGE] Search query state updated, _searchQuery = "$_searchQuery"',
+    );
   }
 
   void _filterItems(String query) {
+    debugPrint('🔵 [LIBRARY_PAGE] _filterItems called with: "$query"');
     setState(() {
       _searchQuery = query;
     });
@@ -101,6 +116,9 @@ class LibraryPageState extends ConsumerState<LibraryPage>
   @override
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(quizLibraryProvider);
+    debugPrint(
+      '🔵 [LIBRARY_PAGE] build() called, watching quizLibraryProvider',
+    );
 
     // Get filtered items and loading/error state from AsyncValue
     bool isLoading = false;
@@ -109,12 +127,25 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
     itemsAsync.when(
       data: (items) {
+        debugPrint(
+          '🟢 [LIBRARY_PAGE] Provider has data: ${items.length} total items',
+        );
         filteredItems = _getFilteredItems(items);
+        debugPrint(
+          '🔵 [LIBRARY_PAGE] After filtering with query "$_searchQuery": ${filteredItems.length} items',
+        );
+        for (var i = 0; i < filteredItems.length && i < 5; i++) {
+          debugPrint(
+            '🔵 [LIBRARY_PAGE] Filtered item $i: ${filteredItems[i].title}',
+          );
+        }
       },
       loading: () {
+        debugPrint('🔵 [LIBRARY_PAGE] Provider is loading...');
         isLoading = true;
       },
       error: (error, _) {
+        debugPrint('🔴 [LIBRARY_PAGE] Provider has error: $error');
         errorMessage = error.toString();
       },
     );

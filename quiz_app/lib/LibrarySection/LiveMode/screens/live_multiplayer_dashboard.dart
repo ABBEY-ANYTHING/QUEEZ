@@ -125,120 +125,123 @@ class _LiveMultiplayerDashboardState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const UniversalAppBar(title: 'Live Multiplayer'),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Icon
                 Container(
-                  padding: const EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.groups_rounded,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Title
+                const Text(
+                  'Live Multiplayer\nSession',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    height: 1.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+
+                // Session Code Card
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     children: [
-                      const Icon(
-                        Icons.groups_rounded,
-                        size: 80,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Live Multiplayer Session',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'Session Code',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.sessionCode,
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primary,
-                                letterSpacing: 4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
                       Text(
-                        'This is a temporary live multiplayer session.\nThe quiz will not be saved to your library.',
+                        'Session Code',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: AppColors.textSecondary,
-                          height: 1.5,
+                          fontWeight: FontWeight.w600,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: _isJoining ? null : _joinSession,
-                        icon: _isJoining
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.white,
-                                ),
-                              )
-                            : const Icon(Icons.login, size: 20),
-                        label: Text(
-                          _isJoining ? 'Joining...' : 'Join Session',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 16,
-                          ),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.sessionCode,
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          letterSpacing: 6,
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Info text
+                Text(
+                  'This is a temporary live multiplayer session.\nThe quiz will not be saved to your library.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+
+                // Join button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isJoining ? null : _joinSession,
+                    icon: _isJoining
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Icon(Icons.login, size: 20),
+                    label: Text(
+                      _isJoining ? 'Joining...' : 'Join Session',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ],
