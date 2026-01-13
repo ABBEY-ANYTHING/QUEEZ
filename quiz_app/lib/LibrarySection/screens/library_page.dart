@@ -7,7 +7,6 @@ import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
-import 'package:quiz_app/widgets/core/core_widgets.dart';
 
 import '../../utils/quiz_design_system.dart';
 
@@ -89,43 +88,10 @@ class LibraryPageState extends ConsumerState<LibraryPage>
     });
   }
 
-  void _showFilterDialog() {
-    AppDialog.show(
-      context: context,
-      title: 'Filter Library',
-      content: StatefulBuilder(
-        builder: (context, setDialogState) => RadioGroup<String?>(
-          groupValue: _typeFilter,
-          onChanged: (value) {
-            setDialogState(() => _typeFilter = value);
-            setState(() => _typeFilter = value);
-            Navigator.pop(context);
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String?>(
-                title: const Text('All Items'),
-                value: null,
-              ),
-              RadioListTile<String?>(
-                title: const Text('Quizzes'),
-                value: 'quiz',
-              ),
-              RadioListTile<String?>(
-                title: const Text('Flashcards'),
-                value: 'flashcard',
-              ),
-              RadioListTile<String?>(title: const Text('Notes'), value: 'note'),
-              RadioListTile<String?>(
-                title: const Text('Study Sets'),
-                value: 'study_set',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _setTypeFilter(String? filter) {
+    setState(() {
+      _typeFilter = filter;
+    });
   }
 
   List<LibraryItem> _getFilteredItems(List<LibraryItem> allItems) {
@@ -200,11 +166,15 @@ class LibraryPageState extends ConsumerState<LibraryPage>
                 searchController: _searchController,
                 onQueryChanged: _filterItems,
                 context: context,
-                onAddQuiz: () {
+                onJoinPressed: () {
                   showAddQuizModal(context, _reloadItems);
                 },
-                onFilter: _showFilterDialog,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: buildFilterChips(
                 typeFilter: _typeFilter,
+                onFilterChanged: _setTypeFilter,
               ),
             ),
             buildLibraryBody(

@@ -15,103 +15,141 @@ Widget buildSearchSection({
   required TextEditingController searchController,
   required ValueChanged<String> onQueryChanged,
   required BuildContext context,
-  required VoidCallback onAddQuiz,
-  required VoidCallback onFilter,
-  required String? typeFilter,
+  required VoidCallback onJoinPressed,
 }) {
   return Container(
-    margin: const EdgeInsets.all(QuizSpacing.lg),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Stack(
+    margin: const EdgeInsets.fromLTRB(
+      QuizSpacing.lg,
+      QuizSpacing.md,
+      QuizSpacing.lg,
+      QuizSpacing.sm,
+    ),
+    child: Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: searchController,
+        onChanged: onQueryChanged,
+        decoration: InputDecoration(
+          hintText: 'Search library...',
+          hintStyle: TextStyle(
+            color: AppColors.textSecondary.withValues(alpha: 0.6),
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            padding: const EdgeInsets.all(16),
+            child: const Icon(
+              Icons.search_rounded,
+              color: AppColors.iconInactive,
+              size: 24,
+            ),
+          ),
+          suffixIcon: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  onPressed: onFilter,
-                  icon: const Icon(Icons.filter_list, size: 24),
-                  tooltip: 'Filter library',
-                ),
-                if (typeFilter != null)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
+                if (searchQuery.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.clear_rounded,
+                      color: AppColors.iconInactive,
                     ),
+                    onPressed: () {
+                      searchController.clear();
+                      onQueryChanged('');
+                    },
                   ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.add,
+                    color: AppColors.primary,
+                    size: 28,
+                  ),
+                  onPressed: onJoinPressed,
+                ),
               ],
             ),
-            IconButton(
-              onPressed: onAddQuiz,
-              icon: const Icon(Icons.add, size: 24),
-              tooltip: 'Add a quiz',
-            ),
-          ],
-        ),
-        const SizedBox(height: QuizSpacing.sm),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(QuizBorderRadius.lg),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
-          child: TextField(
-            controller: searchController,
-            onChanged: onQueryChanged,
-            decoration: InputDecoration(
-              hintText: 'Search quizzes and flashcards...',
-              hintStyle: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: Container(
-                padding: const EdgeInsets.all(16),
-                child: const Icon(
-                  Icons.search_rounded,
-                  color: AppColors.iconInactive,
-                  size: 24,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+        ),
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Build filter chips for library filtering
+Widget buildFilterChips({
+  required String? typeFilter,
+  required ValueChanged<String?> onFilterChanged,
+}) {
+  final filters = [
+    {'label': 'All', 'value': null},
+    {'label': 'Quizzes', 'value': 'quiz'},
+    {'label': 'Flashcards', 'value': 'flashcard'},
+    {'label': 'Notes', 'value': 'note'},
+    {'label': 'Study Sets', 'value': 'study_set'},
+  ];
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: QuizSpacing.lg),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((filter) {
+          final isSelected = typeFilter == filter['value'];
+          return Padding(
+            padding: const EdgeInsets.only(right: QuizSpacing.sm),
+            child: FilterChip(
+              label: Text(
+                filter['label'] as String,
+                style: TextStyle(
+                  color: isSelected ? AppColors.white : AppColors.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 14,
                 ),
               ),
-              suffixIcon: searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(
-                        Icons.clear_rounded,
-                        color: AppColors.iconInactive,
-                      ),
-                      onPressed: () {
-                        searchController.clear();
-                        onQueryChanged('');
-                      },
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 18,
+              selected: isSelected,
+              onSelected: (_) => onFilterChanged(filter['value']),
+              backgroundColor: AppColors.surface,
+              selectedColor: AppColors.primary,
+              checkmarkColor: AppColors.white,
+              showCheckmark: false,
+              padding: const EdgeInsets.symmetric(
+                horizontal: QuizSpacing.sm,
+                vertical: QuizSpacing.xs,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(QuizBorderRadius.md),
+                side: BorderSide(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.iconInactive.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
             ),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ],
+          );
+        }).toList(),
+      ),
     ),
   );
 }
