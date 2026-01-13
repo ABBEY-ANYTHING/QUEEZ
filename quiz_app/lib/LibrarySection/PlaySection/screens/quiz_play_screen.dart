@@ -13,6 +13,7 @@ import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
+import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class QuizPlayScreen extends StatefulWidget {
   final QuizLibraryItem quizItem;
@@ -233,7 +234,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
         showNotificationBell: false,
         leading: _buildCloseButton(),
       ),
-      body: SafeArea(child: _buildBody()),
+      body: SafeArea(
+        child: BottomNavAwarePage(
+          child: _buildBody(),
+        ),
+      ),
     );
   }
 

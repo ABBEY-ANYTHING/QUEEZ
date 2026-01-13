@@ -575,6 +575,7 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
   late AnimationController _animController;
   late Animation<double> _animation;
   bool _showingFront = true;
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -586,6 +587,19 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
     _animation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
+    
+    // Listen to animation status to track when animation completes
+    _animController.addStatusListener((status) {
+      if (status == AnimationStatus.completed || 
+          status == AnimationStatus.dismissed) {
+        if (mounted) {
+          setState(() {
+            _isAnimating = false;
+          });
+        }
+      }
+    });
+    
     _showingFront = true;
   }
 
@@ -597,6 +611,7 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
         oldWidget.flashcard.back != widget.flashcard.back) {
       _animController.reset();
       _showingFront = true;
+      _isAnimating = false;
     }
   }
 
@@ -607,7 +622,12 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
   }
 
   void _flipCard() {
-    if (!widget.isTopCard) return;
+    // Prevent multiple rapid taps during animation
+    if (_isAnimating) return;
+
+    setState(() {
+      _isAnimating = true;
+    });
 
     if (_showingFront) {
       _animController.forward();
@@ -622,7 +642,7 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.isTopCard ? _flipCard : null,
+      onTap: _flipCard,
       behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
         animation: _animation,
@@ -630,18 +650,36 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
           final angle = _animation.value * pi;
           final isFrontVisible = angle < pi / 2;
 
-          return Transform(
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
-              ..rotateY(angle),
-            alignment: Alignment.center,
-            child: isFrontVisible
-                ? _buildFront()
-                : Transform(
-                    transform: Matrix4.identity()..rotateY(pi),
-                    alignment: Alignment.center,
-                    child: _buildBack(),
+          // Use a Stack to layer: backing card -> rotating card
+          // This prevents seeing through to the next card during flip
+          return Stack(
+            children: [
+              // Backing card - solid card that sits behind during flip
+              // This blocks the view of cards behind when the main card is rotating
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    // Always white to match the visible cards behind
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
                   ),
+                ),
+              ),
+              // The actual rotating card
+              Transform(
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateY(angle),
+                alignment: Alignment.center,
+                child: isFrontVisible
+                    ? _buildFront()
+                    : Transform(
+                        transform: Matrix4.identity()..rotateY(pi),
+                        alignment: Alignment.center,
+                        child: _buildBack(),
+                      ),
+              ),
+            ],
           );
         },
       ),
@@ -689,18 +727,17 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
             ),
           ),
           const SizedBox(height: 24),
-          if (widget.isTopCard)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.touch_app, size: 16, color: Colors.grey[400]),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap to flip',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                ),
-              ],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.touch_app, size: 16, color: Colors.grey[400]),
+              const SizedBox(width: 4),
+              Text(
+                'Tap to flip',
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -747,21 +784,20 @@ class _FlashcardWidgetState extends State<_FlashcardWidget>
             ),
           ),
           const SizedBox(height: 24),
-          if (widget.isTopCard)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.touch_app, size: 16, color: Colors.white70),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap to flip back',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.touch_app, size: 16, color: Colors.white70),
+              const SizedBox(width: 4),
+              Text(
+                'Tap to flip back',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.7),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ],
       ),
     );

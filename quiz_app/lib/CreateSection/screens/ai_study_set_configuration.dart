@@ -336,6 +336,7 @@ class _AIStudySetConfigurationState
           ),
           const SizedBox(width: 14),
           Expanded(
+          
             child: Text(
               'AI will analyze your documents and automatically create the optimal number of quizzes, flashcards, and notes.',
               style: TextStyle(
