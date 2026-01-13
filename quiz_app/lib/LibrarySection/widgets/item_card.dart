@@ -458,12 +458,15 @@ class _ItemCardState extends State<ItemCard>
         children: [
           Icon(icon, size: 13, color: _getTextColor()),
           const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: _getTextColor(),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: _getTextColor(),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
