@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quiz_app/ProfileSetup/widgets/profile_progress_indicator.dart';
 import 'package:quiz_app/ProfileSetup/widgets/role_selection_card.dart';
-import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class RoleSelectionStep extends StatefulWidget {

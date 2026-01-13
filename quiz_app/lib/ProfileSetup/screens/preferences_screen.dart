@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_dropdown.dart';
-import 'package:quiz_app/ProfileSetup/widgets/profile_progress_indicator.dart';
-import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class PreferencesStep extends StatefulWidget {

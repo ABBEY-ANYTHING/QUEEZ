@@ -93,7 +93,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
             fontWeight: FontWeight.w400,
           ),
         ),
-        value: widget.value, // Explicitly pass value to make it controlled
+        initialValue: widget.value, // Explicitly pass value to make it controlled
         isExpanded: true,
         icon: Icon(
           Icons.keyboard_arrow_down_rounded,

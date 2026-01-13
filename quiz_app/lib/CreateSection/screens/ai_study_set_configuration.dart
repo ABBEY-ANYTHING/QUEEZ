@@ -99,7 +99,6 @@ class _AIStudySetConfigurationState
       body: SingleChildScrollView(
         controller: _scrollController,
         padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 24),
-        padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
