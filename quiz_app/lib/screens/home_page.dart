@@ -229,9 +229,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     return _allCourses.where((course) {
       final matchesCategory =
           _selectedCategory == 'All' || course['category'] == _selectedCategory;
-      final matchesSearch = _searchQuery.isEmpty ||
+      final matchesSearch =
+          _searchQuery.isEmpty ||
           course['title'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          course['instructor'].toLowerCase().contains(_searchQuery.toLowerCase());
+          course['instructor'].toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          );
       return matchesCategory && matchesSearch;
     }).toList();
   }
@@ -254,19 +257,13 @@ class _HomePageState extends ConsumerState<HomePage> {
           controller: _scrollController,
           slivers: [
             // App Bar with Search
-            SliverToBoxAdapter(
-              child: _buildHeader(),
-            ),
+            SliverToBoxAdapter(child: _buildHeader()),
 
             // Featured Courses Hero Section
-            SliverToBoxAdapter(
-              child: _buildFeaturedSection(),
-            ),
+            SliverToBoxAdapter(child: _buildFeaturedSection()),
 
             // Category Filter Chips
-            SliverToBoxAdapter(
-              child: _buildCategoryChips(),
-            ),
+            SliverToBoxAdapter(child: _buildCategoryChips()),
 
             // Section Title
             SliverToBoxAdapter(
@@ -307,12 +304,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               sliver: _filteredCourses.isEmpty
                   ? SliverToBoxAdapter(child: _buildEmptyState())
                   : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return _buildCourseCard(_filteredCourses[index]);
-                        },
-                        childCount: _filteredCourses.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return _buildCourseCard(_filteredCourses[index]);
+                      }, childCount: _filteredCourses.length),
                     ),
             ),
           ],
@@ -355,7 +349,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               GestureDetector(
                 onTap: () {
-                  ref.read(bottomNavIndexProvider.notifier).setIndex(4);
+                  ref.read(bottomNavIndexProvider.notifier).setIndex(3);
                 },
                 child: Container(
                   width: 48,
@@ -517,7 +511,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       },
       child: Container(
         width: 280,
-        margin: EdgeInsets.only(right: index < _featuredCourses.length - 1 ? 16 : 0),
+        margin: EdgeInsets.only(
+          right: index < _featuredCourses.length - 1 ? 16 : 0,
+        ),
         decoration: BoxDecoration(
           color: course['color'] as Color,
           borderRadius: BorderRadius.circular(20),
@@ -774,7 +770,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.accentBright.withValues(alpha: 0.15),
+                              color: AppColors.accentBright.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text(
@@ -849,7 +847,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                           course['duration'],
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary.withValues(alpha: 0.8),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.8,
+                            ),
                           ),
                         ),
                       ],
@@ -909,15 +909,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 _selectedCategory = 'All';
               });
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             child: const Text(
               'Clear filters',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1065,7 +1060,12 @@ class _CourseDetailSheet extends StatelessWidget {
                         radius: 24,
                         backgroundColor: AppColors.surface,
                         child: Text(
-                          course['instructor'].toString().split(' ').map((e) => e[0]).take(2).join(),
+                          course['instructor']
+                              .toString()
+                              .split(' ')
+                              .map((e) => e[0])
+                              .take(2)
+                              .join(),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
