@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/color.dart';
 
@@ -228,7 +229,6 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
       );
     }
 
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -236,8 +236,9 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
         // Available Drag Items
         if (_availableDragItems.isNotEmpty) ...[
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.start,
             children: _availableDragItems.map((item) {
               return _buildDraggableItem(item);
             }).toList(),
@@ -246,7 +247,6 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
         ],
 
         // Drop Targets
-
         ...widget.dropTargets.map((target) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -260,7 +260,8 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: (_allItemsPlaced && !_hasSubmitted && !widget.hasAnswered)
+            onPressed:
+                (_allItemsPlaced && !_hasSubmitted && !widget.hasAnswered)
                 ? _submitAnswer
                 : null,
             style: ElevatedButton.styleFrom(
@@ -287,8 +288,10 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
 
   Widget _buildDropTarget(String target, String? placedItem) {
     final isCorrect = _isMatchCorrect(target, placedItem);
-    final showFeedback = _hasSubmitted && placedItem != null && widget.correctMatches != null;
-    final canTapToPlace = _selectedItem != null &&
+    final showFeedback =
+        _hasSubmitted && placedItem != null && widget.correctMatches != null;
+    final canTapToPlace =
+        _selectedItem != null &&
         placedItem == null &&
         widget.enabled &&
         !widget.hasAnswered &&
@@ -326,8 +329,8 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
             borderColor = placedItem != null
                 ? AppColors.primary
                 : isHovering
-                    ? AppColors.primary
-                    : Colors.grey.shade300;
+                ? AppColors.primary
+                : Colors.grey.shade300;
           }
 
           return AnimatedContainer(
@@ -374,8 +377,8 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
                           decoration: BoxDecoration(
                             color: showFeedback
                                 ? (isCorrect == true
-                                    ? AppColors.success
-                                    : AppColors.error)
+                                      ? AppColors.success
+                                      : AppColors.error)
                                 : AppColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -402,7 +405,8 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
                                   color: AppColors.white,
                                   size: 18,
                                 ),
-                              ] else if (!widget.hasAnswered && !_hasSubmitted) ...[
+                              ] else if (!widget.hasAnswered &&
+                                  !_hasSubmitted) ...[
                                 const SizedBox(width: 8),
                                 GestureDetector(
                                   onTap: () => _onDragItemRemoved(target),
@@ -425,21 +429,32 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: AppColors.textSecondary.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              canTapToPlace ? 'Tap to place' : 'Drop here',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: canTapToPlace
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary.withValues(alpha: 0.5),
-                                fontStyle: FontStyle.italic,
-                                fontWeight: canTapToPlace ? FontWeight.w600 : FontWeight.normal,
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.3,
                               ),
                             ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  canTapToPlace ? 'Tap to place' : 'Drop here',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: canTapToPlace
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                    fontStyle: FontStyle.italic,
+                                    fontWeight: canTapToPlace
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                 ),
@@ -507,7 +522,10 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
             ),
           ),
         ),
-        childWhenDragging: Opacity(opacity: 0.3, child: _buildItemChip(item, isSelected: false)),
+        childWhenDragging: Opacity(
+          opacity: 0.3,
+          child: _buildItemChip(item, isSelected: false),
+        ),
         child: _buildItemChip(item, isSelected: isSelected),
       ),
     );
@@ -518,10 +536,14 @@ class _QuizDragDropOptionsState extends State<QuizDragDropOptions> {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : AppColors.white,
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.1)
+            : AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.5),
+          color: isSelected
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.5),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [

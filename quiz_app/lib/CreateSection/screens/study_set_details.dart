@@ -11,6 +11,7 @@ import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class StudySetDetails extends StatefulWidget {
   const StudySetDetails({super.key});
@@ -94,24 +95,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'New Study Set',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          color: AppColors.textPrimary,
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: const UniversalAppBar(title: 'New Study Set'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -171,7 +155,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),

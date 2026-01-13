@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:quiz_app/CreateSection/screens/ai_generation_progress.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class AIStudySetConfiguration extends ConsumerStatefulWidget {
   const AIStudySetConfiguration({super.key});
@@ -93,24 +95,7 @@ class _AIStudySetConfigurationState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'AI Configuration',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          color: AppColors.textPrimary,
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: const UniversalAppBar(title: 'AI Configuration'),
       body: SingleChildScrollView(
         controller: _scrollController,
         padding: EdgeInsets.fromLTRB(24, 10, 24, kBottomNavbarHeight + 80),
@@ -141,7 +126,7 @@ class _AIStudySetConfigurationState
         border: Border.all(color: AppColors.surface),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -152,7 +137,7 @@ class _AIStudySetConfigurationState
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
@@ -299,10 +284,10 @@ class _AIStudySetConfigurationState
       child: Container(
         height: 64,
         decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.3),
+          color: AppColors.surface.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             style: BorderStyle.solid,
             width: 1,
           ),
@@ -334,16 +319,16 @@ class _AIStudySetConfigurationState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
+        color: AppColors.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withOpacity(0.18)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),

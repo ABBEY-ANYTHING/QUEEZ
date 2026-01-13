@@ -4,7 +4,6 @@ import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/services/active_session_checker.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
-import 'package:quiz_app/widgets/appbar/appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:quiz_app/widgets/navbar/bottom_navbar.dart';
 
@@ -56,9 +55,9 @@ class _DashboardState extends ConsumerState<Dashboard> {
         }
       },
       child: ActiveSessionChecker(
+        // No appBar here - each page manages its own UniversalAppBar
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          appBar: Appbar(),
           body: BottomNavbarController(key: bottomNavbarKey),
           backgroundColor: AppColors.background,
         ),

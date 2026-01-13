@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -38,13 +39,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     'Technology',
     'Arts',
     'Business',
-    'Other'
+    'Other',
   ];
   final List<String> _experienceLevels = [
     'Beginner',
     'Intermediate',
     'Advanced',
-    'Expert'
+    'Expert',
   ];
   final List<String> _availableInterests = [
     'Reading',
@@ -56,20 +57,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
     'Gaming',
     'Travel',
     'Cooking',
-    'Photography'
+    'Photography',
   ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.userModel.name);
-    _ageController = TextEditingController(text: widget.userModel.age.toString());
+    _ageController = TextEditingController(
+      text: widget.userModel.age.toString(),
+    );
     _dobController = TextEditingController(text: widget.userModel.dateOfBirth);
-    
+
     // Ensure selected values exist in the lists, otherwise use first item
-    _selectedRole = _roles.contains(widget.userModel.role) ? widget.userModel.role : _roles.first;
-    _selectedSubjectArea = _subjectAreas.contains(widget.userModel.subjectArea) ? widget.userModel.subjectArea : _subjectAreas.first;
-    _selectedExperienceLevel = _experienceLevels.contains(widget.userModel.experienceLevel) ? widget.userModel.experienceLevel : _experienceLevels.first;
+    _selectedRole = _roles.contains(widget.userModel.role)
+        ? widget.userModel.role
+        : _roles.first;
+    _selectedSubjectArea = _subjectAreas.contains(widget.userModel.subjectArea)
+        ? widget.userModel.subjectArea
+        : _subjectAreas.first;
+    _selectedExperienceLevel =
+        _experienceLevels.contains(widget.userModel.experienceLevel)
+        ? widget.userModel.experienceLevel
+        : _experienceLevels.first;
     _selectedInterests = List.from(widget.userModel.interests);
   }
 
@@ -103,7 +113,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     if (picked != null) {
       setState(() {
-        _dobController.text = '${picked.day.toString().padLeft(2, '0')} - '
+        _dobController.text =
+            '${picked.day.toString().padLeft(2, '0')} - '
             '${picked.month.toString().padLeft(2, '0')} - '
             '${picked.year}';
       });
@@ -160,24 +171,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-        ),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ),
+      appBar: const UniversalAppBar(title: 'Edit Profile'),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -351,7 +345,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -423,7 +420,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -440,7 +440,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
-              suffixIcon: const Icon(Icons.calendar_today, color: AppColors.primary),
+              suffixIcon: const Icon(
+                Icons.calendar_today,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ),
@@ -492,17 +495,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
               filled: true,
               fillColor: AppColors.white,
               contentPadding: const EdgeInsets.all(16),
             ),
             items: items.map((String item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
+              return DropdownMenuItem<String>(value: item, child: Text(item));
             }).toList(),
             onChanged: onChanged,
           ),
@@ -533,7 +536,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
               color: isSelected ? AppColors.primary : AppColors.white,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.primaryLighter,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.primaryLighter,
                 width: 2,
               ),
               boxShadow: [

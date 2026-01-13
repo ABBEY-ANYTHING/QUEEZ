@@ -25,51 +25,38 @@ Widget buildSearchSection({
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(
-              'Your Library',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
-            Row(
+            Stack(
               children: [
-                Stack(
-                  children: [
-                    IconButton(
-                      onPressed: onFilter,
-                      icon: const Icon(Icons.filter_list, size: 24),
-                      tooltip: 'Filter library',
-                    ),
-                    if (typeFilter != null)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
                 IconButton(
-                  onPressed: onAddQuiz,
-                  icon: const Icon(Icons.add, size: 24),
-                  tooltip: 'Add a quiz',
+                  onPressed: onFilter,
+                  icon: const Icon(Icons.filter_list, size: 24),
+                  tooltip: 'Filter library',
                 ),
+                if (typeFilter != null)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
               ],
+            ),
+            IconButton(
+              onPressed: onAddQuiz,
+              icon: const Icon(Icons.add, size: 24),
+              tooltip: 'Add a quiz',
             ),
           ],
         ),
-        const SizedBox(height: QuizSpacing.lg),
+        const SizedBox(height: QuizSpacing.sm),
         Container(
           decoration: BoxDecoration(
             color: AppColors.white,

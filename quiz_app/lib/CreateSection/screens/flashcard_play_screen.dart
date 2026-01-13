@@ -1,9 +1,11 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/utils/color.dart';
-import 'dart:async';
-import 'dart:math';
+import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class FlashcardPlayScreen extends StatefulWidget {
   final String flashcardSetId;
@@ -103,13 +105,7 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
     if (isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Loading...'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: const UniversalAppBar(title: 'Loading...'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -117,13 +113,7 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
     if (errorMessage != null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('Error'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: const UniversalAppBar(title: 'Error'),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -153,13 +143,7 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
     if (flashcardSet == null || flashcardSet!.cards.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('No Cards'),
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        appBar: const UniversalAppBar(title: 'No Cards'),
         body: const Center(child: Text('No flashcards available')),
       );
     }
@@ -170,20 +154,7 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          flashcardSet!.title,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        backgroundColor: AppColors.white,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-      ),
+      appBar: UniversalAppBar(title: flashcardSet!.title),
       body: Column(
         children: [
           // Progress indicator
@@ -236,30 +207,28 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
                   animation: _flipAnimation,
                   builder: (context, child) {
                     final angle = _flipAnimation.value * pi;
-                    final transform =
-                        Matrix4.identity()
-                          ..setEntry(3, 2, 0.001)
-                          ..rotateY(angle);
+                    final transform = Matrix4.identity()
+                      ..setEntry(3, 2, 0.001)
+                      ..rotateY(angle);
 
                     return Transform(
                       transform: transform,
                       alignment: Alignment.center,
-                      child:
-                          angle <= pi / 2
-                              ? _buildCardFace(
-                                currentCard.front,
-                                'Question',
-                                AppColors.primary,
-                              )
-                              : Transform(
-                                transform: Matrix4.identity()..rotateY(pi),
-                                alignment: Alignment.center,
-                                child: _buildCardFace(
-                                  currentCard.back,
-                                  'Answer',
-                                  AppColors.accentBright,
-                                ),
+                      child: angle <= pi / 2
+                          ? _buildCardFace(
+                              currentCard.front,
+                              'Question',
+                              AppColors.primary,
+                            )
+                          : Transform(
+                              transform: Matrix4.identity()..rotateY(pi),
+                              alignment: Alignment.center,
+                              child: _buildCardFace(
+                                currentCard.back,
+                                'Answer',
+                                AppColors.accentBright,
                               ),
+                            ),
                     );
                   },
                 ),
@@ -314,8 +283,9 @@ class _FlashcardPlayScreenState extends State<FlashcardPlayScreen>
 
                 // Next button
                 ElevatedButton.icon(
-                  onPressed:
-                      currentCardIndex < totalCards - 1 ? _nextCard : null,
+                  onPressed: currentCardIndex < totalCards - 1
+                      ? _nextCard
+                      : null,
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('Next'),
                   style: ElevatedButton.styleFrom(

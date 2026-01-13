@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_results.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/utils/question_type_handler.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/question_text_widget.dart';
@@ -20,7 +21,8 @@ class LiveMultiplayerQuiz extends ConsumerStatefulWidget {
       _LiveMultiplayerQuizState();
 }
 
-class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
+class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
+    with SingleTickerProviderStateMixin {
   bool _hasNavigatedToResults = false;
   bool _isShowingHostEndedDialog = false;
   StreamSubscription<String>? _errorSubscription;
@@ -30,13 +32,23 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
   int _streakToastValue = 0;
   bool _isStreakLost = false;
 
-  // Streak bounce animation state
-  bool _showStreakBounce = false;
+  // Streak visual feedback state
+  bool _streakGained = false;
+  bool _streakLost = false;
   int _previousStreak = 0;
+
+  // Animation controller for pulse effects
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    // Initialize pulse animation controller
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
     // Subscribe to error stream once in initState, not on every build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _errorSubscription = ref
@@ -59,7 +71,26 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
   @override
   void dispose() {
     _errorSubscription?.cancel();
+    _pulseController.dispose();
     super.dispose();
+  }
+
+  /// Trigger visual feedback when streak is gained
+  void _triggerStreakGain() {
+    if (!mounted) return;
+    setState(() => _streakGained = true);
+    _pulseController.forward(from: 0).then((_) {
+      if (mounted) setState(() => _streakGained = false);
+    });
+  }
+
+  /// Trigger visual feedback when streak is lost
+  void _triggerStreakLoss() {
+    if (!mounted) return;
+    setState(() => _streakLost = true);
+    _pulseController.forward(from: 0).then((_) {
+      if (mounted) setState(() => _streakLost = false);
+    });
   }
 
   /// Show a modern streak notification toast
@@ -77,25 +108,6 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
       if (mounted) {
         setState(() {
           _showStreakToast = false;
-        });
-      }
-    });
-  }
-
-  /// Trigger streak bounce animation on reset
-  void _triggerStreakResetBounce(int previousStreak) {
-    if (!mounted) return;
-
-    setState(() {
-      _previousStreak = previousStreak;
-      _showStreakBounce = true;
-    });
-
-    // Reset bounce state after animation completes
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() {
-          _showStreakBounce = false;
         });
       }
     });
@@ -166,6 +178,12 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
         '🎮 UI - Game state changed, currentQuestion: ${next.currentQuestion != null ? "SET" : "NULL"}',
       );
 
+      // Track streak changes for visual feedback
+      if (next.streak > _previousStreak) {
+        _triggerStreakGain();
+      }
+      _previousStreak = next.streak;
+
       // 🎯 Haptic feedback when answer result is received
       if (previous?.isCorrect == null && next.isCorrect != null) {
         if (next.isCorrect == true) {
@@ -181,10 +199,10 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
         } else {
           // Wrong answer - heavy impact
           HapticFeedback.heavyImpact();
-          // Show streak lost if they had a streak before
-          if ((previous?.streak ?? 0) >= 2) {
+          // Show streak lost if they had any streak before
+          if ((previous?.streak ?? 0) >= 1) {
             _showStreakNotification(previous!.streak, true);
-            _triggerStreakResetBounce(previous.streak);
+            _triggerStreakLoss();
           }
         }
       }
@@ -298,52 +316,114 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
 
                             const Spacer(),
 
-                            // Streak indicator with bounce animation
-                            TweenAnimationBuilder<double>(
-                              key: ValueKey(
-                                'streak_${gameState.streak}_$_showStreakBounce',
-                              ),
-                              duration: const Duration(milliseconds: 400),
-                              tween: Tween(
-                                begin: _showStreakBounce ? 1.3 : 0.8,
-                                end: 1.0,
-                              ),
-                              curve: _showStreakBounce
-                                  ? Curves.elasticOut
-                                  : Curves.easeOutBack,
-                              builder: (context, scale, child) {
-                                return Transform.scale(
-                                  scale: scale,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '🔥',
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      AnimatedSwitcher(
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        transitionBuilder: (child, animation) {
-                                          return ScaleTransition(
-                                            scale: animation,
-                                            child: child,
-                                          );
-                                        },
-                                        child: Text(
-                                          '${gameState.streak}',
-                                          key: ValueKey(gameState.streak),
-                                          style: TextStyle(
-                                            color: AppColors.warning,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                            // Streak indicator with visual feedback
+                            Builder(
+                              builder: (context) {
+                                final hasActiveStreak = gameState.streak >= 2;
+
+                                // Determine glow color (orange for gain, red for loss)
+                                Color? glowColor;
+                                if (_streakGained) {
+                                  glowColor = AppColors.warning; // Orange glow
+                                } else if (_streakLost) {
+                                  glowColor = AppColors.error;
+                                }
+
+                                return TweenAnimationBuilder<double>(
+                                  key: ValueKey(
+                                    'streak_${gameState.streak}_${_streakGained}_$_streakLost',
                                   ),
+                                  duration: const Duration(milliseconds: 400),
+                                  tween: Tween(
+                                    begin: _streakGained
+                                        ? 1.4
+                                        : (_streakLost ? 0.8 : 1.0),
+                                    end: 1.0,
+                                  ),
+                                  curve: _streakGained
+                                      ? Curves.elasticOut
+                                      : Curves.easeOutBack,
+                                  builder: (context, scale, child) {
+                                    return Transform.scale(
+                                      scale: scale,
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 400,
+                                        ),
+                                        curve: Curves.easeInOut,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  (glowColor ??
+                                                          Colors.transparent)
+                                                      .withValues(
+                                                        alpha: glowColor != null
+                                                            ? 0.6
+                                                            : 0.0,
+                                                      ),
+                                              blurRadius: glowColor != null
+                                                  ? 12
+                                                  : 0,
+                                              spreadRadius: glowColor != null
+                                                  ? 2
+                                                  : 0,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // Always show Lottie fire animation
+                                            SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: Lottie.asset(
+                                                'assets/animations/fire_streak.json',
+                                                fit: BoxFit.contain,
+                                                repeat: true,
+                                                animate: true,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            AnimatedSwitcher(
+                                              duration: const Duration(
+                                                milliseconds: 300,
+                                              ),
+                                              transitionBuilder:
+                                                  (child, animation) {
+                                                    return ScaleTransition(
+                                                      scale: animation,
+                                                      child: child,
+                                                    );
+                                                  },
+                                              child: Text(
+                                                '${gameState.streak}',
+                                                key: ValueKey(gameState.streak),
+                                                style: TextStyle(
+                                                  color: _streakLost
+                                                      ? AppColors.error
+                                                      : (hasActiveStreak
+                                                            ? AppColors.warning
+                                                            : AppColors
+                                                                  .textSecondary),
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -688,69 +768,58 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz> {
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 16,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _isStreakLost
-                            ? [const Color(0xFF6B7280), const Color(0xFF4B5563)]
-                            : [
-                                const Color(0xFFFF6B35),
-                                const Color(0xFFFF9500),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (_isStreakLost
-                                      ? const Color(0xFF6B7280)
-                                      : const Color(0xFFFF6B35))
-                                  .withValues(alpha: 0.4),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: _isStreakLost
+                          ? AppColors.textSecondary
+                          : AppColors.primary,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          _isStreakLost
-                              ? Icons.heart_broken
-                              : Icons.local_fire_department,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                        if (_isStreakLost)
+                          const Text('💔', style: TextStyle(fontSize: 18))
+                        else
+                          SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Lottie.asset(
+                              'assets/animations/fire_streak.json',
+                              fit: BoxFit.contain,
+                              repeat: true,
+                              animate: true,
+                            ),
+                          ),
                         const SizedBox(width: 8),
                         Text(
                           _isStreakLost
-                              ? '$_previousStreak Streak Lost!'
-                              : '🔥 $_streakToastValue Streak!',
+                              ? 'Streak Lost!'
+                              : '$_streakToastValue Streak!',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         if (!_isStreakLost && _streakToastValue >= 3) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
+                              horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               '+${((_streakToastValue - 1) * 10).clamp(0, 50)}%',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
