@@ -488,85 +488,133 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.privacy_tip_outlined,
                   title: 'Privacy Policy',
                   subtitle: 'Read our privacy policy',
-                 onTap: () {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.65, // 👈 limit height
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    height: 5,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (context) {
+                        return SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              top: 20,
+                              bottom:
+                                  MediaQuery.of(context).viewInsets.bottom + 20,
+                            ),
+                            child: SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height *
+                                  0.65, // 👈 limit height
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      height: 5,
+                                      width: 50,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade400,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
 
-                const Text(
-                  "Privacy Policy",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
+                                  const Text(
+                                    "Privacy Policy",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Text(
-                      """
-This is the Privacy Policy for Queez.
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      child: Text(
+                                        """
+Privacy Policy for Queez
+Last Updated: January 2026
 
-1) We respect your privacy.
-2) We do not sell your data.
-3) Your account data is stored securely using Firebase.
-4) You can delete your account anytime from Settings.
+1. Information We Collect
+We collect information you provide when creating an account:
+• Name and email address
+• Profile information (age, role, subject area, experience level)
+• Learning preferences and interests
+• Quiz and flashcard content you create
+• Study progress and performance data
+
+2. How We Use Your Information
+• To provide and improve our learning services
+• To personalize your learning experience
+• To track your study progress and streaks
+• To enable content sharing and collaboration
+• To send important service updates
+
+3. Data Storage and Security
+• All data is securely stored using Firebase
+• We use industry-standard encryption
+• Your password is never stored in plain text
+• We implement regular security audits
+
+4. Data Sharing
+• We do NOT sell your personal data to third parties
+• Quiz content you share is visible to other users based on your sharing settings
+• Anonymous usage statistics may be collected for app improvement
+
+5. Your Rights
+• Access your data anytime through your profile
+• Edit or update your information in Settings
+• Delete your account and all associated data permanently
+• Export your created content (coming soon)
+
+6. Children's Privacy
+Queez is designed for educational use. Users under 13 require parental consent.
+
+7. Changes to This Policy
+We may update this policy periodically. Continued use constitutes acceptance of changes.
+
+8. Contact Us
+For privacy concerns or questions, contact us through the app's support section.
 """,
-                      style: const TextStyle(fontSize: 14, height: 1.5),
-                    ),
-                  ),
-                ),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
 
-                const SizedBox(height: 12),
+                                  const SizedBox(height: 12),
 
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                     style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFF5E8C61), // dark forest green
-    foregroundColor: Colors.white, // text/icon color
-  ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Close"),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-},
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(
+                                          0xFF5E8C61,
+                                        ), // dark forest green
+                                        foregroundColor:
+                                            Colors.white, // text/icon color
+                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("Close"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
                 _buildDivider(),
                 _buildSettingItem(
@@ -574,10 +622,138 @@ This is the Privacy Policy for Queez.
                   title: 'Terms of Service',
                   subtitle: 'Read our terms',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Terms of service coming soon'),
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
                       ),
+                      builder: (context) {
+                        return SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: 20,
+                              right: 20,
+                              top: 20,
+                              bottom:
+                                  MediaQuery.of(context).viewInsets.bottom + 20,
+                            ),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.65,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Center(
+                                    child: Container(
+                                      height: 5,
+                                      width: 50,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade400,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  const Text(
+                                    "Terms of Service",
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      child: Text(
+                                        """
+Terms of Service for Queez
+Last Updated: January 2026
+
+1. Acceptance of Terms
+By using Queez, you agree to these Terms of Service. If you disagree with any part, please discontinue use.
+
+2. User Accounts
+• You must provide accurate information during registration
+• You are responsible for maintaining account security
+• One account per person; sharing accounts is prohibited
+• You must be 13+ years old to create an account
+
+3. User Content
+• You retain ownership of quizzes, flashcards, and notes you create
+• You grant Queez a license to store and display your content
+• Shared content may be viewed by other users based on your settings
+• You must not upload inappropriate, offensive, or copyrighted content
+
+4. Acceptable Use
+You agree NOT to:
+• Use the app for any illegal purposes
+• Harass, abuse, or harm other users
+• Attempt to hack or compromise app security
+• Upload malicious code or spam content
+• Impersonate others or create fake accounts
+
+5. Learning Content
+• Quiz and flashcard content is for educational purposes
+• We do not guarantee accuracy of user-generated content
+• Official educational content is clearly marked
+• You are responsible for verifying information accuracy
+
+6. Service Availability
+• We strive for 99% uptime but cannot guarantee uninterrupted service
+• Maintenance may cause temporary unavailability
+• We reserve the right to modify or discontinue features
+
+7. Account Termination
+• We may suspend accounts violating these terms
+• You can delete your account anytime from Settings
+• Deleted data cannot be recovered
+
+8. Intellectual Property
+• Queez name, logo, and design are our property
+• You may not copy or redistribute our proprietary content
+
+9. Limitation of Liability
+• Queez is provided "as is" without warranties
+• We are not liable for any damages from app use
+• Maximum liability is limited to fees paid (if any)
+
+10. Changes to Terms
+We may update these terms. Continued use means acceptance of changes.
+
+11. Governing Law
+These terms are governed by applicable laws in your jurisdiction.
+""",
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Color(0xFF5E8C61),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("Close"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
