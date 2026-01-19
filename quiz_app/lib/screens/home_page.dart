@@ -80,30 +80,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   // Color mapping for categories (fallback)
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Programming':
-        return const Color(0xFF3776AB);
-      case 'Science':
-      case 'Science and Technology':
-        return const Color(0xFF88B04B);
-      case 'Mathematics':
-        return const Color(0xFF6B5B95);
-      case 'Language':
-      case 'Language Learning':
-        return const Color(0xFFDC143C);
-      case 'History':
-        return const Color(0xFF8B4513);
-      case 'Arts':
-        return const Color(0xFFFF6347);
-      case 'Business':
-        return const Color(0xFF2E8B57);
-      case 'Law':
-        return const Color(0xFF4169E1);
-      default:
-        return const Color(0xFF9370DB);
-    }
-  }
 
   @override
   void initState() {
@@ -940,30 +916,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Programming':
-        return Icons.code_rounded;
-      case 'Science':
-      case 'Science and Technology':
-        return Icons.science_rounded;
-      case 'Mathematics':
-        return Icons.calculate_rounded;
-      case 'Language':
-      case 'Language Learning':
-        return Icons.translate_rounded;
-      case 'History':
-        return Icons.history_edu_rounded;
-      case 'Arts':
-        return Icons.palette_rounded;
-      case 'Business':
-        return Icons.business_center_rounded;
-      case 'Law':
-        return Icons.gavel_rounded;
-      default:
-        return Icons.school_rounded;
-    }
-  }
 
   String _formatNumber(int number) {
     if (number >= 1000) {
