@@ -237,8 +237,8 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) => HostingPage(
-                quizId: quizId,
-                quizTitle: quizTitle,
+                itemId: quizId,
+                itemTitle: quizTitle,
                 mode: mode,
                 hostId: userId,
                 existingSessionCode: sessionCode, // Skip session creation

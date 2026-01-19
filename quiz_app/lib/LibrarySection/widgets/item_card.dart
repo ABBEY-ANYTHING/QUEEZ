@@ -239,13 +239,23 @@ class _ItemCardState extends State<ItemCard>
   }
 
   void _handleShare(BuildContext context) {
+    final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+
     if (widget.item.isQuiz) {
-      final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
       showModeSelection(
         context: context,
-        quizId: widget.item.id,
-        quizTitle: widget.item.title,
+        itemId: widget.item.id,
+        itemTitle: widget.item.title,
         hostId: hostId,
+        isStudySet: false,
+      );
+    } else if (widget.item.isStudySet) {
+      showModeSelection(
+        context: context,
+        itemId: widget.item.id,
+        itemTitle: widget.item.title,
+        hostId: hostId,
+        isStudySet: true,
       );
     } else {
       // For other types, show a simple share message

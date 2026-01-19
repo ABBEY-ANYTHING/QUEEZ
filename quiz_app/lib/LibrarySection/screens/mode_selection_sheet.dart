@@ -6,15 +6,17 @@ import 'package:quiz_app/utils/quiz_design_system.dart';
 
 /// Clean, minimalistic mode selection sheet with 2x2 grid layout
 class ModeSelectionSheet extends StatelessWidget {
-  final String quizId;
-  final String quizTitle;
+  final String itemId; // Can be quizId or studySetId
+  final String itemTitle;
   final String hostId;
+  final bool isStudySet;
 
   const ModeSelectionSheet({
     super.key,
-    required this.quizId,
-    required this.quizTitle,
+    required this.itemId,
+    required this.itemTitle,
     required this.hostId,
+    this.isStudySet = false,
   });
 
   @override
@@ -69,55 +71,87 @@ class ModeSelectionSheet extends StatelessWidget {
               const SizedBox(height: QuizSpacing.xl),
 
               // 2x2 Grid of mode cards
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              if (isStudySet)
+                // Study Set modes: Share and Marketplace only
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _buildModeCard(
+                          context: context,
+                          icon: Icons.share_outlined,
+                          title: 'Share',
+                          mode: 'share',
+                        ),
+                      ),
+                      const SizedBox(width: QuizSpacing.md),
+                      Expanded(
+                        child: _buildModeCard(
+                          context: context,
+                          icon: Icons.storefront_outlined,
+                          title: 'List on Marketplace',
+                          mode: 'marketplace',
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Quiz modes: All 4 modes
+                Column(
                   children: [
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.share_outlined,
-                        title: 'Share',
-                        mode: 'share',
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.share_outlined,
+                              title: 'Share',
+                              mode: 'share',
+                            ),
+                          ),
+                          const SizedBox(width: QuizSpacing.md),
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.groups_outlined,
+                              title: 'Live Multiplayer',
+                              mode: 'live_multiplayer',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: QuizSpacing.md),
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.groups_outlined,
-                        title: 'Live Multiplayer',
-                        mode: 'live_multiplayer',
+                    const SizedBox(height: QuizSpacing.md),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.person_outline,
+                              title: 'Self-Paced',
+                              mode: 'self_paced',
+                            ),
+                          ),
+                          const SizedBox(width: QuizSpacing.md),
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.schedule_outlined,
+                              title: 'Timed Individual',
+                              mode: 'timed_individual',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: QuizSpacing.md),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.person_outline,
-                        title: 'Self-Paced',
-                        mode: 'self_paced',
-                      ),
-                    ),
-                    const SizedBox(width: QuizSpacing.md),
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.schedule_outlined,
-                        title: 'Timed Individual',
-                        mode: 'timed_individual',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: QuizSpacing.xl),
 
               // Cancel button
@@ -156,14 +190,33 @@ class ModeSelectionSheet extends StatelessWidget {
       child: InkWell(
         onTap: () {
           Navigator.pop(context);
+
+          // Marketplace mode doesn't need session - just list the item
+          if (mode == 'marketplace') {
+            // TODO: Implement marketplace listing logic
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isStudySet
+                      ? 'Study set listed on marketplace!'
+                      : 'Quiz listed on marketplace!',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+            return;
+          }
+
+          // For share/session modes, navigate to HostingPage
           Navigator.push(
             context,
             customRoute(
               HostingPage(
-                quizId: quizId,
-                quizTitle: quizTitle,
+                itemId: itemId,
+                itemTitle: itemTitle,
                 mode: mode,
                 hostId: hostId,
+                isStudySet: isStudySet,
               ),
               AnimationType.slideUp,
             ),
@@ -219,9 +272,10 @@ class ModeSelectionSheet extends StatelessWidget {
 /// Call this from your quiz detail page or library
 void showModeSelection({
   required BuildContext context,
-  required String quizId,
-  required String quizTitle,
+  required String itemId,
+  required String itemTitle,
   required String hostId,
+  bool isStudySet = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -229,9 +283,10 @@ void showModeSelection({
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (context) => ModeSelectionSheet(
-      quizId: quizId,
-      quizTitle: quizTitle,
+      itemId: itemId,
+      itemTitle: itemTitle,
       hostId: hostId,
+      isStudySet: isStudySet,
     ),
   );
 }
