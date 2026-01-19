@@ -1,15 +1,18 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/models/quiz.dart';
+import 'package:quiz_app/CreateSection/models/video_lecture.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
+import 'package:quiz_app/CreateSection/services/google_drive_service.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
@@ -48,6 +51,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
   List<Quiz> quizzes = [];
   List<FlashcardSet> flashcardSets = [];
   List<Note> notes = [];
+  List<VideoLecture> videoLectures = [];
   bool _isSaving = false;
 
   @override
@@ -63,6 +67,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         quizzes = cachedStudySet.quizzes;
         flashcardSets = cachedStudySet.flashcardSets;
         notes = cachedStudySet.notes;
+        videoLectures = cachedStudySet.videoLectures;
       });
     }
   }
@@ -102,7 +107,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Add Item to Study Set',
+                  'Add Item to Course',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -179,6 +184,20 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                   onTap: () {
                     Navigator.pop(context);
                     _showSelectNoteDialog();
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Video Lecture Section
+                _buildItemTypeHeader('Video Lecture'),
+                const SizedBox(height: 12),
+                _buildAddItemOption(
+                  icon: Icons.videocam_outlined,
+                  title: 'Upload Video Lecture',
+                  description: 'Upload video from your device to Google Drive',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _uploadVideoLecture();
                   },
                 ),
               ],
@@ -640,6 +659,215 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
     }
   }
 
+  /// Upload video lecture to Google Drive (via backend)
+  Future<void> _uploadVideoLecture() async {
+    try {
+      // Pick video file
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.video,
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      if (file.path == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not access the selected file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Check file size (limit to 100MB for reasonable upload time)
+      if (file.size > 100 * 1024 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Video file is too large. Maximum size is 100MB.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Show title input dialog
+      final titleController = TextEditingController(
+        text: file.name.replaceAll(RegExp(r'\.[^.]+$'), ''),
+      );
+
+      if (!mounted) return;
+      final videoTitle = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Video Title'),
+          content: TextField(
+            controller: titleController,
+            decoration: const InputDecoration(
+              labelText: 'Enter a title for this video',
+              border: OutlineInputBorder(),
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, titleController.text),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('Upload'),
+            ),
+          ],
+        ),
+      );
+
+      if (videoTitle == null || videoTitle.trim().isEmpty) return;
+
+      if (!mounted) return;
+
+      // Show uploading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                'Uploading "${videoTitle.trim()}"...',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This may take a moment depending on the file size.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Upload to Google Drive
+      final uploadResult = await GoogleDriveService.uploadVideo(
+        videoFile: File(file.path!),
+        title: videoTitle.trim(),
+      );
+
+      // Close upload dialog
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (uploadResult == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload video'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Create VideoLecture object
+      final videoLecture = VideoLecture(
+        id: uploadResult['fileId'],
+        title: videoTitle.trim(),
+        driveFileId: uploadResult['fileId'] ?? '',
+        shareableLink: uploadResult['shareableLink'] ?? '',
+        duration: 0, // Would need video metadata parsing for actual duration
+        uploadedAt: DateTime.now().toIso8601String(),
+      );
+
+      // Add to study set cache
+      StudySetCacheManager.instance.addVideoLectureToStudySet(videoLecture);
+
+      if (!mounted) return;
+      setState(() {
+        _loadCachedItems();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Video "${videoTitle.trim()}" uploaded successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Try to close any open dialogs
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (_) {}
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading video: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Remove a video lecture
+  void _removeVideoLecture(VideoLecture video) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Video'),
+        content: Text(
+          'Are you sure you want to remove "${video.title}" from this course?\n\n'
+          'Note: This will also delete the video from your Google Drive.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Delete from Google Drive
+    if (video.driveFileId.isNotEmpty) {
+      await GoogleDriveService.deleteVideo(video.driveFileId);
+    }
+
+    // Remove from cache
+    StudySetCacheManager.instance.removeVideoLectureFromStudySet(
+      video.id ?? video.driveFileId,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _loadCachedItems();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Video removed successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   Future<void> _saveStudySet() async {
     if (_isSaving) return;
 
@@ -815,7 +1043,10 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
               const SizedBox(height: 40),
 
               // Display Added Items or Empty State
-              if (quizzes.isEmpty && flashcardSets.isEmpty && notes.isEmpty)
+              if (quizzes.isEmpty &&
+                  flashcardSets.isEmpty &&
+                  notes.isEmpty &&
+                  videoLectures.isEmpty)
                 // Empty State with Lottie Animation
                 Center(
                   child: Column(
@@ -884,6 +1115,15 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                       _buildSectionHeader('Notes', notes.length),
                       const SizedBox(height: 12),
                       ...notes.map((note) => _buildNoteCard(note)),
+                      const SizedBox(height: 24),
+                    ],
+                    if (videoLectures.isNotEmpty) ...[
+                      _buildSectionHeader(
+                        'Video Lectures',
+                        videoLectures.length,
+                      ),
+                      const SizedBox(height: 12),
+                      ...videoLectures.map((video) => _buildVideoCard(video)),
                     ],
                   ],
                 ),
@@ -1138,5 +1378,71 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       notes.removeWhere((n) => n.id == noteId);
       StudySetCacheManager.instance.removeNoteFromStudySet(noteId);
     });
+  }
+
+  Widget _buildVideoCard(VideoLecture video) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.videocam, color: Colors.red, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  video.title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_done,
+                      size: 14,
+                      color: Colors.green.shade400,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Uploaded to Google Drive',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+            onPressed: () => _removeVideoLecture(video),
+          ),
+        ],
+      ),
+    );
   }
 }

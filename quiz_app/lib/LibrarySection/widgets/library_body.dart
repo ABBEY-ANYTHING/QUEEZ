@@ -107,7 +107,7 @@ Widget buildFilterChips({
     {'label': 'Quizzes', 'value': 'quiz'},
     {'label': 'Flashcards', 'value': 'flashcard'},
     {'label': 'Notes', 'value': 'note'},
-    {'label': 'Study Sets', 'value': 'study_set'},
+    {'label': 'Courses', 'value': 'course_pack'},
   ];
 
   return Container(
@@ -332,7 +332,7 @@ class _AnimatedItemListState extends State<_AnimatedItemList> {
                             : item.isNote
                             ? 'Note'
                             : item.isStudySet
-                            ? 'Study Set'
+                            ? 'Course'
                             : 'Flashcard Set'}',
                     content: 'Are you sure you want to delete "${item.title}"?',
                     primaryActionText: 'Delete',
@@ -373,7 +373,7 @@ class _AnimatedItemListState extends State<_AnimatedItemList> {
                               : item.isNote
                               ? 'Note'
                               : item.isStudySet
-                              ? 'Study Set'
+                              ? 'Course'
                               : 'Flashcard set'} deleted successfully',
                         ),
                         backgroundColor: Colors.green,

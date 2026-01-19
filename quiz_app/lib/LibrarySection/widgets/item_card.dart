@@ -508,7 +508,7 @@ class _ItemCardState extends State<ItemCard>
   String _getTypeLabel() {
     if (widget.item.isQuiz) return 'Quiz';
     if (widget.item.isNote) return 'Note';
-    if (widget.item.isStudySet) return 'Study Set';
+    if (widget.item.isStudySet) return 'Course';
     return 'Flashcards';
   }
 

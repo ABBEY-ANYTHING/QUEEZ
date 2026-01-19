@@ -536,7 +536,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     _buildCompactStatItem(
                       icon: Icons.folder_outlined,
                       count: studySetCount,
-                      label: 'Study Sets',
+                      label: 'Courses',
                       color: const Color(0xFF8B5CF6),
                     ),
                 ],

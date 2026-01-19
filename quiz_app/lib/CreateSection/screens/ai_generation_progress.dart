@@ -91,8 +91,8 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
 
       await QuizSavedDialog.show(
         context,
-        title: 'Study Set Generated!',
-        message: 'Review and edit your AI-generated study set before saving.',
+        title: 'Course Generated!',
+        message: 'Review and edit your AI-generated course before saving.',
         onDismiss: () async {
           if (mounted) {
             // Navigate to the dashboard for editing

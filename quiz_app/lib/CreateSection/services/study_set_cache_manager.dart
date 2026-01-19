@@ -1,7 +1,8 @@
-import 'package:quiz_app/CreateSection/models/study_set.dart';
-import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/models/quiz.dart';
+import 'package:quiz_app/CreateSection/models/study_set.dart';
+import 'package:quiz_app/CreateSection/models/video_lecture.dart';
 
 class StudySetCacheManager {
   static final StudySetCacheManager instance = StudySetCacheManager._internal();
@@ -30,6 +31,7 @@ class StudySetCacheManager {
       quizzes: [],
       flashcardSets: [],
       notes: [],
+      videoLectures: [],
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -74,6 +76,19 @@ class StudySetCacheManager {
     }
   }
 
+  /// Add video lecture to study set
+  void addVideoLectureToStudySet(VideoLecture videoLecture) {
+    if (_currentStudySet != null) {
+      final updatedVideoLectures = List<VideoLecture>.from(
+        _currentStudySet!.videoLectures,
+      )..add(videoLecture);
+      _currentStudySet = _currentStudySet!.copyWith(
+        videoLectures: updatedVideoLectures,
+        updatedAt: DateTime.now(),
+      );
+    }
+  }
+
   /// Remove quiz from study set
   void removeQuizFromStudySet(String quizId) {
     if (_currentStudySet != null) {
@@ -111,6 +126,24 @@ class StudySetCacheManager {
         updatedAt: DateTime.now(),
       );
     }
+  }
+
+  /// Remove video lecture from study set
+  void removeVideoLectureFromStudySet(String videoId) {
+    if (_currentStudySet != null) {
+      final updatedVideoLectures = _currentStudySet!.videoLectures
+          .where((v) => v.id != videoId && v.driveFileId != videoId)
+          .toList();
+      _currentStudySet = _currentStudySet!.copyWith(
+        videoLectures: updatedVideoLectures,
+        updatedAt: DateTime.now(),
+      );
+    }
+  }
+
+  /// Get video lectures
+  List<VideoLecture> getVideoLectures() {
+    return _currentStudySet?.videoLectures ?? [];
   }
 
   /// Set complete study set (for AI-generated content)
