@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/translations.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -123,9 +124,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return 'good_morning'.tr(ref);
+    if (hour < 17) return 'good_afternoon'.tr(ref);
+    return 'good_evening'.tr(ref);
   }
 
   List<CoursePack> get _filteredCourses {

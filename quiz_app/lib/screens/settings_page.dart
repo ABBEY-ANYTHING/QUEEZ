@@ -1,22 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
+import 'package:quiz_app/providers/locale_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_strings.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -300,6 +303,188 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void _showLanguageSelector() {
+    final currentLocale = ref.read(localeProvider);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.language_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Select Language',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Choose your preferred language for the app',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: supportedLanguages.length,
+                  itemBuilder: (context, index) {
+                    final language = supportedLanguages[index];
+                    final isSelected = currentLocale.languageCode == language.code;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            ref.read(localeProvider.notifier).setLocale(language.code);
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_outline,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text('Language changed to ${language.name}'),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.primary,
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withValues(alpha: 0.1)
+                                  : AppColors.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  language.flag,
+                                  style: const TextStyle(fontSize: 28),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        language.name,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        language.nativeName,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: isSelected
+                                              ? AppColors.primary.withValues(alpha: 0.7)
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -317,9 +502,9 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Settings',
-                style: TextStyle(
+              Text(
+                AppStrings.get('settings', ref.watch(localeProvider).languageCode),
+                style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -336,13 +521,13 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 32),
 
               // Account Section
-              _buildSectionTitle('Account'),
+              _buildSectionTitle(AppStrings.get('account', ref.watch(localeProvider).languageCode)),
               const SizedBox(height: 12),
               _buildSettingsCard([
                 _buildSettingItem(
                   icon: Icons.person_outline_rounded,
-                  title: 'Edit Profile',
-                  subtitle: 'Update your profile information',
+                  title: AppStrings.get('edit_profile', ref.watch(localeProvider).languageCode),
+                  subtitle: AppStrings.get('update_profile_info', ref.watch(localeProvider).languageCode),
                   onTap: () async {
                     if (_userModel != null) {
                       final result = await Navigator.push(
@@ -389,8 +574,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildDivider(),
                 _buildSettingItem(
                   icon: Icons.lock_outline_rounded,
-                  title: 'Change Password',
-                  subtitle: 'Update your password',
+                  title: AppStrings.get('change_password', ref.watch(localeProvider).languageCode),
+                  subtitle: AppStrings.get('update_password', ref.watch(localeProvider).languageCode),
                   onTap: _handleChangePassword,
                 ),
               ]),
@@ -398,26 +583,20 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 24),
 
               // Preferences Section
-              _buildSectionTitle('Preferences'),
+              _buildSectionTitle(AppStrings.get('preferences', ref.watch(localeProvider).languageCode)),
               const SizedBox(height: 12),
               _buildSettingsCard([
                 _buildSettingItem(
                   icon: Icons.language_rounded,
-                  title: 'Language',
-                  subtitle: 'English (US)',
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Language selection coming soon'),
-                      ),
-                    );
-                  },
+                  title: AppStrings.get('language', ref.watch(localeProvider).languageCode),
+                  subtitle: ref.watch(localeProvider.notifier).currentLanguage.name,
+                  onTap: () => _showLanguageSelector(),
                 ),
                 _buildDivider(),
                 _buildSettingItem(
                   icon: Icons.palette_outlined,
-                  title: 'Theme',
-                  subtitle: 'Light mode',
+                  title: AppStrings.get('theme', ref.watch(localeProvider).languageCode),
+                  subtitle: AppStrings.get('light_mode', ref.watch(localeProvider).languageCode),
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -431,13 +610,13 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 24),
 
               // About Section
-              _buildSectionTitle('About'),
+              _buildSectionTitle(AppStrings.get('about', ref.watch(localeProvider).languageCode)),
               const SizedBox(height: 12),
               _buildSettingsCard([
                 _buildSettingItem(
                   icon: Icons.info_outline_rounded,
-                  title: 'About Queez',
-                  subtitle: 'Version 1.0.0',
+                  title: AppStrings.get('about_app', ref.watch(localeProvider).languageCode),
+                  subtitle: '${AppStrings.get('version', ref.watch(localeProvider).languageCode)} 1.0.0',
                   onTap: () {
                     AppDialog.show(
                       context: context,
@@ -762,12 +941,12 @@ These terms are governed by applicable laws in your jurisdiction.
               const SizedBox(height: 24),
 
               // Danger Zone
-              _buildSectionTitle('Danger Zone'),
+              _buildSectionTitle(AppStrings.get('danger_zone', ref.watch(localeProvider).languageCode)),
               const SizedBox(height: 12),
               _buildSettingsCard([
                 _buildSettingItem(
                   icon: Icons.logout_rounded,
-                  title: 'Sign Out',
+                  title: AppStrings.get('sign_out', ref.watch(localeProvider).languageCode),
                   subtitle: 'Sign out of your account',
                   onTap: _handleSignOut,
                   isDestructive: true,
@@ -775,7 +954,7 @@ These terms are governed by applicable laws in your jurisdiction.
                 _buildDivider(),
                 _buildSettingItem(
                   icon: Icons.delete_outline_rounded,
-                  title: 'Delete Account',
+                  title: AppStrings.get('delete_account', ref.watch(localeProvider).languageCode),
                   subtitle: 'Permanently delete your account',
                   onTap: _handleDeleteAccount,
                   isDestructive: true,
