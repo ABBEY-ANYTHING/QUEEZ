@@ -19,21 +19,27 @@ import 'package:quiz_app/widgets/core/core_widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
 class HostingPage extends ConsumerStatefulWidget {
-  final String quizId;
-  final String quizTitle;
+  final String itemId; // Can be quizId or coursePackId
+  final String itemTitle;
   final String mode;
   final String hostId;
+  final bool isCoursePack;
   final String?
   existingSessionCode; // For reconnection - skip creating new session
 
   const HostingPage({
     super.key,
-    required this.quizId,
-    required this.quizTitle,
+    required this.itemId,
+    required this.itemTitle,
     required this.mode,
     required this.hostId,
+    this.isCoursePack = false,
     this.existingSessionCode,
   });
+
+  // Backward compatibility getters
+  String get quizId => itemId;
+  String get quizTitle => itemTitle;
 
   @override
   ConsumerState<HostingPage> createState() => _HostingPageState();
@@ -109,11 +115,22 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         errorMessage = null;
       });
 
-      final result = await SessionService.createSession(
-        quizId: widget.quizId,
-        hostId: widget.hostId,
-        mode: widget.mode,
-      );
+      final Map<String, dynamic> result;
+
+      if (widget.isCoursePack) {
+        // For course packs, use course pack share code endpoint
+        result = await SessionService.createCoursePackShareCode(
+          coursePackId: widget.itemId,
+          hostId: widget.hostId,
+        );
+      } else {
+        // For quizzes, use regular session creation
+        result = await SessionService.createSession(
+          quizId: widget.quizId,
+          hostId: widget.hostId,
+          mode: widget.mode,
+        );
+      }
 
       if (result['success'] == true) {
         setState(() {

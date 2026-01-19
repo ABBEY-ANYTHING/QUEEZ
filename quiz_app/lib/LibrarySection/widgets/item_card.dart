@@ -325,13 +325,23 @@ class _ItemCardState extends ConsumerState<ItemCard>
   }
 
   void _handleShare(BuildContext context) {
+    final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+
     if (widget.item.isQuiz) {
-      final hostId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
       showModeSelection(
         context: context,
-        quizId: widget.item.id,
-        quizTitle: widget.item.title,
+        itemId: widget.item.id,
+        itemTitle: widget.item.title,
         hostId: hostId,
+        isCoursePack: false,
+      );
+    } else if (widget.item.isStudySet) {
+      showModeSelection(
+        context: context,
+        itemId: widget.item.id,
+        itemTitle: widget.item.title,
+        hostId: hostId,
+        isCoursePack: true,
       );
     } else {
       // For other types, show a simple share message
@@ -598,8 +608,7 @@ class _ItemCardState extends ConsumerState<ItemCard>
   String _getTypeLabel() {
     if (widget.item.isQuiz) return 'Quiz';
     if (widget.item.isNote) return 'Note';
-    if (widget.item.isStudySet) return 'Study Set';
-    if (widget.item.isCoursePack) return 'Course';
+    if (widget.item.isStudySet) return 'Course Pack';
     return 'Flashcards';
   }
 
@@ -720,7 +729,7 @@ class _ItemCardState extends ConsumerState<ItemCard>
       context,
       MaterialPageRoute(
         builder: (context) => WaitScreen(
-          loadingMessage: 'Loading study set',
+          loadingMessage: 'Loading course pack',
           onLoadComplete: () async {
             loadedStudySet = await StudySetService.fetchStudySetById(
               widget.item.id,

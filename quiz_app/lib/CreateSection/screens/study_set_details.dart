@@ -94,7 +94,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const UniversalAppBar(title: 'New Study Set'),
+      appBar: const UniversalAppBar(title: 'New Course'),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -108,10 +108,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
                 const SizedBox(height: 32),
                 _buildFormSection(),
                 const SizedBox(height: 40),
-                PrimaryButton(
-                  text: 'Create Study Set',
-                  onPressed: _handleCreate,
-                ),
+                PrimaryButton(text: 'Create Course', onPressed: _handleCreate),
               ],
             ),
           ),
@@ -125,7 +122,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Let\'s build your set',
+          'Let\'s build your course',
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w700,
@@ -178,7 +175,7 @@ class StudySetDetailsState extends State<StudySetDetails> {
             title: 'Description',
             child: CustomTextField(
               controller: _descriptionController,
-              hintText: 'What is this study set about?',
+              hintText: 'What is this course about?',
               maxLines: 3,
               validator: (value) =>
                   value?.isEmpty ?? true ? 'Please enter a description' : null,

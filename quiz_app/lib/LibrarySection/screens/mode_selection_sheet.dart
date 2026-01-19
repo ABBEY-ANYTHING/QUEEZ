@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -6,15 +7,17 @@ import 'package:quiz_app/utils/quiz_design_system.dart';
 
 /// Clean, minimalistic mode selection sheet with 2x2 grid layout
 class ModeSelectionSheet extends StatelessWidget {
-  final String quizId;
-  final String quizTitle;
+  final String itemId; // Can be quizId or coursePackId
+  final String itemTitle;
   final String hostId;
+  final bool isCoursePack;
 
   const ModeSelectionSheet({
     super.key,
-    required this.quizId,
-    required this.quizTitle,
+    required this.itemId,
+    required this.itemTitle,
     required this.hostId,
+    this.isCoursePack = false,
   });
 
   @override
@@ -69,55 +72,87 @@ class ModeSelectionSheet extends StatelessWidget {
               const SizedBox(height: QuizSpacing.xl),
 
               // 2x2 Grid of mode cards
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              if (isCoursePack)
+                // Course Pack modes: Share and Marketplace only
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _buildModeCard(
+                          context: context,
+                          icon: Icons.share_outlined,
+                          title: 'Share',
+                          mode: 'share',
+                        ),
+                      ),
+                      const SizedBox(width: QuizSpacing.md),
+                      Expanded(
+                        child: _buildModeCard(
+                          context: context,
+                          icon: Icons.storefront_outlined,
+                          title: 'List on Marketplace',
+                          mode: 'marketplace',
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Quiz modes: All 4 modes
+                Column(
                   children: [
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.share_outlined,
-                        title: 'Share',
-                        mode: 'share',
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.share_outlined,
+                              title: 'Share',
+                              mode: 'share',
+                            ),
+                          ),
+                          const SizedBox(width: QuizSpacing.md),
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.groups_outlined,
+                              title: 'Live Multiplayer',
+                              mode: 'live_multiplayer',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: QuizSpacing.md),
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.groups_outlined,
-                        title: 'Live Multiplayer',
-                        mode: 'live_multiplayer',
+                    const SizedBox(height: QuizSpacing.md),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.person_outline,
+                              title: 'Self-Paced',
+                              mode: 'self_paced',
+                            ),
+                          ),
+                          const SizedBox(width: QuizSpacing.md),
+                          Expanded(
+                            child: _buildModeCard(
+                              context: context,
+                              icon: Icons.schedule_outlined,
+                              title: 'Timed Individual',
+                              mode: 'timed_individual',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: QuizSpacing.md),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.person_outline,
-                        title: 'Self-Paced',
-                        mode: 'self_paced',
-                      ),
-                    ),
-                    const SizedBox(width: QuizSpacing.md),
-                    Expanded(
-                      child: _buildModeCard(
-                        context: context,
-                        icon: Icons.schedule_outlined,
-                        title: 'Timed Individual',
-                        mode: 'timed_individual',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: QuizSpacing.xl),
 
               // Cancel button
@@ -154,16 +189,71 @@ class ModeSelectionSheet extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           Navigator.pop(context);
+
+          // Marketplace mode - publish the course pack
+          if (mode == 'marketplace') {
+            if (isCoursePack) {
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              );
+
+              try {
+                await CoursePackService.publishCoursePack(
+                  itemId,
+                  isPublic: true,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Course pack listed on marketplace!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Failed to list: ${e.toString().replaceAll('Exception: ', '')}',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Marketplace listing is only available for course packs',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            return;
+          }
+
+          // For share/session modes, navigate to HostingPage
           Navigator.push(
             context,
             customRoute(
               HostingPage(
-                quizId: quizId,
-                quizTitle: quizTitle,
+                itemId: itemId,
+                itemTitle: itemTitle,
                 mode: mode,
                 hostId: hostId,
+                isCoursePack: isCoursePack,
               ),
               AnimationType.slideUp,
             ),
@@ -219,9 +309,10 @@ class ModeSelectionSheet extends StatelessWidget {
 /// Call this from your quiz detail page or library
 void showModeSelection({
   required BuildContext context,
-  required String quizId,
-  required String quizTitle,
+  required String itemId,
+  required String itemTitle,
   required String hostId,
+  bool isCoursePack = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -229,9 +320,10 @@ void showModeSelection({
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (context) => ModeSelectionSheet(
-      quizId: quizId,
-      quizTitle: quizTitle,
+      itemId: itemId,
+      itemTitle: itemTitle,
       hostId: hostId,
+      isCoursePack: isCoursePack,
     ),
   );
 }

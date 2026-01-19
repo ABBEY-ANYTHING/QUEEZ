@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+
 import '../../api_config.dart';
 
 class SessionService {
@@ -21,12 +22,12 @@ class SessionService {
         'host_id': hostId,
         'mode': mode,
       };
-      
+
       // Add time settings if provided
       if (perQuestionTimeLimit != null) {
         body['per_question_time_limit'] = perQuestionTimeLimit;
       }
-      
+
       final response = await http
           .post(
             Uri.parse('$baseUrl/api/multiplayer/create-session'),
@@ -197,6 +198,51 @@ class SessionService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // Create share code for course pack (replaces study set share code)
+  static Future<Map<String, dynamic>> createCoursePackShareCode({
+    required String coursePackId,
+    required String hostId,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/course-pack/$coursePackId/create-share-code'),
+            headers: {'Content-Type': 'application/json'},
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timed out');
+            },
+          );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': data['success'] ?? true,
+          'session_code': data['share_code'], // Backend returns share_code
+          'message': data['message'],
+          'expires_in': 600, // 10 minutes
+        };
+      } else {
+        throw Exception('Failed to create share code: ${response.body}');
+      }
+    } on SocketException {
+      throw Exception('Network error. Please check your connection.');
+    } catch (e) {
+      throw Exception('Error creating share code: $e');
+    }
+  }
+
+  // Create share code for study set (deprecated - redirects to course pack)
+  @Deprecated('Use createCoursePackShareCode instead')
+  static Future<Map<String, dynamic>> createStudySetShareCode({
+    required String studySetId,
+    required String hostId,
+  }) async {
+    return createCoursePackShareCode(coursePackId: studySetId, hostId: hostId);
   }
 
   // End quiz session

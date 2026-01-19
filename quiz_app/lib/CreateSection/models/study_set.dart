@@ -1,6 +1,7 @@
-import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/models/quiz.dart';
+import 'package:quiz_app/CreateSection/models/video_lecture.dart';
 
 class StudySet {
   final String id;
@@ -13,6 +14,13 @@ class StudySet {
   final List<Quiz> quizzes;
   final List<FlashcardSet> flashcardSets;
   final List<Note> notes;
+  final List<VideoLecture> videoLectures;
+  // Marketplace fields
+  final bool isPublic;
+  final double rating;
+  final int ratingCount;
+  final int enrolledCount;
+  final double estimatedHours;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +35,12 @@ class StudySet {
     required this.quizzes,
     required this.flashcardSets,
     required this.notes,
+    this.videoLectures = const [],
+    this.isPublic = false,
+    this.rating = 0.0,
+    this.ratingCount = 0,
+    this.enrolledCount = 0,
+    this.estimatedHours = 0.0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -43,6 +57,9 @@ class StudySet {
       'quizzes': quizzes.map((q) => q.toJson()).toList(),
       'flashcardSets': flashcardSets.map((f) => f.toJson()).toList(),
       'notes': notes.map((n) => n.toJson()).toList(),
+      'videoLectures': videoLectures.map((v) => v.toJson()).toList(),
+      'isPublic': isPublic,
+      'estimatedHours': estimatedHours,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -66,6 +83,14 @@ class StudySet {
       notes: (json['notes'] as List? ?? [])
           .map((n) => Note.fromJson(n))
           .toList(),
+      videoLectures: (json['videoLectures'] as List? ?? [])
+          .map((v) => VideoLecture.fromJson(v))
+          .toList(),
+      isPublic: json['isPublic'] ?? false,
+      rating: (json['rating'] ?? 0).toDouble(),
+      ratingCount: json['ratingCount'] ?? 0,
+      enrolledCount: json['enrolledCount'] ?? 0,
+      estimatedHours: (json['estimatedHours'] ?? 0).toDouble(),
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
     );
@@ -95,6 +120,12 @@ class StudySet {
     List<Quiz>? quizzes,
     List<FlashcardSet>? flashcardSets,
     List<Note>? notes,
+    List<VideoLecture>? videoLectures,
+    bool? isPublic,
+    double? rating,
+    int? ratingCount,
+    int? enrolledCount,
+    double? estimatedHours,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -109,10 +140,20 @@ class StudySet {
       quizzes: quizzes ?? this.quizzes,
       flashcardSets: flashcardSets ?? this.flashcardSets,
       notes: notes ?? this.notes,
+      videoLectures: videoLectures ?? this.videoLectures,
+      isPublic: isPublic ?? this.isPublic,
+      rating: rating ?? this.rating,
+      ratingCount: ratingCount ?? this.ratingCount,
+      enrolledCount: enrolledCount ?? this.enrolledCount,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  int get totalItems => quizzes.length + flashcardSets.length + notes.length;
+  int get totalItems =>
+      quizzes.length +
+      flashcardSets.length +
+      notes.length +
+      videoLectures.length;
 }

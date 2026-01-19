@@ -200,8 +200,8 @@ class _BottomNavbar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           _NavItem(
-            icon: Icons.home_rounded,
-            label: 'Home',
+            icon: Icons.shopping_cart_outlined,
+            label: 'Store',
             index: 0,
             currentIndex: currentIndex,
             onTap: onTap,
@@ -213,11 +213,7 @@ class _BottomNavbar extends StatelessWidget {
             currentIndex: currentIndex,
             onTap: onTap,
           ),
-          _CreateButton(
-            index: 2,
-            currentIndex: currentIndex,
-            onTap: onTap,
-          ),
+          _CreateButton(index: 2, currentIndex: currentIndex, onTap: onTap),
           _NavItem(
             icon: Icons.person_rounded,
             label: 'Profile',
@@ -258,7 +254,8 @@ class _NavItem extends StatefulWidget {
   State<_NavItem> createState() => _NavItemState();
 }
 
-class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin {
+class _NavItemState extends State<_NavItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
 
@@ -269,9 +266,10 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _scaleController, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _scaleController, curve: Curves.easeOut));
   }
 
   @override
@@ -313,10 +311,7 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _scaleAnimation.value, child: child);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -332,23 +327,18 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.elasticOut,
                 builder: (context, scale, child) {
-                  return Transform.scale(
-                    scale: scale,
-                    child: child,
-                  );
+                  return Transform.scale(scale: scale, child: child);
                 },
                 child: TweenAnimationBuilder<Color?>(
                   tween: ColorTween(
-                    begin: isActive ? AppColors.textSecondary : AppColors.primary,
+                    begin: isActive
+                        ? AppColors.textSecondary
+                        : AppColors.primary,
                     end: isActive ? AppColors.primary : AppColors.textSecondary,
                   ),
                   duration: const Duration(milliseconds: 200),
                   builder: (context, color, _) {
-                    return Icon(
-                      widget.icon,
-                      size: 24,
-                      color: color,
-                    );
+                    return Icon(widget.icon, size: 24, color: color);
                   },
                 ),
               ),
@@ -428,12 +418,14 @@ class _CreateButtonState extends State<_CreateButton>
       vsync: this,
       duration: const Duration(milliseconds: 120),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _elevationAnimation = Tween<double>(begin: 8.0, end: 2.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _elevationAnimation = Tween<double>(
+      begin: 8.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override

@@ -24,7 +24,7 @@ class StudySetModeSelection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const UniversalAppBar(title: 'Create Study Set'),
+      appBar: const UniversalAppBar(title: 'Create Course'),
       body: SafeArea(
         child: NavbarAwareScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -32,7 +32,7 @@ class StudySetModeSelection extends StatelessWidget {
             children: [
               CustomCard(
                 title: 'Create Manually',
-                description: 'Build your study set step by step',
+                description: 'Build your course step by step',
                 iconPath: 'assets/icons/quiz_icon.png',
                 onPressed: () => _onManualTap(context),
                 showArrow: true,

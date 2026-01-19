@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/providers/ai_study_set_provider.dart';
-import 'package:quiz_app/CreateSection/services/study_set_service.dart';
+import 'package:quiz_app/CreateSection/screens/study_set_dashboard.dart';
+import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
-import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
@@ -83,29 +84,31 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
 
       if (!mounted) return;
 
-      try {
-        await StudySetService.saveStudySet(studySet);
-      } catch (saveError) {
-        if (!mounted) return;
-        _showErrorDialog(
-          'Save Error',
-          'Study set generated but failed to save: $saveError',
-        );
-        return;
-      }
+      // Store the generated study set in cache (do NOT save to database yet)
+      StudySetCacheManager.instance.setStudySet(studySet);
 
       if (!mounted) return;
 
       await QuizSavedDialog.show(
         context,
-        title: 'Study Set Generated!',
-        message: 'Your AI-powered study set is ready.',
+        title: 'Course Generated!',
+        message: 'Review and edit your AI-generated course before saving.',
         onDismiss: () async {
           if (mounted) {
-            await ref.read(quizLibraryProvider.notifier).reload();
-            if (!mounted) return;
-            Navigator.of(context).popUntil((route) => route.isFirst);
-            bottomNavbarKey.currentState?.setIndex(1);
+            // Navigate to the dashboard for editing
+            Navigator.of(context).pushReplacement(
+              customRoute(
+                StudySetDashboard(
+                  studySetId: studySet.id,
+                  title: studySet.name,
+                  description: studySet.description,
+                  language: studySet.language,
+                  category: studySet.category,
+                  coverImagePath: studySet.coverImagePath,
+                ),
+                AnimationType.fade,
+              ),
+            );
           }
         },
       );
@@ -188,15 +191,16 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop || !state.isGenerating) return;
 
-        final shouldExit = await AppDialog.show<bool>(
+        final shouldExit = await AppDialog.showInput<bool>(
           context: context,
           title: 'Cancel Generation?',
-          content:
-              'Are you sure you want to cancel? Your progress will be lost.',
-          secondaryActionText: 'Continue',
-          secondaryActionCallback: () => Navigator.pop(context, false),
-          primaryActionText: 'Cancel',
-          primaryActionCallback: () => Navigator.pop(context, true),
+          content: const Text(
+            'Are you sure you want to cancel? Your progress will be lost.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          cancelText: 'Continue',
+          submitText: 'Cancel',
+          onSubmit: () => true,
         );
 
         if (shouldExit == true && context.mounted) {
