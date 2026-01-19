@@ -6,6 +6,7 @@ import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/translations.dart';
 import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -92,9 +93,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Profile',
-                          style: TextStyle(
+                        Text(
+                          'profile'.tr(ref),
+                          style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -416,9 +417,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             children: [
               Icon(Icons.favorite_outline, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              const Text(
-                'Interests',
-                style: TextStyle(
+              Text(
+                'interests'.tr(ref),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
@@ -483,9 +484,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 size: 18,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'My Content',
-                style: TextStyle(
+              Text(
+                'my_content'.tr(ref),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -516,27 +517,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   _buildCompactStatItem(
                     icon: Icons.quiz_outlined,
                     count: quizCount,
-                    label: 'Quizzes',
+                    label: 'quizzes'.tr(ref),
                     color: const Color(0xFF6366F1),
                   ),
                   _buildCompactStatItem(
                     icon: Icons.style_outlined,
                     count: flashcardCount,
-                    label: 'Flashcards',
+                    label: 'flashcards'.tr(ref),
                     color: const Color(0xFF10B981),
                   ),
                   if (noteCount > 0)
                     _buildCompactStatItem(
                       icon: Icons.note_outlined,
                       count: noteCount,
-                      label: 'Notes',
+                      label: 'notes'.tr(ref),
                       color: const Color(0xFFF59E0B),
                     ),
                   if (studySetCount > 0)
                     _buildCompactStatItem(
                       icon: Icons.folder_outlined,
                       count: studySetCount,
-                      label: 'Study Sets',
+                      label: 'study_sets'.tr(ref),
                       color: const Color(0xFF8B5CF6),
                     ),
                 ],

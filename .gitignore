@@ -37,3 +37,4 @@ dist/
 .kiro/
 backend/
 .github/copilot-instructions.md
+quiz_app/assets/credentials/service.json

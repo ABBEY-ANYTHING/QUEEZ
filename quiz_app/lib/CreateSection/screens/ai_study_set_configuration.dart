@@ -158,7 +158,7 @@ class _AIStudySetConfigurationState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Upload documents and let AI craft your perfect study set.',
+                  'Upload documents and let AI craft your perfect course.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
@@ -336,7 +336,6 @@ class _AIStudySetConfigurationState
           ),
           const SizedBox(width: 14),
           Expanded(
-          
             child: Text(
               'AI will analyze your documents and automatically create the optimal number of quizzes, flashcards, and notes.',
               style: TextStyle(
@@ -390,7 +389,7 @@ class _AIStudySetConfigurationState
                 const Icon(Icons.auto_awesome, size: 22),
                 const SizedBox(width: 12),
                 const Text(
-                  'Generate Study Set',
+                  'Generate Course',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

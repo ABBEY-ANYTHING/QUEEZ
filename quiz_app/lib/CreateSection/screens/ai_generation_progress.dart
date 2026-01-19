@@ -91,8 +91,8 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
 
       await QuizSavedDialog.show(
         context,
-        title: 'Study Set Generated!',
-        message: 'Review and edit your AI-generated study set before saving.',
+        title: 'Course Generated!',
+        message: 'Review and edit your AI-generated course before saving.',
         onDismiss: () async {
           if (mounted) {
             // Navigate to the dashboard for editing
@@ -191,15 +191,16 @@ class _AIGenerationProgressState extends ConsumerState<AIGenerationProgress>
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop || !state.isGenerating) return;
 
-        final shouldExit = await AppDialog.show<bool>(
+        final shouldExit = await AppDialog.showInput<bool>(
           context: context,
           title: 'Cancel Generation?',
-          content:
-              'Are you sure you want to cancel? Your progress will be lost.',
-          secondaryActionText: 'Continue',
-          secondaryActionCallback: () => Navigator.pop(context, false),
-          primaryActionText: 'Cancel',
-          primaryActionCallback: () => Navigator.pop(context, true),
+          content: const Text(
+            'Are you sure you want to cancel? Your progress will be lost.',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          ),
+          cancelText: 'Continue',
+          submitText: 'Cancel',
+          onSubmit: () => true,
         );
 
         if (shouldExit == true && context.mounted) {
