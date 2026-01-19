@@ -9,6 +9,8 @@ import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
+import '../../../utils/app_logger.dart';
+
 class LiveMultiplayerDashboard extends ConsumerStatefulWidget {
   final String quizId;
   final String sessionCode;

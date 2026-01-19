@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../utils/app_logger.dart';
+
 /// Model for app version info from Firebase
 class AppVersionInfo {
   final String versionNumber;
@@ -46,7 +48,7 @@ class AppVersionService {
       return AppVersionInfo.fromFirestore(doc);
     } catch (e) {
       // Log error but don't crash the app
-      print('Error fetching app version: $e');
+      AppLogger.error('Error fetching app version: $e');
       return null;
     }
   }
