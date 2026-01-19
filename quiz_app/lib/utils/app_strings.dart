@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// App Translations - Contains all translatable strings
 class AppStrings {
-  static Map<String, Map<String, String>> _localizedValues = {
+  static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
       // Common
       'app_name': 'Queez',
