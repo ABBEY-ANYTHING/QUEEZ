@@ -31,7 +31,55 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<CoursePack> _allCourses = [];
   String? _errorMessage;
 
-  // Color mapping for categories
+  // Random colors for courses (consistent per course ID)
+  static const List<Color> _courseColors = [
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF8B5CF6), // Violet
+    Color(0xFFEC4899), // Pink
+    Color(0xFFEF4444), // Red
+    Color(0xFFF97316), // Orange
+    Color(0xFFF59E0B), // Amber
+    Color(0xFF10B981), // Emerald
+    Color(0xFF14B8A6), // Teal
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF3B82F6), // Blue
+    Color(0xFF6B7280), // Gray
+    Color(0xFF84CC16), // Lime
+  ];
+
+  // Random icons for courses (consistent per course ID)
+  static const List<IconData> _courseIcons = [
+    Icons.school_rounded,
+    Icons.auto_stories_rounded,
+    Icons.psychology_rounded,
+    Icons.lightbulb_rounded,
+    Icons.extension_rounded,
+    Icons.rocket_launch_rounded,
+    Icons.insights_rounded,
+    Icons.emoji_objects_rounded,
+    Icons.workspace_premium_rounded,
+    Icons.military_tech_rounded,
+    Icons.stars_rounded,
+    Icons.bolt_rounded,
+    Icons.diamond_rounded,
+    Icons.local_fire_department_rounded,
+    Icons.explore_rounded,
+    Icons.hub_rounded,
+  ];
+
+  // Get consistent random color for a course based on its ID
+  Color _getRandomColor(String courseId) {
+    final hash = courseId.hashCode.abs();
+    return _courseColors[hash % _courseColors.length];
+  }
+
+  // Get consistent random icon for a course based on its ID
+  IconData _getRandomIcon(String courseId) {
+    final hash = courseId.hashCode.abs();
+    return _courseIcons[hash % _courseIcons.length];
+  }
+
+  // Color mapping for categories (fallback)
   Color _getCategoryColor(String category) {
     switch (category) {
       case 'Programming':
@@ -383,7 +431,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               TextButton(
                 onPressed: () {
-                  // Navigate to see all featured courses
+                  // Scroll to the All Courses section
+                  _scrollController.animateTo(
+                    600, // Approximate position of All Courses section
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                  );
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
@@ -425,7 +478,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildFeaturedCard(CoursePack course, int index) {
-    final color = _getCategoryColor(course.category);
+    final color = _getRandomColor(course.id);
+    final icon = _getRandomIcon(course.id);
 
     return GestureDetector(
       onTap: () {
@@ -454,7 +508,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               right: -30,
               bottom: -30,
               child: Icon(
-                _getCategoryIcon(course.category),
+                icon,
                 size: 150,
                 color: Colors.white.withValues(alpha: 0.15),
               ),
@@ -627,7 +681,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildCourseCard(CoursePack course) {
-    final color = _getCategoryColor(course.category);
+    final color = _getRandomColor(course.id);
+    final icon = _getRandomIcon(course.id);
     final bool isBestseller = course.enrolledCount > 100;
 
     return GestureDetector(
@@ -660,7 +715,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               child: Center(
                 child: Icon(
-                  _getCategoryIcon(course.category),
+                  icon,
                   size: 40,
                   color: Colors.white.withValues(alpha: 0.9),
                 ),
@@ -778,7 +833,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${course.estimatedHours.toStringAsFixed(1)}h',
+                          _formatDuration(course.estimatedHours),
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary.withValues(
@@ -875,31 +930,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (sheetContext) => _CourseDetailSheet(
         course: course,
         currentUserId: _auth.currentUser?.uid,
-        onClaim: () async {
-          final user = _auth.currentUser;
-          final navigator = Navigator.of(sheetContext);
-          final scaffoldMessenger = ScaffoldMessenger.of(sheetContext);
-
-          if (user != null) {
-            try {
-              await CoursePackService.claimCoursePack(course.id, user.uid);
-              navigator.pop();
-              scaffoldMessenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Course pack added to your library!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              _loadCourses(); // Refresh to show updated enrollment count
-            } catch (e) {
-              scaffoldMessenger.showSnackBar(
-                SnackBar(
-                  content: Text(e.toString().replaceAll('Exception: ', '')),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
+        courseColor: _getRandomColor(course.id),
+        courseIcon: _getRandomIcon(course.id),
+        onClaim: () {
+          // Refresh courses after claiming
+          _loadCourses();
         },
       ),
     );
@@ -936,26 +971,126 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
     return number.toString();
   }
+
+  String _formatDuration(double hours) {
+    if (hours < 1) {
+      // Convert to minutes and round to nearest 10
+      final minutes = (hours * 60).round();
+      final roundedMinutes = ((minutes / 10).round() * 10);
+      return '${roundedMinutes}m';
+    }
+    // For 1 hour or more, show in hours
+    return '${hours.toStringAsFixed(1)}h';
+  }
 }
 
 // Course Detail Bottom Sheet
-class _CourseDetailSheet extends StatelessWidget {
+class _CourseDetailSheet extends StatefulWidget {
   final CoursePack course;
   final String? currentUserId;
   final VoidCallback onClaim;
+  final Color courseColor;
+  final IconData courseIcon;
 
   const _CourseDetailSheet({
     required this.course,
     required this.onClaim,
+    required this.courseColor,
+    required this.courseIcon,
     this.currentUserId,
   });
 
-  bool get isOwner => currentUserId != null && course.ownerId == currentUserId;
+  @override
+  State<_CourseDetailSheet> createState() => _CourseDetailSheetState();
+}
+
+class _CourseDetailSheetState extends State<_CourseDetailSheet> {
+  bool _isClaiming = false;
+  bool _isCheckingClaimed = true;
+  bool _alreadyClaimed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfClaimed();
+  }
+
+  Future<void> _checkIfClaimed() async {
+    if (widget.currentUserId == null || isOwner) {
+      setState(() => _isCheckingClaimed = false);
+      return;
+    }
+
+    try {
+      final claimed = await CoursePackService.hasUserClaimedCourse(
+        widget.course.id,
+        widget.currentUserId!,
+      );
+
+      if (mounted) {
+        setState(() {
+          _alreadyClaimed = claimed;
+          _isCheckingClaimed = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking claimed status: $e');
+      if (mounted) {
+        setState(() => _isCheckingClaimed = false);
+      }
+    }
+  }
+
+  bool get isOwner =>
+      widget.currentUserId != null &&
+      widget.course.ownerId == widget.currentUserId;
+
+  Future<void> _handleClaim() async {
+    if (_isClaiming || isOwner || _alreadyClaimed) return;
+
+    setState(() => _isClaiming = true);
+
+    try {
+      await CoursePackService.claimCoursePack(
+        widget.course.id,
+        widget.currentUserId!,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _alreadyClaimed = true;
+        _isClaiming = false;
+      });
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Course pack added to your library!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Call the parent's onClaim to refresh the list
+      widget.onClaim();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isClaiming = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = _getCategoryColor(course.category);
-
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
       decoration: const BoxDecoration(
@@ -989,7 +1124,7 @@ class _CourseDetailSheet extends StatelessWidget {
                     width: double.infinity,
                     height: 160,
                     decoration: BoxDecoration(
-                      color: color,
+                      color: widget.courseColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Stack(
@@ -998,7 +1133,7 @@ class _CourseDetailSheet extends StatelessWidget {
                           right: -20,
                           bottom: -20,
                           child: Icon(
-                            _getCategoryIcon(course.category),
+                            widget.courseIcon,
                             size: 120,
                             color: Colors.white.withValues(alpha: 0.15),
                           ),
@@ -1008,6 +1143,7 @@ class _CourseDetailSheet extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1019,7 +1155,7 @@ class _CourseDetailSheet extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  course.category,
+                                  widget.course.category,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -1028,7 +1164,7 @@ class _CourseDetailSheet extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                course.name,
+                                widget.course.name,
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w700,
@@ -1049,28 +1185,28 @@ class _CourseDetailSheet extends StatelessWidget {
                       _buildStatItem(
                         icon: Icons.star_rounded,
                         iconColor: Colors.amber,
-                        value: course.rating > 0
-                            ? course.rating.toStringAsFixed(1)
+                        value: widget.course.rating > 0
+                            ? widget.course.rating.toStringAsFixed(1)
                             : 'New',
                         label: 'Rating',
                       ),
                       _buildStatItem(
                         icon: Icons.people_rounded,
                         iconColor: AppColors.primary,
-                        value: _formatNumber(course.enrolledCount),
+                        value: _formatNumber(widget.course.enrolledCount),
                         label: 'Students',
                       ),
                       _buildStatItem(
                         icon: Icons.play_circle_rounded,
                         iconColor: AppColors.accentBright,
-                        value: '${course.videoLectures.length}',
+                        value: '${widget.course.videoLectures.length}',
                         label: 'Lessons',
                       ),
                       _buildStatItem(
                         icon: Icons.access_time_rounded,
                         iconColor: AppColors.secondary,
-                        value: course.estimatedHours.toStringAsFixed(1),
-                        label: 'Hours',
+                        value: _formatDuration(widget.course.estimatedHours),
+                        label: 'Duration',
                       ),
                     ],
                   ),
@@ -1087,8 +1223,8 @@ class _CourseDetailSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    course.description.isNotEmpty
-                        ? course.description
+                    widget.course.description.isNotEmpty
+                        ? widget.course.description
                         : 'Master the fundamentals and advanced concepts with this comprehensive course. '
                               'This course is designed for learners who want to build a solid foundation and develop practical skills.',
                     style: TextStyle(
@@ -1111,20 +1247,20 @@ class _CourseDetailSheet extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildContentItem(
                     Icons.quiz_rounded,
-                    '${course.quizzes.length} Quizzes',
+                    '${widget.course.quizzes.length} Quizzes',
                   ),
                   _buildContentItem(
                     Icons.style_rounded,
-                    '${course.flashcardSets.length} Flashcard Sets',
+                    '${widget.course.flashcardSets.length} Flashcard Sets',
                   ),
                   _buildContentItem(
                     Icons.note_rounded,
-                    '${course.notes.length} Notes',
+                    '${widget.course.notes.length} Notes',
                   ),
-                  if (course.videoLectures.isNotEmpty)
+                  if (widget.course.videoLectures.isNotEmpty)
                     _buildContentItem(
                       Icons.videocam_rounded,
-                      '${course.videoLectures.length} Video Lectures',
+                      '${widget.course.videoLectures.length} Video Lectures',
                     ),
 
                   const SizedBox(height: 32),
@@ -1133,9 +1269,11 @@ class _CourseDetailSheet extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isOwner ? null : onClaim,
+                      onPressed: (isOwner || _alreadyClaimed || _isClaiming || _isCheckingClaimed)
+                          ? null
+                          : _handleClaim,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isOwner
+                        backgroundColor: (isOwner || _alreadyClaimed)
                             ? AppColors.textSecondary
                             : AppColors.primary,
                         foregroundColor: AppColors.white,
@@ -1144,26 +1282,57 @@ class _CourseDetailSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         elevation: 0,
+                        disabledBackgroundColor: (isOwner || _alreadyClaimed)
+                            ? AppColors.textSecondary
+                            : AppColors.primary.withValues(alpha: 0.6),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isOwner
-                                ? Icons.check_circle_outlined
-                                : Icons.add_to_photos_outlined,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            isOwner ? 'You Own This' : 'Claim Course',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _isCheckingClaimed
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.white,
+                                ),
+                              ),
+                            )
+                          : _isClaiming
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.white,
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      isOwner
+                                          ? Icons.check_circle_outlined
+                                          : _alreadyClaimed
+                                              ? Icons.check_circle_rounded
+                                              : Icons.add_to_photos_outlined,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isOwner
+                                          ? 'You Own This'
+                                          : _alreadyClaimed
+                                              ? 'Already Claimed'
+                                              : 'Claim Course',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1228,60 +1397,21 @@ class _CourseDetailSheet extends StatelessWidget {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Programming':
-        return Icons.code_rounded;
-      case 'Science':
-      case 'Science and Technology':
-        return Icons.science_rounded;
-      case 'Mathematics':
-        return Icons.calculate_rounded;
-      case 'Language':
-      case 'Language Learning':
-        return Icons.translate_rounded;
-      case 'History':
-        return Icons.history_edu_rounded;
-      case 'Arts':
-        return Icons.palette_rounded;
-      case 'Business':
-        return Icons.business_center_rounded;
-      case 'Law':
-        return Icons.gavel_rounded;
-      default:
-        return Icons.school_rounded;
-    }
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Programming':
-        return const Color(0xFF3776AB);
-      case 'Science':
-      case 'Science and Technology':
-        return const Color(0xFF88B04B);
-      case 'Mathematics':
-        return const Color(0xFF6B5B95);
-      case 'Language':
-      case 'Language Learning':
-        return const Color(0xFFDC143C);
-      case 'History':
-        return const Color(0xFF8B4513);
-      case 'Arts':
-        return const Color(0xFFFF6347);
-      case 'Business':
-        return const Color(0xFF2E8B57);
-      case 'Law':
-        return const Color(0xFF4169E1);
-      default:
-        return const Color(0xFF9370DB);
-    }
-  }
-
   String _formatNumber(int number) {
     if (number >= 1000) {
       return '${(number / 1000).toStringAsFixed(1)}K';
     }
     return number.toString();
+  }
+
+  String _formatDuration(double hours) {
+    if (hours < 1) {
+      // Convert to minutes and round to nearest 10
+      final minutes = (hours * 60).round();
+      final roundedMinutes = ((minutes / 10).round() * 10);
+      return '${roundedMinutes}m';
+    }
+    // For 1 hour or more, show in hours
+    return '${hours.toStringAsFixed(1)}h';
   }
 }
