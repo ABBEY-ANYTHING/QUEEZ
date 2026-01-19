@@ -51,7 +51,7 @@ class CreatePage extends StatelessWidget {
                 context: context,
                 icon: Icons.layers_outlined,
                 iconColor: const Color(0xFF6B9B7C),
-                title: 'Course',
+                title: 'Course Packs',
                 description: 'Combine quizzes, flashcards, notes & videos!',
                 onTap: () => _onStudySetTap(context),
               ),
