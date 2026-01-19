@@ -563,6 +563,7 @@ class AppStrings {
       'language_changed': 'تم تغيير اللغة بنجاح',
     },
     'zh': {
+      // Common
       'app_name': 'Queez',
       'cancel': '取消',
       'save': '保存',
@@ -576,19 +577,90 @@ class AppStrings {
       'error': '错误',
       'success': '成功',
       'search': '搜索',
+      'back': '返回',
+      'next': '下一步',
+      'continue_text': '继续',
+      'skip': '跳过',
+
+      // Settings
       'settings': '设置',
       'account': '账户',
       'edit_profile': '编辑资料',
+      'update_profile_info': '更新您的个人信息',
       'change_password': '修改密码',
+      'update_password': '更新您的密码',
       'preferences': '偏好设置',
       'language': '语言',
       'theme': '主题',
+      'light_mode': '浅色模式',
+      'dark_mode': '深色模式',
+      'about': '关于',
+      'about_app': '关于 Queez',
+      'version': '版本',
+      'privacy_policy': '隐私政策',
+      'read_privacy_policy': '阅读我们的隐私政策',
+      'terms_of_service': '服务条款',
       'sign_out': '退出登录',
+      'sign_out_confirm': '确定要退出登录吗？',
       'delete_account': '删除账户',
+      'delete_account_warning': '这将永久删除您的账户和所有相关数据。此操作无法撤销。',
+      'danger_zone': '危险区域',
       'select_language': '选择语言',
+
+      // Profile
       'profile': '个人资料',
+      'name': '姓名',
+      'username': '用户名',
+      'email': '邮箱',
+      'age': '年龄',
+      'role': '角色',
+      'subject_area': '学科领域',
+      'experience_level': '经验水平',
+      'interests': '兴趣爱好',
+
+      // Library
       'library': '资料库',
+      'my_content': '我的内容',
+      'quizzes': '测验',
+      'flashcards': '单词卡',
+      'notes': '笔记',
+      'study_sets': '学习集',
+      'create': '创建',
+      'explore': '探索',
+
+      // Quiz
+      'quiz': '测验',
+      'start_quiz': '开始测验',
+      'question': '问题',
+      'correct': '正确',
+      'incorrect': '错误',
+      'score': '分数',
+      'time_remaining': '剩余时间',
+      'submit': '提交',
+      'finish': '完成',
+
+      // Auth
+      'login': '登录',
+      'sign_up': '注册',
+      'email_address': '邮箱地址',
+      'password': '密码',
+      'confirm_password': '确认密码',
+      'forgot_password': '忘记密码？',
+      'dont_have_account': '没有账户？',
+      'already_have_account': '已有账户？',
+
+      // Navigation
       'home': '首页',
+      'dashboard': '仪表板',
+
+      // Greetings
+      'good_morning': '早上好',
+      'good_afternoon': '下午好',
+      'good_evening': '晚上好',
+
+      // Messages
+      'profile_updated': '个人资料更新成功！',
+      'password_reset_sent': '密码重置链接已发送到您的邮箱',
       'language_changed': '语言更改成功',
     },
     'ja': {
