@@ -24,12 +24,42 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _usernameController;
   late TextEditingController _dobController;
   late String _selectedRole;
+  late String _selectedSubjectArea;
+  late String _selectedExperienceLevel;
   late List<String> _selectedInterests;
   DateTime? _selectedDate;
 
   bool _isSaving = false;
 
   final List<String> _roles = ['Student', 'Teacher', 'Professional', 'Other'];
+  final List<String> _subjectAreas = [
+    'Mathematics',
+    'Science',
+    'Physics',
+    'Chemistry',
+    'Biology',
+    'Computer Science',
+    'Engineering',
+    'Medicine',
+    'Business',
+    'Economics',
+    'History',
+    'Geography',
+    'Literature',
+    'Languages',
+    'Art',
+    'Music',
+    'Philosophy',
+    'Psychology',
+    'Law',
+    'Other',
+  ];
+  final List<String> _experienceLevels = [
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+    'Expert',
+  ];
   final List<String> _availableInterests = [
     'Math',
     'Science',
@@ -80,6 +110,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _selectedRole = _roles.contains(widget.userModel.role)
         ? widget.userModel.role
         : _roles.first;
+    _selectedSubjectArea = _subjectAreas.contains(widget.userModel.subjectArea)
+        ? widget.userModel.subjectArea
+        : _subjectAreas.first;
+    _selectedExperienceLevel =
+        _experienceLevels.contains(widget.userModel.experienceLevel)
+        ? widget.userModel.experienceLevel
+        : _experienceLevels.first;
     _selectedInterests = List.from(widget.userModel.interests);
   }
 
@@ -192,6 +229,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'dateOfBirth': dobString,
         'age': age,
         'role': _selectedRole,
+        'subjectArea': _selectedSubjectArea,
+        'experienceLevel': _selectedExperienceLevel,
         'interests': _selectedInterests,
       });
 
@@ -269,6 +308,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onChanged: (value) {
                           setState(() {
                             _selectedRole = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Subject Area'),
+                      const SizedBox(height: 16),
+                      _buildDropdown(
+                        label: 'Subject Area',
+                        value: _selectedSubjectArea,
+                        items: _subjectAreas,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSubjectArea = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _buildSectionTitle('Experience Level'),
+                      const SizedBox(height: 16),
+                      _buildDropdown(
+                        label: 'Experience Level',
+                        value: _selectedExperienceLevel,
+                        items: _experienceLevels,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedExperienceLevel = value!;
                           });
                         },
                       ),

@@ -11,6 +11,7 @@ class LibraryItem {
   final String? originalOwner;
   final String? originalOwnerUsername;
   final String? sharedMode; // Only for quizzes
+  final bool isFavorite; // Whether this item is favorited by the current user
 
   LibraryItem({
     required this.id,
@@ -25,6 +26,7 @@ class LibraryItem {
     this.originalOwner,
     this.originalOwnerUsername,
     this.sharedMode,
+    this.isFavorite = false,
   });
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class LibraryItem {
       originalOwner: json['originalOwner'],
       originalOwnerUsername: json['originalOwnerUsername'],
       sharedMode: json['sharedMode'],
+      isFavorite: json['isFavorite'] ?? false,
     );
   }
 
@@ -48,6 +51,7 @@ class LibraryItem {
   bool get isFlashcard => type == 'flashcard';
   bool get isNote => type == 'note';
   bool get isStudySet => type == 'study_set';
+  bool get isCoursePack => type == 'course_pack';
 
   // Convert to QuizLibraryItem (for quizzes only)
   dynamic toQuizLibraryItem() {
@@ -65,5 +69,39 @@ class LibraryItem {
       'originalOwnerUsername': originalOwnerUsername,
       'sharedMode': sharedMode,
     };
+  }
+
+  // Create a copy with updated fields
+  LibraryItem copyWith({
+    String? id,
+    String? type,
+    String? title,
+    String? description,
+    String? coverImagePath,
+    String? createdAt,
+    int? itemCount,
+    String? category,
+    String? language,
+    String? originalOwner,
+    String? originalOwnerUsername,
+    String? sharedMode,
+    bool? isFavorite,
+  }) {
+    return LibraryItem(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      coverImagePath: coverImagePath ?? this.coverImagePath,
+      createdAt: createdAt ?? this.createdAt,
+      itemCount: itemCount ?? this.itemCount,
+      category: category ?? this.category,
+      language: language ?? this.language,
+      originalOwner: originalOwner ?? this.originalOwner,
+      originalOwnerUsername:
+          originalOwnerUsername ?? this.originalOwnerUsername,
+      sharedMode: sharedMode ?? this.sharedMode,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
   }
 }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/services/unified_library_service.dart';
+import 'package:quiz_app/services/favorites_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'library_provider.g.dart';
@@ -45,6 +46,9 @@ class QuizLibrary extends _$QuizLibrary {
 
         // Fetch usernames from Firestore for items with originalOwner
         await _fetchUsernames(items);
+
+        // Fetch favorites and mark items
+        await _markFavorites(items);
 
         debugPrint(
           '🟢 [LIBRARY_PROVIDER] build() completed with ${items.length} items',
@@ -106,25 +110,35 @@ class QuizLibrary extends _$QuizLibrary {
         final item = items[i];
         if (item.originalOwner != null &&
             usernameMap.containsKey(item.originalOwner)) {
-          items[i] = LibraryItem(
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            description: item.description,
-            coverImagePath: item.coverImagePath,
-            createdAt: item.createdAt,
-            itemCount: item.itemCount,
-            language: item.language,
-            category: item.category,
-            originalOwner: item.originalOwner,
+          items[i] = item.copyWith(
             originalOwnerUsername: usernameMap[item.originalOwner]!,
-            sharedMode: item.sharedMode,
           );
         }
       }
     } catch (e) {
       debugPrint('Error batch fetching usernames: $e');
       // Continue without usernames on error
+    }
+  }
+
+  /// Mark items as favorites based on user's favorites collection
+  Future<void> _markFavorites(List<LibraryItem> items) async {
+    if (items.isEmpty) return;
+
+    try {
+      final favoritesService = FavoritesService();
+      final favoriteIds = await favoritesService.getFavoriteIds();
+
+      debugPrint('🔵 [LIBRARY_PROVIDER] Found ${favoriteIds.length} favorites');
+
+      // Update items with favorite status
+      for (var i = 0; i < items.length; i++) {
+        final isFavorite = favoriteIds.contains(items[i].id);
+        items[i] = items[i].copyWith(isFavorite: isFavorite);
+      }
+    } catch (e) {
+      debugPrint('Error marking favorites: $e');
+      // Continue without favorites on error
     }
   }
 
@@ -135,5 +149,24 @@ class QuizLibrary extends _$QuizLibrary {
     debugPrint('🔵 [LIBRARY_PROVIDER] State set to loading');
     state = await AsyncValue.guard(() => build());
     debugPrint('🟢 [LIBRARY_PROVIDER] reload() completed, state updated');
+  }
+
+  /// Toggle favourite status for an item locally (no server reload)
+  void toggleFavoriteLocally(String itemId, bool isFavorite) {
+    debugPrint(
+      '🔵 [LIBRARY_PROVIDER] toggleFavoriteLocally: $itemId -> $isFavorite',
+    );
+
+    state.whenData((items) {
+      final updatedItems = items.map((item) {
+        if (item.id == itemId) {
+          return item.copyWith(isFavorite: isFavorite);
+        }
+        return item;
+      }).toList();
+
+      state = AsyncValue.data(updatedItems);
+      debugPrint('🟢 [LIBRARY_PROVIDER] Local favourite update complete');
+    });
   }
 }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
@@ -13,23 +14,33 @@ import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dar
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/screens/mode_selection_sheet.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
+import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/services/favorites_service.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/wait_screen.dart';
 
-class ItemCard extends StatefulWidget {
+class ItemCard extends ConsumerStatefulWidget {
   final LibraryItem item;
   final VoidCallback onDelete;
+  final VoidCallback? onFavoriteChanged;
 
-  const ItemCard({super.key, required this.item, required this.onDelete});
+  const ItemCard({
+    super.key,
+    required this.item,
+    required this.onDelete,
+    this.onFavoriteChanged,
+  });
 
   @override
-  State<ItemCard> createState() => _ItemCardState();
+  ConsumerState<ItemCard> createState() => _ItemCardState();
 }
 
-class _ItemCardState extends State<ItemCard>
+class _ItemCardState extends ConsumerState<ItemCard>
     with SingleTickerProviderStateMixin {
   bool _showOptions = false;
+  late bool _isFavorite;
+  final FavoritesService _favoritesService = FavoritesService();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -37,6 +48,7 @@ class _ItemCardState extends State<ItemCard>
   @override
   void initState() {
     super.initState();
+    _isFavorite = widget.item.isFavorite;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -189,6 +201,31 @@ class _ItemCardState extends State<ItemCard>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Favorite button
+        GestureDetector(
+          onTap: _toggleFavorite,
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              size: 18,
+              color: _isFavorite ? Colors.red : _getAccentColor(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
         // Share button
         GestureDetector(
           onTap: () => _handleShare(context),
@@ -236,6 +273,55 @@ class _ItemCardState extends State<ItemCard>
         ),
       ],
     );
+  }
+
+  Future<void> _toggleFavorite() async {
+    // Optimistic UI update - toggle locally first for instant feedback
+    final newFavoriteStatus = !_isFavorite;
+    setState(() {
+      _isFavorite = newFavoriteStatus;
+    });
+
+    // Update provider state locally (no server reload)
+    ref
+        .read(quizLibraryProvider.notifier)
+        .toggleFavoriteLocally(widget.item.id, newFavoriteStatus);
+
+    try {
+      // Persist to Firestore in background
+      if (newFavoriteStatus) {
+        await _favoritesService.addToFavorites(
+          widget.item.id,
+          widget.item.type,
+        );
+      } else {
+        await _favoritesService.removeFromFavorites(
+          widget.item.id,
+          widget.item.type,
+        );
+      }
+      debugPrint(
+        '✅ Favorite persisted: ${widget.item.id} -> $newFavoriteStatus',
+      );
+    } catch (e) {
+      debugPrint('Error persisting favorite: $e');
+      // Revert on error
+      setState(() {
+        _isFavorite = !newFavoriteStatus;
+      });
+      ref
+          .read(quizLibraryProvider.notifier)
+          .toggleFavoriteLocally(widget.item.id, !newFavoriteStatus);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _handleShare(BuildContext context) {
@@ -479,6 +565,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isQuiz) return const Color(0xFFF5F0E8); // Warm cream
     if (widget.item.isNote) return const Color(0xFFFDF6E3); // Soft sand
     if (widget.item.isStudySet) return const Color(0xFFE8F0E8); // Sage mist
+    if (widget.item.isCoursePack) return const Color(0xFFE8EBF0); // Cool slate
     return const Color(0xFFF0EDE8); // Warm stone - Flashcard
   }
 
@@ -487,6 +574,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isQuiz) return const Color(0xFF5E8C61); // Forest green
     if (widget.item.isNote) return const Color(0xFFB8860B); // Dark goldenrod
     if (widget.item.isStudySet) return const Color(0xFF6B8E7B); // Eucalyptus
+    if (widget.item.isCoursePack) return const Color(0xFF5B6B8C); // Slate blue
     return const Color(0xFF8B7355); // Warm brown - Flashcard
   }
 
@@ -495,6 +583,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isQuiz) return const Color(0xFF3D5940); // Deep forest
     if (widget.item.isNote) return const Color(0xFF6B4423); // Saddle brown
     if (widget.item.isStudySet) return const Color(0xFF4A6B5A); // Deep sage
+    if (widget.item.isCoursePack) return const Color(0xFF3A4A5C); // Deep slate
     return const Color(0xFF5C4A3A); // Dark brown - Flashcard
   }
 
@@ -502,6 +591,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isQuiz) return Icons.quiz_outlined;
     if (widget.item.isNote) return Icons.description_outlined;
     if (widget.item.isStudySet) return Icons.collections_bookmark_outlined;
+    if (widget.item.isCoursePack) return Icons.school_outlined;
     return Icons.style_outlined; // Flashcard
   }
 
@@ -509,6 +599,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isQuiz) return 'Quiz';
     if (widget.item.isNote) return 'Note';
     if (widget.item.isStudySet) return 'Study Set';
+    if (widget.item.isCoursePack) return 'Course';
     return 'Flashcards';
   }
 
@@ -516,6 +607,7 @@ class _ItemCardState extends State<ItemCard>
     if (widget.item.isNote) return 'Note';
     if (widget.item.isStudySet) return '${widget.item.itemCount} Items';
     if (widget.item.isQuiz) return '${widget.item.itemCount} Questions';
+    if (widget.item.isCoursePack) return '${widget.item.itemCount} Items';
     return '${widget.item.itemCount} Cards';
   }
 

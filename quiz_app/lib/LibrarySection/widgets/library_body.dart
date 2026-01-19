@@ -1,9 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
-import 'package:quiz_app/CreateSection/services/note_service.dart';
-import 'package:quiz_app/CreateSection/services/quiz_service.dart';
-import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/widgets/item_card.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -104,10 +99,11 @@ Widget buildFilterChips({
 }) {
   final filters = [
     {'label': 'All', 'value': null},
+    {'label': 'Favourites', 'value': 'favorites'},
     {'label': 'Quizzes', 'value': 'quiz'},
     {'label': 'Flashcards', 'value': 'flashcard'},
     {'label': 'Notes', 'value': 'note'},
-    {'label': 'Study Sets', 'value': 'study_set'},
+    {'label': 'Courses', 'value': 'course_pack'},
   ];
 
   return Container(
@@ -162,6 +158,7 @@ Widget buildLibraryBody({
   required List<LibraryItem> filteredItems,
   required String searchQuery,
   required VoidCallback onRetry,
+  required VoidCallback onFavoriteChanged,
 }) {
   if (isLoading) {
     return SliverFillRemaining(
@@ -253,163 +250,43 @@ Widget buildLibraryBody({
 
   return SliverPadding(
     padding: const EdgeInsets.all(QuizSpacing.lg),
-    sliver: SliverToBoxAdapter(child: _AnimatedItemList(items: filteredItems)),
+    sliver: SliverToBoxAdapter(
+      child: _AnimatedItemList(
+        items: filteredItems,
+        onFavoriteChanged: onFavoriteChanged,
+      ),
+    ),
   );
 }
 
-class _AnimatedItemList extends StatefulWidget {
+class _AnimatedItemList extends StatelessWidget {
   final List<LibraryItem> items;
+  final VoidCallback onFavoriteChanged;
 
-  const _AnimatedItemList({required this.items});
-
-  @override
-  State<_AnimatedItemList> createState() => _AnimatedItemListState();
-}
-
-class _AnimatedItemListState extends State<_AnimatedItemList> {
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
-  late List<LibraryItem> _items;
-
-  @override
-  void initState() {
-    super.initState();
-    _items = List.from(widget.items);
-  }
-
-  @override
-  void didUpdateWidget(_AnimatedItemList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.items.length != _items.length) {
-      _items = List.from(widget.items);
-    }
-  }
-
-  Future<void> _removeItem(int index) async {
-    final removedItem = _items[index];
-    _items.removeAt(index);
-
-    _listKey.currentState?.removeItem(
-      index,
-      (context, animation) => _buildItemCard(removedItem, animation, index),
-      duration: QuizAnimations.slow,
-    );
-  }
-
-  Widget _buildItemCard(
-    LibraryItem item,
-    Animation<double> animation,
-    int index,
-  ) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, -0.1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: QuizSpacing.md),
-            child: ItemCard(
-              item: item,
-              onDelete: () async {
-                // Capture context before any async operations
-                final dialogContext = context;
-
-                // Check if context is still valid
-                if (!dialogContext.mounted) return;
-
-                // Show confirmation dialog
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierColor: AppColors.primary.withValues(alpha: 0.3),
-                  builder: (dialogContext) => AppDialog(
-                    title:
-                        'Delete ${item.isQuiz
-                            ? 'Quiz'
-                            : item.isNote
-                            ? 'Note'
-                            : item.isStudySet
-                            ? 'Study Set'
-                            : 'Flashcard Set'}',
-                    content: 'Are you sure you want to delete "${item.title}"?',
-                    primaryActionText: 'Delete',
-                    primaryActionCallback: () =>
-                        Navigator.pop(dialogContext, true),
-                    secondaryActionText: 'Cancel',
-                    secondaryActionCallback: () =>
-                        Navigator.pop(dialogContext, false),
-                  ),
-                );
-
-                if (confirmed == true) {
-                  try {
-                    // Delete from backend based on type
-                    if (item.isQuiz) {
-                      await QuizService.deleteQuiz(item.id);
-                    } else if (item.isFlashcard) {
-                      await FlashcardService.deleteFlashcardSet(item.id);
-                    } else if (item.isNote) {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        await NoteService.deleteNote(item.id, user.uid);
-                      }
-                    } else if (item.isStudySet) {
-                      await StudySetService.deleteStudySet(item.id);
-                    }
-
-                    // Remove item with animation
-                    await _removeItem(index);
-
-                    // Show success message
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${item.isQuiz
-                              ? 'Quiz'
-                              : item.isNote
-                              ? 'Note'
-                              : item.isStudySet
-                              ? 'Study Set'
-                              : 'Flashcard set'} deleted successfully',
-                        ),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  } catch (e) {
-                    // Show error message
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete: $e'),
-                        backgroundColor: Colors.red,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  const _AnimatedItemList({
+    required this.items,
+    required this.onFavoriteChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedList(
-      key: _listKey,
+    return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      initialItemCount: _items.length,
-      itemBuilder: (context, index, animation) {
-        if (index >= _items.length) return const SizedBox.shrink();
-        return _buildItemCard(_items[index], animation, index);
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: QuizSpacing.md),
+          child: ItemCard(
+            key: ValueKey(item.id),
+            item: item,
+            onFavoriteChanged: onFavoriteChanged,
+            onDelete: () {
+              // Delete is handled inside ItemCard
+            },
+          ),
+        );
       },
     );
   }

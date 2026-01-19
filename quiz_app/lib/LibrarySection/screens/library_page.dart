@@ -89,25 +89,51 @@ class LibraryPageState extends ConsumerState<LibraryPage>
   }
 
   void _setTypeFilter(String? filter) {
+    debugPrint('🔵 [LIBRARY_PAGE] Setting filter to: $filter');
     setState(() {
       _typeFilter = filter;
     });
   }
 
+  /// Handle favorite changes (no longer needs server reload - handled locally)
+  void _onFavoriteChanged() {
+    debugPrint('🔵 [LIBRARY_PAGE] Favorite changed (handled locally)');
+  }
+
   List<LibraryItem> _getFilteredItems(List<LibraryItem> allItems) {
     var filtered = allItems;
 
+    debugPrint(
+      '🔵 [LIBRARY_PAGE] Filtering ${allItems.length} items with filter: $_typeFilter',
+    );
+
     // Apply type filter
     if (_typeFilter != null) {
-      filtered = filtered.where((item) => item.type == _typeFilter).toList();
+      if (_typeFilter == 'favorites') {
+        // Filter for favorites only
+        filtered = filtered.where((item) => item.isFavorite).toList();
+        debugPrint(
+          '🔵 [LIBRARY_PAGE] After favorites filter: ${filtered.length} items',
+        );
+      } else {
+        // Filter by type
+        filtered = filtered.where((item) => item.type == _typeFilter).toList();
+        debugPrint(
+          '🔵 [LIBRARY_PAGE] After type filter ($_typeFilter): ${filtered.length} items',
+        );
+      }
     }
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
+      final beforeSearchCount = filtered.length;
       filtered = filtered.where((item) {
         return item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             item.description.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
+      debugPrint(
+        '🔵 [LIBRARY_PAGE] After search filter "$_searchQuery": ${filtered.length} items (was $beforeSearchCount)',
+      );
     }
 
     return filtered;
@@ -184,6 +210,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
               filteredItems: filteredItems,
               searchQuery: _searchQuery,
               onRetry: _reloadItems,
+              onFavoriteChanged: _onFavoriteChanged,
             ),
             const SliverPadding(
               padding: EdgeInsets.only(bottom: kBottomNavbarHeight),
