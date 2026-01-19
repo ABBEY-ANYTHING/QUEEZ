@@ -156,7 +156,7 @@ class _ErrorListenerState extends ConsumerState<ErrorListener> {
       title: 'ERROR',
       content: message,
       primaryActionText: 'OK',
-      primaryActionCallback: () => Navigator.pop(context),
+      // No callback needed - dialog will close automatically
     );
   }
 

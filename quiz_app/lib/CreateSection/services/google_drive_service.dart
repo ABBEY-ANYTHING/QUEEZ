@@ -22,6 +22,17 @@ class GoogleDriveService {
     required String title,
   }) async {
     try {
+      debugPrint('📹 [GoogleDriveService] Starting video upload...');
+      debugPrint('📹 [GoogleDriveService] File path: ${videoFile.path}');
+      debugPrint(
+        '📹 [GoogleDriveService] File exists: ${await videoFile.exists()}',
+      );
+      debugPrint(
+        '📹 [GoogleDriveService] File size: ${await videoFile.length()} bytes',
+      );
+      debugPrint('📹 [GoogleDriveService] Title: $title');
+      debugPrint('📹 [GoogleDriveService] Upload URL: $_baseUrl/upload');
+
       // Create multipart request
       final request = http.MultipartRequest(
         'POST',
@@ -29,6 +40,7 @@ class GoogleDriveService {
       );
 
       // Add video file
+      debugPrint('📹 [GoogleDriveService] Adding file to multipart request...');
       request.files.add(
         await http.MultipartFile.fromPath('file', videoFile.path),
       );
@@ -37,24 +49,42 @@ class GoogleDriveService {
       request.fields['title'] = title;
 
       // Send request
+      debugPrint('📹 [GoogleDriveService] Sending request to backend...');
       final streamedResponse = await request.send();
+      debugPrint(
+        '📹 [GoogleDriveService] Response status: ${streamedResponse.statusCode}',
+      );
+
       final response = await http.Response.fromStream(streamedResponse);
+      debugPrint('📹 [GoogleDriveService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
+          debugPrint('📹 [GoogleDriveService] ✅ Upload successful!');
+          debugPrint('📹 [GoogleDriveService] File ID: ${data['fileId']}');
+          debugPrint(
+            '📹 [GoogleDriveService] Shareable Link: ${data['shareableLink']}',
+          );
           return {
             'fileId': data['fileId'],
             'shareableLink': data['shareableLink'],
             'name': data['name'],
           };
+        } else {
+          debugPrint('📹 [GoogleDriveService] ❌ Upload failed - success=false');
+          debugPrint('📹 [GoogleDriveService] Message: ${data['message']}');
         }
+      } else {
+        debugPrint(
+          '📹 [GoogleDriveService] ❌ Upload failed with status ${response.statusCode}',
+        );
       }
 
-      debugPrint('Upload failed: ${response.statusCode} - ${response.body}');
       return null;
-    } catch (e) {
-      debugPrint('Error uploading video: $e');
+    } catch (e, stackTrace) {
+      debugPrint('📹 [GoogleDriveService] ❌ Error uploading video: $e');
+      debugPrint('📹 [GoogleDriveService] Stack trace: $stackTrace');
       return null;
     }
   }

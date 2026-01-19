@@ -659,6 +659,10 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
     }
   }
 
+  // Video upload state
+  bool _isUploadingVideo = false;
+  String _uploadingVideoTitle = '';
+
   /// Upload video lecture to Google Drive (via backend)
   Future<void> _uploadVideoLecture() async {
     try {
@@ -694,69 +698,76 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         return;
       }
 
-      // Show title input dialog
+      // Show title input dialog using AppDialog.showInput
       final titleController = TextEditingController(
         text: file.name.replaceAll(RegExp(r'\.[^.]+$'), ''),
       );
 
       if (!mounted) return;
-      final videoTitle = await showDialog<String>(
+
+      final videoTitle = await AppDialog.showInput<String>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Video Title'),
-          content: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(
-              labelText: 'Enter a title for this video',
-              border: OutlineInputBorder(),
+        title: 'Video Title',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter a title for this video lecture',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, titleController.text),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+            const SizedBox(height: 16),
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'e.g., Introduction to Python',
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryLight.withValues(alpha: 0.3),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.primaryLight.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
-              child: const Text('Upload'),
             ),
           ],
         ),
+        submitText: 'Upload',
+        onSubmit: () => titleController.text,
+        cancelText: 'Cancel',
       );
 
       if (videoTitle == null || videoTitle.trim().isEmpty) return;
 
-      if (!mounted) return;
-
-      // Show uploading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 20),
-              Text(
-                'Uploading "${videoTitle.trim()}"...',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This may take a moment depending on the file size.',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+      debugPrint(
+        '🎬 [Dashboard] User confirmed video title: ${videoTitle.trim()}',
       );
+
+      // Set uploading state - show inline loading on page
+      if (!mounted) return;
+      setState(() {
+        _isUploadingVideo = true;
+        _uploadingVideoTitle = videoTitle.trim();
+      });
+
+      debugPrint('🎬 [Dashboard] Starting upload to Google Drive...');
+      debugPrint('🎬 [Dashboard] File path: ${file.path}');
 
       // Upload to Google Drive
       final uploadResult = await GoogleDriveService.uploadVideo(
@@ -764,12 +775,16 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         title: videoTitle.trim(),
       );
 
-      // Close upload dialog
+      debugPrint('🎬 [Dashboard] Upload result: $uploadResult');
+
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
 
       if (uploadResult == null) {
-        if (!mounted) return;
+        debugPrint('🎬 [Dashboard] ❌ Upload failed - result is null');
+        setState(() {
+          _isUploadingVideo = false;
+          _uploadingVideoTitle = '';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to upload video'),
@@ -779,23 +794,34 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         return;
       }
 
+      debugPrint('🎬 [Dashboard] ✅ Upload successful!');
+      debugPrint('🎬 [Dashboard] Creating VideoLecture object...');
+
       // Create VideoLecture object
       final videoLecture = VideoLecture(
         id: uploadResult['fileId'],
         title: videoTitle.trim(),
         driveFileId: uploadResult['fileId'] ?? '',
         shareableLink: uploadResult['shareableLink'] ?? '',
-        duration: 0, // Would need video metadata parsing for actual duration
+        duration: 0,
         uploadedAt: DateTime.now().toIso8601String(),
+      );
+
+      debugPrint(
+        '🎬 [Dashboard] VideoLecture created: ${videoLecture.title} (${videoLecture.driveFileId})',
       );
 
       // Add to study set cache
       StudySetCacheManager.instance.addVideoLectureToStudySet(videoLecture);
+      debugPrint('🎬 [Dashboard] Added to cache');
 
-      if (!mounted) return;
       setState(() {
+        _isUploadingVideo = false;
+        _uploadingVideoTitle = '';
         _loadCachedItems();
       });
+
+      debugPrint('🎬 [Dashboard] 🎉 Video upload complete!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -804,12 +830,11 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         ),
       );
     } catch (e) {
-      // Try to close any open dialogs
-      try {
-        Navigator.of(context, rootNavigator: true).pop();
-      } catch (_) {}
-
       if (!mounted) return;
+      setState(() {
+        _isUploadingVideo = false;
+        _uploadingVideoTitle = '';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error uploading video: $e'),
@@ -821,26 +846,50 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
 
   /// Remove a video lecture
   void _removeVideoLecture(VideoLecture video) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.showInput<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Video'),
-        content: Text(
-          'Are you sure you want to remove "${video.title}" from this course?\n\n'
-          'Note: This will also delete the video from your Google Drive.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      title: 'Remove Video',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Are you sure you want to remove "${video.title}" from this course?',
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove'),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This will also delete the video from Google Drive.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
+      submitText: 'Remove',
+      onSubmit: () => true,
+      cancelText: 'Cancel',
     );
 
     if (confirmed != true) return;
@@ -1039,6 +1088,61 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                   ),
                 ),
               ),
+
+              // Video Uploading Indicator
+              if (_isUploadingVideo) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Uploading Video...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _uploadingVideoTitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 40),
 

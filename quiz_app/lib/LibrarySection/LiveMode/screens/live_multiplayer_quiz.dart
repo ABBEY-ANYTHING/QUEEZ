@@ -61,7 +61,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
                 title: 'Error',
                 content: error,
                 primaryActionText: 'OK',
-                primaryActionCallback: () => Navigator.pop(context),
+                // No callback needed - dialog will close automatically
               );
             }
           });
@@ -142,10 +142,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
       content:
           'The host has ended the quiz. Tap below to see the final results!',
       primaryActionText: 'View Results',
-      primaryActionCallback: () {
-        Navigator.of(context).pop(); // Close dialog
-        _navigateToResults();
-      },
+      primaryActionCallback: _navigateToResults,
       dismissible: false,
     );
   }
@@ -701,11 +698,8 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
                                     content:
                                         'Are you sure you want to end the quiz early? All progress will be saved.',
                                     secondaryActionText: 'CANCEL',
-                                    secondaryActionCallback: () =>
-                                        Navigator.pop(context),
                                     primaryActionText: 'END NOW',
                                     primaryActionCallback: () {
-                                      Navigator.pop(context);
                                       ref
                                           .read(sessionProvider.notifier)
                                           .endQuiz();
