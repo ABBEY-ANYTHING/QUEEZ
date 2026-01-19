@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+
 import '../../api_config.dart';
 
 class SessionService {
@@ -199,15 +200,15 @@ class SessionService {
     }
   }
 
-  // Create share code for study set
-  static Future<Map<String, dynamic>> createStudySetShareCode({
-    required String studySetId,
+  // Create share code for course pack (replaces study set share code)
+  static Future<Map<String, dynamic>> createCoursePackShareCode({
+    required String coursePackId,
     required String hostId,
   }) async {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/api/study-sets/$studySetId/create-share-code'),
+            Uri.parse('$baseUrl/course-pack/$coursePackId/create-share-code'),
             headers: {'Content-Type': 'application/json'},
           )
           .timeout(
@@ -233,6 +234,15 @@ class SessionService {
     } catch (e) {
       throw Exception('Error creating share code: $e');
     }
+  }
+
+  // Create share code for study set (deprecated - redirects to course pack)
+  @Deprecated('Use createCoursePackShareCode instead')
+  static Future<Map<String, dynamic>> createStudySetShareCode({
+    required String studySetId,
+    required String hostId,
+  }) async {
+    return createCoursePackShareCode(coursePackId: studySetId, hostId: hostId);
   }
 
   // End quiz session
