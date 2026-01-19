@@ -194,7 +194,7 @@ class ModeSelectionSheet extends StatelessWidget {
 
           // Marketplace mode - publish the course pack
           if (mode == 'marketplace') {
-            if (isStudySet) {
+            if (isCoursePack) {
               // Show loading
               showDialog(
                 context: context,
