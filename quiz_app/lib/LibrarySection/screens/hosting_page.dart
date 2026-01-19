@@ -19,11 +19,11 @@ import 'package:quiz_app/widgets/core/core_widgets.dart';
 import 'package:share_plus/share_plus.dart';
 
 class HostingPage extends ConsumerStatefulWidget {
-  final String itemId; // Can be quizId or studySetId
+  final String itemId; // Can be quizId or coursePackId
   final String itemTitle;
   final String mode;
   final String hostId;
-  final bool isStudySet;
+  final bool isCoursePack;
   final String?
   existingSessionCode; // For reconnection - skip creating new session
 
@@ -33,7 +33,7 @@ class HostingPage extends ConsumerStatefulWidget {
     required this.itemTitle,
     required this.mode,
     required this.hostId,
-    this.isStudySet = false,
+    this.isCoursePack = false,
     this.existingSessionCode,
   });
 
@@ -117,10 +117,10 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
       final Map<String, dynamic> result;
 
-      if (widget.isStudySet) {
-        // For study sets, use study set share code endpoint
-        result = await SessionService.createStudySetShareCode(
-          studySetId: widget.itemId,
+      if (widget.isCoursePack) {
+        // For course packs, use course pack share code endpoint
+        result = await SessionService.createCoursePackShareCode(
+          coursePackId: widget.itemId,
           hostId: widget.hostId,
         );
       } else {

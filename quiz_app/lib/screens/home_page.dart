@@ -1007,6 +1007,7 @@ class _CourseDetailSheet extends StatelessWidget {
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1026,7 +1027,6 @@ class _CourseDetailSheet extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              const Spacer(),
                               Text(
                                 course.name,
                                 style: const TextStyle(

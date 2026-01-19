@@ -786,9 +786,17 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
           _uploadingVideoTitle = '';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to upload video'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text(
+              'Failed to upload video. Server might be waking up - try again in a few seconds.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'RETRY',
+              textColor: Colors.white,
+              onPressed: _uploadVideoLecture,
+            ),
           ),
         );
         return;

@@ -247,7 +247,7 @@ class _ItemCardState extends State<ItemCard>
         itemId: widget.item.id,
         itemTitle: widget.item.title,
         hostId: hostId,
-        isStudySet: false,
+        isCoursePack: false,
       );
     } else if (widget.item.isStudySet) {
       showModeSelection(
@@ -255,7 +255,7 @@ class _ItemCardState extends State<ItemCard>
         itemId: widget.item.id,
         itemTitle: widget.item.title,
         hostId: hostId,
-        isStudySet: true,
+        isCoursePack: true,
       );
     } else {
       // For other types, show a simple share message
@@ -638,7 +638,7 @@ class _ItemCardState extends State<ItemCard>
       context,
       MaterialPageRoute(
         builder: (context) => WaitScreen(
-          loadingMessage: 'Loading study set',
+          loadingMessage: 'Loading course pack',
           onLoadComplete: () async {
             loadedStudySet = await StudySetService.fetchStudySetById(
               widget.item.id,

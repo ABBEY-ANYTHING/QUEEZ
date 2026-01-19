@@ -82,7 +82,8 @@ class LibraryItem {
   bool get isQuiz => type == 'quiz';
   bool get isFlashcard => type == 'flashcard';
   bool get isNote => type == 'note';
-  bool get isStudySet => type == 'study_set' || type == 'course_pack';
+  bool get isStudySet =>
+      type == 'course_pack'; // Alias for backward compatibility
   bool get isCoursePack => type == 'course_pack';
 
   // Convert to QuizLibraryItem (for quizzes only)

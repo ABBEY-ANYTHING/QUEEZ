@@ -7,17 +7,17 @@ import 'package:quiz_app/utils/quiz_design_system.dart';
 
 /// Clean, minimalistic mode selection sheet with 2x2 grid layout
 class ModeSelectionSheet extends StatelessWidget {
-  final String itemId; // Can be quizId or studySetId
+  final String itemId; // Can be quizId or coursePackId
   final String itemTitle;
   final String hostId;
-  final bool isStudySet;
+  final bool isCoursePack;
 
   const ModeSelectionSheet({
     super.key,
     required this.itemId,
     required this.itemTitle,
     required this.hostId,
-    this.isStudySet = false,
+    this.isCoursePack = false,
   });
 
   @override
@@ -72,8 +72,8 @@ class ModeSelectionSheet extends StatelessWidget {
               const SizedBox(height: QuizSpacing.xl),
 
               // 2x2 Grid of mode cards
-              if (isStudySet)
-                // Study Set modes: Share and Marketplace only
+              if (isCoursePack)
+                // Course Pack modes: Share and Marketplace only
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -253,7 +253,7 @@ class ModeSelectionSheet extends StatelessWidget {
                 itemTitle: itemTitle,
                 mode: mode,
                 hostId: hostId,
-                isStudySet: isStudySet,
+                isCoursePack: isCoursePack,
               ),
               AnimationType.slideUp,
             ),
@@ -312,7 +312,7 @@ void showModeSelection({
   required String itemId,
   required String itemTitle,
   required String hostId,
-  bool isStudySet = false,
+  bool isCoursePack = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -323,7 +323,7 @@ void showModeSelection({
       itemId: itemId,
       itemTitle: itemTitle,
       hostId: hostId,
-      isStudySet: isStudySet,
+      isCoursePack: isCoursePack,
     ),
   );
 }

@@ -506,8 +506,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               final noteCount = items
                   .where((item) => item.type == 'note')
                   .length;
-              final studySetCount = items
-                  .where((item) => item.type == 'study_set')
+              final coursePackCount = items
+                  .where((item) => item.type == 'course_pack')
                   .length;
 
               return Wrap(
@@ -533,11 +533,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       label: 'notes'.tr(ref),
                       color: const Color(0xFFF59E0B),
                     ),
-                  if (studySetCount > 0)
+                  if (coursePackCount > 0)
                     _buildCompactStatItem(
                       icon: Icons.folder_outlined,
-                      count: studySetCount,
-                      label: 'study_sets'.tr(ref),
+                      count: coursePackCount,
+                      label: 'Courses',
                       color: const Color(0xFF8B5CF6),
                     ),
                 ],

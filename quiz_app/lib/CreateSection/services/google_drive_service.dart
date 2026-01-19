@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +11,23 @@ import 'package:quiz_app/api_config.dart';
 class GoogleDriveService {
   // Base URL for video API
   static String get _baseUrl => '${ApiConfig.baseUrl}/video';
+
+  /// Wake up the server (Render free tier goes to sleep)
+  static Future<bool> _wakeUpServer() async {
+    try {
+      debugPrint('📹 [GoogleDriveService] Waking up server...');
+      final response = await http
+          .get(Uri.parse('${ApiConfig.baseUrl}/health'))
+          .timeout(const Duration(seconds: 10));
+      debugPrint(
+        '📹 [GoogleDriveService] Server wake response: ${response.statusCode}',
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('📹 [GoogleDriveService] Server might be starting up: $e');
+      return false;
+    }
+  }
 
   /// Upload a video file to Google Drive
   ///
@@ -27,11 +45,17 @@ class GoogleDriveService {
       debugPrint(
         '📹 [GoogleDriveService] File exists: ${await videoFile.exists()}',
       );
+
+      final fileSize = await videoFile.length();
       debugPrint(
-        '📹 [GoogleDriveService] File size: ${await videoFile.length()} bytes',
+        '📹 [GoogleDriveService] File size: $fileSize bytes (${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB)',
       );
       debugPrint('📹 [GoogleDriveService] Title: $title');
       debugPrint('📹 [GoogleDriveService] Upload URL: $_baseUrl/upload');
+
+      // Wake up the server first (Render free tier sleeps after 15 mins)
+      debugPrint('📹 [GoogleDriveService] Checking if server is awake...');
+      await _wakeUpServer();
 
       // Create multipart request
       final request = http.MultipartRequest(
@@ -48,9 +72,21 @@ class GoogleDriveService {
       // Add title as form field
       request.fields['title'] = title;
 
-      // Send request
-      debugPrint('📹 [GoogleDriveService] Sending request to backend...');
-      final streamedResponse = await request.send();
+      // Send request with timeout (2 minutes for large files)
+      debugPrint(
+        '📹 [GoogleDriveService] Sending request to backend (timeout: 120s)...',
+      );
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 120),
+        onTimeout: () {
+          debugPrint(
+            '📹 [GoogleDriveService] ⚠️ Request timed out after 120 seconds',
+          );
+          throw TimeoutException('Upload timed out after 120 seconds');
+        },
+      );
+
       debugPrint(
         '📹 [GoogleDriveService] Response status: ${streamedResponse.statusCode}',
       );
@@ -79,8 +115,20 @@ class GoogleDriveService {
         debugPrint(
           '📹 [GoogleDriveService] ❌ Upload failed with status ${response.statusCode}',
         );
+        debugPrint('📹 [GoogleDriveService] Error body: ${response.body}');
       }
 
+      return null;
+    } on TimeoutException catch (e) {
+      debugPrint('📹 [GoogleDriveService] ⏱️ Timeout error: $e');
+      debugPrint(
+        '📹 [GoogleDriveService] The server might be waking up or the file is too large.',
+      );
+      debugPrint('📹 [GoogleDriveService] Try again in a few seconds.');
+      return null;
+    } on SocketException catch (e) {
+      debugPrint('📹 [GoogleDriveService] 🔌 Network error: $e');
+      debugPrint('📹 [GoogleDriveService] Check your internet connection.');
       return null;
     } catch (e, stackTrace) {
       debugPrint('📹 [GoogleDriveService] ❌ Error uploading video: $e');
@@ -96,7 +144,9 @@ class GoogleDriveService {
   /// Returns true if successful
   static Future<bool> deleteVideo(String fileId) async {
     try {
-      final response = await http.delete(Uri.parse('$_baseUrl/$fileId'));
+      final response = await http
+          .delete(Uri.parse('$_baseUrl/$fileId'))
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -118,7 +168,9 @@ class GoogleDriveService {
   /// Returns video info map or null
   static Future<Map<String, dynamic>?> getVideoInfo(String fileId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/$fileId'));
+      final response = await http
+          .get(Uri.parse('$_baseUrl/$fileId'))
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
