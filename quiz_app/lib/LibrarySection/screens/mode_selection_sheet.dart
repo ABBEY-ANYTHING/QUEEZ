@@ -11,6 +11,7 @@ class ModeSelectionSheet extends StatelessWidget {
   final String itemTitle;
   final String hostId;
   final bool isCoursePack;
+  final bool isCurrentlyPublic; // Whether course pack is already on marketplace
 
   const ModeSelectionSheet({
     super.key,
@@ -18,6 +19,7 @@ class ModeSelectionSheet extends StatelessWidget {
     required this.itemTitle,
     required this.hostId,
     this.isCoursePack = false,
+    this.isCurrentlyPublic = false,
   });
 
   @override
@@ -73,7 +75,7 @@ class ModeSelectionSheet extends StatelessWidget {
 
               // 2x2 Grid of mode cards
               if (isCoursePack)
-                // Course Pack modes: Share and Marketplace only
+                // Course Pack modes: Share and Marketplace
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,9 +92,14 @@ class ModeSelectionSheet extends StatelessWidget {
                       Expanded(
                         child: _buildModeCard(
                           context: context,
-                          icon: Icons.storefront_outlined,
-                          title: 'List on Marketplace',
+                          icon: isCurrentlyPublic
+                              ? Icons.remove_shopping_cart_outlined
+                              : Icons.storefront_outlined,
+                          title: isCurrentlyPublic
+                              ? 'Remove from Marketplace'
+                              : 'List on Marketplace',
                           mode: 'marketplace',
+                          isRemove: isCurrentlyPublic,
                         ),
                       ),
                     ],
@@ -185,20 +192,27 @@ class ModeSelectionSheet extends StatelessWidget {
     required IconData icon,
     required String title,
     required String mode,
+    bool isRemove = false,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () async {
-          Navigator.pop(context);
-
-          // Marketplace mode - publish the course pack
+          // Marketplace mode - publish or unpublish the course pack
           if (mode == 'marketplace') {
             if (isCoursePack) {
-              // Show loading
+              // Get the root navigator and scaffold messenger before popping
+              final rootNavigator = Navigator.of(context, rootNavigator: true);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+              // Close the bottom sheet first
+              Navigator.pop(context);
+
+              // Show loading dialog using root navigator
               showDialog(
-                context: context,
+                context: rootNavigator.context,
                 barrierDismissible: false,
+                useRootNavigator: true,
                 builder: (ctx) => const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
@@ -207,29 +221,31 @@ class ModeSelectionSheet extends StatelessWidget {
               try {
                 await CoursePackService.publishCoursePack(
                   itemId,
-                  isPublic: true,
+                  isPublic: !isRemove, // Toggle based on current state
                 );
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Close loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Course pack listed on marketplace!'),
-                      backgroundColor: Colors.green,
+                // Close loading dialog
+                rootNavigator.pop();
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isRemove
+                          ? 'Course pack removed from marketplace!'
+                          : 'Course pack listed on marketplace!',
                     ),
-                  );
-                }
+                    backgroundColor: Colors.green,
+                  ),
+                );
               } catch (e) {
-                if (context.mounted) {
-                  Navigator.of(context).pop(); // Close loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Failed to list: ${e.toString().replaceAll('Exception: ', '')}',
-                      ),
-                      backgroundColor: Colors.red,
+                // Close loading dialog
+                rootNavigator.pop();
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Failed to ${isRemove ? 'remove' : 'list'}: ${e.toString().replaceAll('Exception: ', '')}',
                     ),
-                  );
-                }
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -240,9 +256,13 @@ class ModeSelectionSheet extends StatelessWidget {
                   backgroundColor: Colors.orange,
                 ),
               );
+              Navigator.pop(context);
             }
             return;
           }
+
+          // Close the bottom sheet
+          Navigator.pop(context);
 
           // For share/session modes, navigate to HostingPage
           Navigator.push(
@@ -313,6 +333,7 @@ void showModeSelection({
   required String itemTitle,
   required String hostId,
   bool isCoursePack = false,
+  bool isCurrentlyPublic = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -324,6 +345,7 @@ void showModeSelection({
       itemTitle: itemTitle,
       hostId: hostId,
       isCoursePack: isCoursePack,
+      isCurrentlyPublic: isCurrentlyPublic,
     ),
   );
 }

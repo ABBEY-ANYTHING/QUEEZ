@@ -70,7 +70,7 @@ class StudySetService {
     }
   }
 
-  /// Fetch Study Set by ID
+  /// Fetch Study Set by ID (checks both study_sets and course_pack collections)
   static Future<StudySet?> fetchStudySetById(String id) async {
     try {
       debugPrint('Fetching study set with ID: $id');
@@ -98,7 +98,36 @@ class StudySetService {
         }
         return null;
       } else if (response.statusCode == 404) {
-        debugPrint('Study set not found (404)');
+        debugPrint('Study set not found (404), trying course_pack endpoint...');
+        
+        // Fallback: try fetching from course_pack endpoint
+        try {
+          final coursePackResponse = await http
+              .get(Uri.parse('$baseUrl/course-packs/$id'), headers: _headers)
+              .timeout(
+                Duration(seconds: 30),
+                onTimeout: () {
+                  throw Exception(
+                    'Request timed out. Please check your internet connection.',
+                  );
+                },
+              );
+          
+          debugPrint('Course pack response status: ${coursePackResponse.statusCode}');
+          debugPrint('Course pack response body: ${coursePackResponse.body}');
+          
+          if (coursePackResponse.statusCode == 200) {
+            final data = jsonDecode(coursePackResponse.body);
+            if (data['coursePack'] != null) {
+              debugPrint('Course pack data found, converting to StudySet...');
+              // Convert course pack to StudySet format
+              return StudySet.fromJson(data['coursePack']);
+            }
+          }
+        } catch (e) {
+          debugPrint('Error fetching from course_pack endpoint: $e');
+        }
+        
         return null;
       } else {
         final errorBody = jsonDecode(response.body);

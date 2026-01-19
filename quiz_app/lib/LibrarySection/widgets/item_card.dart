@@ -256,6 +256,7 @@ class _ItemCardState extends State<ItemCard>
         itemTitle: widget.item.title,
         hostId: hostId,
         isCoursePack: true,
+        isCurrentlyPublic: widget.item.isPublic,
       );
     } else {
       // For other types, show a simple share message

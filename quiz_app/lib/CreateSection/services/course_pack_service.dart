@@ -51,6 +51,8 @@ class CoursePack {
   final String language;
   final String? coverImagePath;
   final String ownerId;
+  final String? originalOwner; // Original owner if this is a claimed course
+  final String? originalCoursePackId; // Original course pack ID if claimed
   final List<dynamic> quizzes;
   final List<dynamic> flashcardSets;
   final List<dynamic> notes;
@@ -71,6 +73,8 @@ class CoursePack {
     required this.language,
     this.coverImagePath,
     required this.ownerId,
+    this.originalOwner,
+    this.originalCoursePackId,
     required this.quizzes,
     required this.flashcardSets,
     required this.notes,
@@ -83,6 +87,9 @@ class CoursePack {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// Returns true if this course was claimed from another user
+  bool get isClaimed => originalOwner != null && originalCoursePackId != null;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -108,6 +115,8 @@ class CoursePack {
     language: json['language'] ?? '',
     coverImagePath: json['coverImagePath'],
     ownerId: json['ownerId'] ?? json['owner_id'] ?? '',
+    originalOwner: json['originalOwner'],
+    originalCoursePackId: json['originalCoursePackId'],
     quizzes: json['quizzes'] ?? [],
     flashcardSets: json['flashcardSets'] ?? [],
     notes: json['notes'] ?? [],
@@ -432,6 +441,40 @@ class CoursePackService {
       }
     } catch (e) {
       throw Exception('Failed to claim course pack: $e');
+    }
+  }
+
+  /// Check if user has already claimed a course pack
+  static Future<bool> hasUserClaimedCourse(
+    String coursePackId,
+    String userId,
+  ) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/course-pack/user/$userId/claimed/$coursePackId',
+            ),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['claimed'] ?? false;
+      }
+      return false;
+    } catch (e) {
+      // If endpoint doesn't exist, check locally by fetching user's courses
+      try {
+        final userCourses = await fetchUserCoursePacks(userId);
+        return userCourses.any(
+          (course) => course.originalCoursePackId == coursePackId,
+        );
+      } catch (e2) {
+        debugPrint('Error checking claimed status: $e2');
+        return false;
+      }
     }
   }
 }
