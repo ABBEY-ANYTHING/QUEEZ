@@ -874,18 +874,19 @@ class _HomePageState extends ConsumerState<HomePage> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => _CourseDetailSheet(
         course: course,
-        onEnroll: () async {
+        currentUserId: _auth.currentUser?.uid,
+        onClaim: () async {
           final user = _auth.currentUser;
           final navigator = Navigator.of(sheetContext);
           final scaffoldMessenger = ScaffoldMessenger.of(sheetContext);
 
           if (user != null) {
             try {
-              await CoursePackService.enrollInCoursePack(course.id, user.uid);
+              await CoursePackService.claimCoursePack(course.id, user.uid);
               navigator.pop();
               scaffoldMessenger.showSnackBar(
                 const SnackBar(
-                  content: Text('Successfully enrolled in course!'),
+                  content: Text('Course pack added to your library!'),
                   backgroundColor: Colors.green,
                 ),
               );
@@ -893,7 +894,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             } catch (e) {
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: Text('Failed to enroll: $e'),
+                  content: Text(e.toString().replaceAll('Exception: ', '')),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -940,9 +941,16 @@ class _HomePageState extends ConsumerState<HomePage> {
 // Course Detail Bottom Sheet
 class _CourseDetailSheet extends StatelessWidget {
   final CoursePack course;
-  final VoidCallback onEnroll;
+  final String? currentUserId;
+  final VoidCallback onClaim;
 
-  const _CourseDetailSheet({required this.course, required this.onEnroll});
+  const _CourseDetailSheet({
+    required this.course,
+    required this.onClaim,
+    this.currentUserId,
+  });
+
+  bool get isOwner => currentUserId != null && course.ownerId == currentUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -1125,9 +1133,11 @@ class _CourseDetailSheet extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: onEnroll,
+                      onPressed: isOwner ? null : onClaim,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: isOwner
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
                         foregroundColor: AppColors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -1135,12 +1145,24 @@ class _CourseDetailSheet extends StatelessWidget {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Enroll Now',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isOwner
+                                ? Icons.check_circle_outlined
+                                : Icons.add_to_photos_outlined,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isOwner ? 'You Own This' : 'Claim Course',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

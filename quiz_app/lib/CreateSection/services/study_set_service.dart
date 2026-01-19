@@ -19,12 +19,12 @@ class StudySetService {
       debugPrint('Creating study set...');
       final jsonData = studySet.toJson();
       debugPrint('Study set JSON: ${jsonEncode(jsonData)}');
-      debugPrint('URL: $baseUrl/study-sets');
+      debugPrint('URL: $baseUrl/course-pack');
       debugPrint('========================================');
 
       final response = await http
           .post(
-            Uri.parse('$baseUrl/study-sets'),
+            Uri.parse('$baseUrl/course-pack'),
             headers: _headers,
             body: jsonEncode(jsonData),
           )
@@ -76,7 +76,7 @@ class StudySetService {
       debugPrint('Fetching study set with ID: $id');
 
       final response = await http
-          .get(Uri.parse('$baseUrl/study-sets/$id'), headers: _headers)
+          .get(Uri.parse('$baseUrl/course-pack/$id'), headers: _headers)
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -92,9 +92,11 @@ class StudySetService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         // Backend returns { "success": true, "studySet": {...} }
-        if (data['studySet'] != null) {
-          debugPrint('Study set data found, parsing...');
-          return StudySet.fromJson(data['studySet']);
+        // Backend might return { "success": true, "coursePack": {...} } or "studySet"
+        final itemData = data['coursePack'] ?? data['studySet'];
+        if (itemData != null) {
+          debugPrint('Study set/Course pack data found, parsing...');
+          return StudySet.fromJson(itemData);
         }
         return null;
       } else if (response.statusCode == 404) {
@@ -117,7 +119,7 @@ class StudySetService {
       debugPrint('Fetching study sets for user: $userId');
 
       final response = await http
-          .get(Uri.parse('$baseUrl/study-sets/user/$userId'), headers: _headers)
+          .get(Uri.parse('$baseUrl/course-pack/user/$userId'), headers: _headers)
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -130,8 +132,14 @@ class StudySetService {
       debugPrint('Response status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
-        return data.map((json) => StudySet.fromJson(json)).toList();
+        final body = jsonDecode(response.body);
+        List list;
+        if (body is List) {
+          list = body;
+        } else {
+          list = body['coursePacks'] ?? body['studySets'] ?? body['data'] ?? [];
+        }
+        return list.map((json) => StudySet.fromJson(json)).toList();
       } else {
         final errorBody = jsonDecode(response.body);
         throw Exception(
@@ -149,7 +157,7 @@ class StudySetService {
       debugPrint('Deleting study set with ID: $id');
 
       final response = await http
-          .delete(Uri.parse('$baseUrl/study-sets/$id'), headers: _headers)
+          .delete(Uri.parse('$baseUrl/course-pack/$id'), headers: _headers)
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -182,7 +190,7 @@ class StudySetService {
 
       final response = await http
           .put(
-            Uri.parse('$baseUrl/study-sets/${updatedStudySet.id}'),
+            Uri.parse('$baseUrl/course-pack/${updatedStudySet.id}'),
             headers: _headers,
             body: jsonEncode(updatedStudySet.toJson()),
           )

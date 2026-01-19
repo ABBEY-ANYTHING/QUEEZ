@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -188,22 +189,58 @@ class ModeSelectionSheet extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           Navigator.pop(context);
 
-          // Marketplace mode doesn't need session - just list the item
+          // Marketplace mode - publish the course pack
           if (mode == 'marketplace') {
-            // TODO: Implement marketplace listing logic
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isStudySet
-                      ? 'Study set listed on marketplace!'
-                      : 'Quiz listed on marketplace!',
+            if (isStudySet) {
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (ctx) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
-                backgroundColor: Colors.green,
-              ),
-            );
+              );
+
+              try {
+                await CoursePackService.publishCoursePack(
+                  itemId,
+                  isPublic: true,
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Course pack listed on marketplace!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Close loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Failed to list: ${e.toString().replaceAll('Exception: ', '')}',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Marketplace listing is only available for course packs',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
             return;
           }
 

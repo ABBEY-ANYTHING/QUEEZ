@@ -40,17 +40,35 @@ class LibraryItem {
   });
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) {
+    // Infer type or handle loose typing
+    String type = json['type'] ?? '';
+    // If type is missing, try to infer from content
+    if (type.isEmpty) {
+      if (json.containsKey('quizzes') || 
+          json.containsKey('flashcardSets') || 
+          json.containsKey('notes')) {
+        type = 'course_pack';
+      } else if (json.containsKey('questions') || json.containsKey('questionCount')) {
+        type = 'quiz';
+      } else if (json.containsKey('cards') || json.containsKey('cardCount')) {
+        type = 'flashcard';
+      }
+    }
+
+    // Handle title mapping (course packs use 'name')
+    final title = json['title'] ?? json['name'] ?? 'Untitled';
+
     return LibraryItem(
-      id: json['id'],
-      type: json['type'],
-      title: json['title'],
+      id: json['id'] ?? json['_id'] ?? '',
+      type: type,
+      title: title,
       description: json['description'] ?? '',
       coverImagePath: json['coverImagePath'],
       createdAt: json['createdAt'],
-      itemCount: json['itemCount'] ?? 0,
+      itemCount: json['itemCount'] ?? json['qsCount'] ?? 0, // Fallbacks for counts
       category: json['category'] ?? '',
       language: json['language'] ?? '',
-      originalOwner: json['originalOwner'],
+      originalOwner: json['originalOwner'] ?? json['ownerId'],
       originalOwnerUsername: json['originalOwnerUsername'],
       sharedMode: json['sharedMode'],
       isPublic: json['isPublic'] ?? false,

@@ -411,4 +411,27 @@ class CoursePackService {
       throw Exception('Failed to delete course pack: $e');
     }
   }
+
+  /// Claim/copy a public course pack to user's library
+  static Future<String> claimCoursePack(String id, String userId) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/course-pack/$id/claim'),
+            headers: _headers,
+            body: jsonEncode({'user_id': userId}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['course_pack_id'] ?? '';
+      } else {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['detail'] ?? 'Failed to claim course pack');
+      }
+    } catch (e) {
+      throw Exception('Failed to claim course pack: $e');
+    }
+  }
 }
