@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
@@ -86,7 +87,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       // Profile is complete only if it has at least name and role
       return hasName && hasRole;
     } catch (e) {
-      debugPrint('Error checking profile: $e');
+      AppLogger.error('Error checking profile: $e');
       return false; // On error, assume profile not setup
     }
   }
@@ -117,7 +118,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       // Check if profile is set up
       final hasProfile = await _isProfileSetup(uid);
 
-      debugPrint('Login check - UID: $uid, Has Profile: $hasProfile');
+      AppLogger.debug('Login check - UID: $uid, Has Profile: $hasProfile');
 
       // Save login state to SharedPreferences directly
       final prefs = await SharedPreferences.getInstance();
@@ -125,7 +126,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
       if (hasProfile) {
         // Profile is already set up, go to dashboard
-        debugPrint('Navigating to dashboard - profile exists');
+        AppLogger.success('Navigating to dashboard - profile exists');
         await prefs.setBool('profileSetupCompleted', true);
         await prefs.setString('lastRoute', '/dashboard');
 
@@ -138,7 +139,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         }
       } else {
         // Profile not set up, go to profile setup
-        debugPrint('Navigating to profile setup - profile incomplete');
+        AppLogger.info('Navigating to profile setup - profile incomplete');
         await prefs.setBool('profileSetupCompleted', false);
         await prefs.setString('lastRoute', '/profile_welcome');
 
@@ -163,7 +164,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       _showMessage('Firebase error: ${e.message}');
     } catch (e) {
       _showMessage('An unexpected error occurred: $e');
-      debugPrint('Login error details: $e');
+      AppLogger.error('Login error details: $e');
     } finally {
       if (mounted) {
         setState(() => _loading = false);

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,8 +46,10 @@ class _CompletionScreenState extends State<CompletionScreen> {
     try {
       final User? currentUser = _auth.currentUser;
       if (currentUser != null) {
-        final DocumentSnapshot userDoc =
-            await _firestore.collection('users').doc(currentUser.uid).get();
+        final DocumentSnapshot userDoc = await _firestore
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
 
         if (userDoc.exists) {
           setState(() {
@@ -60,7 +63,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      AppLogger.error('Error loading user data: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -86,7 +89,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
         customNavigateReplacement(context, '/dashboard', AnimationType.fade);
       }
     } catch (e) {
-      debugPrint('Error completing profile setup: $e');
+      AppLogger.error('Error completing profile setup: $e');
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/widgets/add_quiz_modal.dart';
 import 'package:quiz_app/LibrarySection/widgets/library_body.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/utils/translations.dart';
@@ -57,40 +58,38 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
   /// 🔁 Reload items from server
   Future<void> _reloadItems() async {
-    debugPrint('🔵 [LIBRARY_PAGE] _reloadItems called');
+    AppLogger.info('_reloadItems called');
     await ref.read(quizLibraryProvider.notifier).reload();
-    debugPrint('🟢 [LIBRARY_PAGE] _reloadItems completed');
+    AppLogger.success('_reloadItems completed');
   }
 
   /// 🔍 Set search query (also refreshes data if needed)
   void _setSearchQuery(String query) {
-    debugPrint('🔵 [LIBRARY_PAGE] _setSearchQuery called with: "$query"');
+    AppLogger.info('_setSearchQuery called with: "$query"');
 
     // First invalidate to ensure fresh data is fetched
-    debugPrint('🔵 [LIBRARY_PAGE] Invalidating quizLibraryProvider...');
+    AppLogger.info('Invalidating quizLibraryProvider...');
     ref.invalidate(quizLibraryProvider);
-    debugPrint('🟢 [LIBRARY_PAGE] quizLibraryProvider invalidated');
+    AppLogger.success('quizLibraryProvider invalidated');
 
     // Then update the search query UI
-    debugPrint('🔵 [LIBRARY_PAGE] Updating search query state...');
+    AppLogger.info('Updating search query state...');
     setState(() {
       _searchQuery = query;
       _searchController.text = query;
     });
-    debugPrint(
-      '🟢 [LIBRARY_PAGE] Search query state updated, _searchQuery = "$_searchQuery"',
-    );
+    AppLogger.success('Search query state updated, _searchQuery = "$_searchQuery"');
   }
 
   void _filterItems(String query) {
-    debugPrint('🔵 [LIBRARY_PAGE] _filterItems called with: "$query"');
+    AppLogger.debug('_filterItems called with: "$query"');
     setState(() {
       _searchQuery = query;
     });
   }
 
   void _setTypeFilter(String? filter) {
-    debugPrint('🔵 [LIBRARY_PAGE] Setting filter to: $filter');
+    AppLogger.debug('Setting filter to: $filter');
     setState(() {
       _typeFilter = filter;
     });
@@ -98,30 +97,24 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
   /// Handle favorite changes (no longer needs server reload - handled locally)
   void _onFavoriteChanged() {
-    debugPrint('🔵 [LIBRARY_PAGE] Favorite changed (handled locally)');
+    AppLogger.debug('Favorite changed (handled locally)');
   }
 
   List<LibraryItem> _getFilteredItems(List<LibraryItem> allItems) {
     var filtered = allItems;
 
-    debugPrint(
-      '🔵 [LIBRARY_PAGE] Filtering ${allItems.length} items with filter: $_typeFilter',
-    );
+    AppLogger.debug('Filtering ${allItems.length} items with filter: $_typeFilter');
 
     // Apply type filter
     if (_typeFilter != null) {
       if (_typeFilter == 'favorites') {
         // Filter for favorites only
         filtered = filtered.where((item) => item.isFavorite).toList();
-        debugPrint(
-          '🔵 [LIBRARY_PAGE] After favorites filter: ${filtered.length} items',
-        );
+        AppLogger.debug('After favorites filter: ${filtered.length} items');
       } else {
         // Filter by type
         filtered = filtered.where((item) => item.type == _typeFilter).toList();
-        debugPrint(
-          '🔵 [LIBRARY_PAGE] After type filter ($_typeFilter): ${filtered.length} items',
-        );
+        AppLogger.debug('After type filter ($_typeFilter): ${filtered.length} items');
       }
     }
 
@@ -132,9 +125,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
         return item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             item.description.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
-      debugPrint(
-        '🔵 [LIBRARY_PAGE] After search filter "$_searchQuery": ${filtered.length} items (was $beforeSearchCount)',
-      );
+      AppLogger.debug('After search filter "$_searchQuery": ${filtered.length} items (was $beforeSearchCount)');
     }
 
     return filtered;
@@ -143,9 +134,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
   @override
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(quizLibraryProvider);
-    debugPrint(
-      '🔵 [LIBRARY_PAGE] build() called, watching quizLibraryProvider',
-    );
+    AppLogger.debug('build() called, watching quizLibraryProvider');
 
     // Get filtered items and loading/error state from AsyncValue
     bool isLoading = false;
@@ -154,25 +143,19 @@ class LibraryPageState extends ConsumerState<LibraryPage>
 
     itemsAsync.when(
       data: (items) {
-        debugPrint(
-          '🟢 [LIBRARY_PAGE] Provider has data: ${items.length} total items',
-        );
+        AppLogger.success('Provider has data: ${items.length} total items');
         filteredItems = _getFilteredItems(items);
-        debugPrint(
-          '🔵 [LIBRARY_PAGE] After filtering with query "$_searchQuery": ${filteredItems.length} items',
-        );
+        AppLogger.debug('After filtering with query "$_searchQuery": ${filteredItems.length} items');
         for (var i = 0; i < filteredItems.length && i < 5; i++) {
-          debugPrint(
-            '🔵 [LIBRARY_PAGE] Filtered item $i: ${filteredItems[i].title}',
-          );
+          AppLogger.debug('Filtered item $i: ${filteredItems[i].title}');
         }
       },
       loading: () {
-        debugPrint('🔵 [LIBRARY_PAGE] Provider is loading...');
+        AppLogger.info('Provider is loading...');
         isLoading = true;
       },
       error: (error, _) {
-        debugPrint('🔴 [LIBRARY_PAGE] Provider has error: $error');
+        AppLogger.error('Provider has error', exception: error);
         errorMessage = error.toString();
       },
     );

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/translations.dart';
 import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
@@ -52,7 +53,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      AppLogger.error('Failed to load profile: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }

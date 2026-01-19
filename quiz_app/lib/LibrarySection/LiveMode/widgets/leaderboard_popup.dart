@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:quiz_app/utils/quiz_design_system.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/quiz_design_system.dart';
 
 /// Beautiful animated leaderboard popup shown after answering a question
 class LeaderboardPopup extends StatefulWidget {
@@ -31,7 +32,9 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
   @override
   void initState() {
     super.initState();
-    debugPrint('🏆 LEADERBOARD_POPUP - Initializing with ${widget.rankings.length} participants');
+    AppLogger.info(
+      'Leaderboard popup: ${widget.rankings.length} participants, ${widget.displayDuration}s display',
+    );
     _remainingSeconds = widget.displayDuration;
 
     _controller = AnimationController(
@@ -44,13 +47,9 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
       curve: Curves.easeOutBack,
     );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
+    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     _controller.forward();
-    debugPrint('🏆 LEADERBOARD_POPUP - Starting ${widget.displayDuration}s countdown');
     _startCountdown();
   }
 
@@ -62,15 +61,11 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
         _remainingSeconds--;
       });
 
-      debugPrint('⏱️ LEADERBOARD_POPUP - Countdown: $_remainingSeconds seconds remaining');
-
       if (_remainingSeconds > 0) {
         _startCountdown();
       } else {
-        debugPrint('✅ LEADERBOARD_POPUP - Countdown complete, closing popup');
         _controller.reverse().then((_) {
           if (mounted) {
-            debugPrint('➡️ LEADERBOARD_POPUP - Calling onComplete callback');
             widget.onComplete();
           }
         });
@@ -211,10 +206,7 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
                         builder: (context, value, child) {
                           return Transform.translate(
                             offset: Offset(0, 20 * (1 - value)),
-                            child: Opacity(
-                              opacity: value,
-                              child: child,
-                            ),
+                            child: Opacity(opacity: value, child: child),
                           );
                         },
                         child: Container(
@@ -230,7 +222,7 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
                               color: isCurrentUser
                                   ? AppColors.primary
                                   : medalColor?.withValues(alpha: 0.3) ??
-                                      Colors.transparent,
+                                        Colors.transparent,
                               width: isCurrentUser ? 2 : 1,
                             ),
                           ),
@@ -245,8 +237,9 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
                                   shape: BoxShape.circle,
                                   color: rank <= 3 && medalColor != null
                                       ? medalColor.withValues(alpha: 0.2)
-                                      : QuizColors.textSecondary
-                                          .withValues(alpha: 0.2),
+                                      : QuizColors.textSecondary.withValues(
+                                          alpha: 0.2,
+                                        ),
                                   border: Border.all(
                                     color: rank <= 3 && medalColor != null
                                         ? medalColor
@@ -296,11 +289,13 @@ class _LeaderboardPopupState extends State<LeaderboardPopup>
                                   gradient: LinearGradient(
                                     colors: [
                                       medalColor?.withValues(alpha: 0.3) ??
-                                          AppColors.primary
-                                              .withValues(alpha: 0.3),
+                                          AppColors.primary.withValues(
+                                            alpha: 0.3,
+                                          ),
                                       medalColor?.withValues(alpha: 0.1) ??
-                                          AppColors.primary
-                                              .withValues(alpha: 0.1),
+                                          AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(

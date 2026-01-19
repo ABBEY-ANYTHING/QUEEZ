@@ -13,6 +13,7 @@ import 'package:quiz_app/CreateSection/widgets/primary_button.dart';
 import 'package:quiz_app/CreateSection/widgets/section_title.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
@@ -81,7 +82,7 @@ class QuizDetailsState extends State<QuizDetails> {
         questions = fetchedQuestions;
       });
     } catch (e) {
-      debugPrint('Error fetching questions: $e');
+      AppLogger.error('Error fetching questions: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

@@ -6,6 +6,7 @@ import 'package:quiz_app/ProfilePage/edit_profile_page.dart';
 import 'package:quiz_app/models/user_model.dart';
 import 'package:quiz_app/providers/locale_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/app_strings.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
@@ -49,7 +50,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      AppLogger.error('Error loading user data: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }

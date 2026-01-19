@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+
+import '../utils/app_logger.dart';
 import '../utils/color.dart';
-import 'dart:math';
 
 class WaitScreen extends StatefulWidget {
   final Future<void> Function() onLoadComplete;
@@ -68,7 +71,7 @@ class _WaitScreenState extends State<WaitScreen> {
       await widget.onLoadComplete();
     } catch (e) {
       // Handle errors if needed
-      debugPrint('Error during loading: $e');
+      AppLogger.error('Error during loading: $e');
     }
 
     // Calculate elapsed time

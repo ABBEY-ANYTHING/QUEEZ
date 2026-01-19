@@ -56,7 +56,7 @@ class _LiveMultiplayerDashboardState
                 : (user.email?.split('@')[0] ?? username);
           }
         } catch (e) {
-          debugPrint('Error fetching user data from Firestore: $e');
+          AppLogger.error('Error fetching user data from Firestore: $e');
           // Fallback to displayName or email
           username = user.displayName?.trim().isNotEmpty == true
               ? user.displayName!

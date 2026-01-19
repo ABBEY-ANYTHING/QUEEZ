@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:quiz_app/models/user_model.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
@@ -103,7 +104,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           );
         }
       } catch (e) {
-        debugPrint('Error parsing DOB: $e');
+        AppLogger.warning('Invalid DOB format: $e');
       }
     }
 
@@ -240,7 +241,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // The parent screen will handle showing feedback if needed
       Navigator.pop(context, true);
     } catch (e) {
-      debugPrint('Error updating profile: $e');
+      AppLogger.error('Profile update failed: $e');
       if (!mounted) return;
       AppSnackBar.showError(
         context,

@@ -7,6 +7,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/widgets/podium_widget.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
@@ -46,14 +47,14 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
   void _requestLeaderboardIfNeeded() {
     if (_hasRequestedLeaderboard) return;
 
-    debugPrint('🏆 LiveHostView - Requesting initial leaderboard');
+    AppLogger.debug('🏆 LiveHostView - Requesting initial leaderboard');
     _hasRequestedLeaderboard = true;
 
     // ✅ FIX: Small delay to ensure gameProvider's WebSocket listener is set up
     // This fixes the race condition on host reconnection
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        debugPrint('🏆 LiveHostView - Sending leaderboard request');
+        AppLogger.debug('🏆 LiveHostView - Sending leaderboard request');
         ref.read(gameProvider.notifier).requestLeaderboard();
       }
     });
@@ -71,7 +72,7 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
       final sessionState = ref.read(sessionProvider);
       // Only poll if session is still active
       if (sessionState?.status == 'active') {
-        debugPrint('🔄 LiveHostView - Polling leaderboard...');
+        AppLogger.debug('🔄 LiveHostView - Polling leaderboard...');
         ref.read(gameProvider.notifier).requestLeaderboard();
       } else if (sessionState?.status == 'completed') {
         // Stop polling when quiz is completed
@@ -110,7 +111,7 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
       _isEndingSession = true;
     });
 
-    debugPrint('🛑 HOST - Ending session...');
+    AppLogger.debug('🛑 HOST - Ending session...');
 
     // End the quiz via WebSocket - this will broadcast to all participants
     ref.read(sessionProvider.notifier).endQuiz();
@@ -193,7 +194,7 @@ class _LiveHostViewState extends ConsumerState<LiveHostView> {
     // Listen for session completion
     ref.listen(sessionProvider, (previous, next) {
       if (next != null && next.status == 'completed' && !_hasSessionEnded) {
-        debugPrint('🏁 HOST - Session completed');
+        AppLogger.debug('🏁 HOST - Session completed');
         _hasSessionEnded = true;
         _leaderboardPollingTimer?.cancel();
         setState(() {

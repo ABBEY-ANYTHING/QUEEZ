@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/widgets/quiz/quiz_widgets.dart';
 
 /// Multi-select options widget for live multiplayer mode.
@@ -39,7 +40,7 @@ class _MultiSelectOptionsState extends State<MultiSelectOptions> {
     if (widget.options.length != oldWidget.options.length ||
         (widget.options.isNotEmpty && oldWidget.options.isNotEmpty && 
          widget.options[0] != oldWidget.options[0])) {
-      debugPrint('📝 MULTI_SELECT - New question detected, resetting');
+      AppLogger.debug('📝 MULTI_SELECT - New question detected, resetting');
       setState(() {
         _localSelectedIndices = null;
         _submitted = false;
@@ -48,7 +49,7 @@ class _MultiSelectOptionsState extends State<MultiSelectOptions> {
     
     // Also reset if hasAnswered goes from true to false (new question)
     if (!widget.hasAnswered && oldWidget.hasAnswered) {
-      debugPrint('📝 MULTI_SELECT - hasAnswered changed to false, resetting');
+      AppLogger.debug('📝 MULTI_SELECT - hasAnswered changed to false, resetting');
       setState(() {
         _localSelectedIndices = null;
         _submitted = false;
@@ -60,7 +61,7 @@ class _MultiSelectOptionsState extends State<MultiSelectOptions> {
     if (_submitted || widget.hasAnswered) return;
     
     final indices = (answer as List).cast<int>();
-    debugPrint('📝 MULTI_SELECT - Submitting: $indices');
+    AppLogger.debug('📝 MULTI_SELECT - Submitting: $indices');
     setState(() {
       _localSelectedIndices = indices;
       _submitted = true;

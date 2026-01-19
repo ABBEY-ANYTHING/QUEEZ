@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+
+import '../utils/app_logger.dart';
 
 /// Service for managing user favourites stored in Firestore users collection
 class FavoritesService {
@@ -42,9 +43,9 @@ class FavoritesService {
         },
       }, SetOptions(merge: true));
 
-      debugPrint('✅ Added $itemType item $itemId to favorites');
+      AppLogger.success('Added $itemType item $itemId to favorites');
     } catch (e) {
-      debugPrint('❌ Error adding to favorites: $e');
+      AppLogger.error('Error adding to favorites: $e');
       rethrow;
     }
   }
@@ -65,9 +66,9 @@ class FavoritesService {
         'favourites.$field': FieldValue.arrayRemove([itemId]),
       });
 
-      debugPrint('✅ Removed item $itemId from favorites');
+      AppLogger.success('Removed item $itemId from favorites');
     } catch (e) {
-      debugPrint('❌ Error removing from favorites: $e');
+      AppLogger.error('Error removing from favorites: $e');
       rethrow;
     }
   }
@@ -88,7 +89,7 @@ class FavoritesService {
         return true;
       }
     } catch (e) {
-      debugPrint('❌ Error toggling favorite: $e');
+      AppLogger.error('Error toggling favorite: $e');
       rethrow;
     }
   }
@@ -115,7 +116,7 @@ class FavoritesService {
       final typeList = favourites[field] as List<dynamic>?;
       return typeList?.contains(itemId) ?? false;
     } catch (e) {
-      debugPrint('❌ Error checking favorite status: $e');
+      AppLogger.error('Error checking favorite status: $e');
       return false;
     }
   }
@@ -144,7 +145,7 @@ class FavoritesService {
 
       return allIds;
     } catch (e) {
-      debugPrint('❌ Error fetching favorite IDs: $e');
+      AppLogger.error('Error fetching favorite IDs: $e');
       return {};
     }
   }
@@ -211,7 +212,7 @@ class FavoritesService {
         ),
       };
     } catch (e) {
-      debugPrint('❌ Error fetching all favorites: $e');
+      AppLogger.error('Error fetching all favorites: $e');
       return {
         'quiz': {},
         'flashcard': {},

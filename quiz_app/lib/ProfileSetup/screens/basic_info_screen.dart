@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class BasicInfoStep extends StatefulWidget {
@@ -87,7 +88,7 @@ class _BasicInfoStepState extends State<BasicInfoStep> {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      debugPrint('Error saving basic info: $e');
+      AppLogger.error('Error saving basic info: $e');
     }
   }
 

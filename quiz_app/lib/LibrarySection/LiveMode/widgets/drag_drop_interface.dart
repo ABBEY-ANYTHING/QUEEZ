@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/widgets/quiz/quiz_widgets.dart';
 
 /// Drag & Drop interface widget for live multiplayer mode.
@@ -36,7 +37,7 @@ class _DragDropInterfaceState extends State<DragDropInterface> {
     // Reset when question changes
     if (!_listEquals(oldWidget.dragItems, widget.dragItems) ||
         !_listEquals(oldWidget.dropTargets, widget.dropTargets)) {
-      debugPrint('📝 DRAG_DROP - Question changed, resetting');
+      AppLogger.debug('📝 DRAG_DROP - Question changed, resetting');
       setState(() {
         _localSubmittedAnswer = null;
         _submitted = false;
@@ -55,7 +56,7 @@ class _DragDropInterfaceState extends State<DragDropInterface> {
   void _handleAnswerSelected(Map<String, String> answer) {
     if (_submitted || widget.hasAnswered) return;
     
-    debugPrint('📝 DRAG_DROP - Submitting matches: $answer');
+    AppLogger.debug('📝 DRAG_DROP - Submitting matches: $answer');
     setState(() {
       _localSubmittedAnswer = answer;
       _submitted = true;
@@ -72,13 +73,13 @@ class _DragDropInterfaceState extends State<DragDropInterface> {
     final showFeedback = _submitted && widget.hasAnswered && widget.correctMatches != null;
     final isEnabled = !_submitted && !widget.hasAnswered;
     
-    debugPrint('🎮 DragDropInterface build:');
-    debugPrint('   enabled: $isEnabled');
-    debugPrint('   _submitted: $_submitted');
-    debugPrint('   widget.hasAnswered: ${widget.hasAnswered}');
-    debugPrint('   showFeedback: $showFeedback');
-    debugPrint('   dragItems: ${widget.dragItems}');
-    debugPrint('   dropTargets: ${widget.dropTargets}');
+    AppLogger.debug('🎮 DragDropInterface build:');
+    AppLogger.debug('   enabled: $isEnabled');
+    AppLogger.debug('   _submitted: $_submitted');
+    AppLogger.debug('   widget.hasAnswered: ${widget.hasAnswered}');
+    AppLogger.debug('   showFeedback: $showFeedback');
+    AppLogger.debug('   dragItems: ${widget.dragItems}');
+    AppLogger.debug('   dropTargets: ${widget.dropTargets}');
 
     return QuizDragDropOptions(
       dragItems: widget.dragItems,

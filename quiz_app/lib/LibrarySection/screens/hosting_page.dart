@@ -12,6 +12,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/screens/live_host_view.dart';
 import 'package:quiz_app/LibrarySection/services/session_service.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
@@ -85,7 +86,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     final sessionState = ref.read(sessionProvider);
     if (sessionState != null && widget.mode == 'live_multiplayer') {
-      debugPrint(
+      AppLogger.websocket(
         '🔄 HOST - WebSocket update: ${sessionState.participants.length} participants',
       );
       setState(() {
@@ -102,7 +103,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             .toList();
         participantCount = participants.length;
       });
-      debugPrint(
+      AppLogger.websocket(
         '✅ HOST - Updated participant list: $participantCount participants',
       );
     }
@@ -169,7 +170,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
   /// Reconnect to an existing session (used when host reopens app)
   Future<void> _reconnectToSession() async {
-    debugPrint(
+    AppLogger.websocket(
       '🔄 HOST RECONNECTION - Reconnecting to session: ${widget.existingSessionCode}',
     );
 
@@ -210,7 +211,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           }).toList();
         });
 
-        debugPrint(
+        AppLogger.websocket(
           '✅ HOST RECONNECTION - Session validated, $participantCount participants',
         );
 
@@ -221,7 +222,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         }
       } else {
         // Session no longer valid
-        debugPrint('❌ HOST RECONNECTION - Session no longer valid');
+        AppLogger.error('❌ HOST RECONNECTION - Session no longer valid');
         setState(() {
           isLoading = false;
           errorMessage = 'Session has expired. Please create a new quiz.';
@@ -229,7 +230,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         await ActiveSessionService.clearActiveSession();
       }
     } catch (e) {
-      debugPrint('❌ HOST RECONNECTION - Error: $e');
+      AppLogger.error('❌ HOST RECONNECTION - Error: $e');
       setState(() {
         isLoading = false;
         errorMessage =
@@ -265,7 +266,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
                 : (user.email?.split('@')[0] ?? username);
           }
         } catch (e) {
-          debugPrint('Error fetching user data from Firestore: $e');
+          AppLogger.error('Error fetching user data from Firestore: $e');
           // Fallback to displayName or email
           username = user.displayName?.trim().isNotEmpty == true
               ? user.displayName!
@@ -273,11 +274,11 @@ class _HostingPageState extends ConsumerState<HostingPage> {
         }
       }
 
-      debugPrint(
+      AppLogger.websocket(
         '🎯 HOST - Attempting to join session $sessionCode as $username',
       );
-      debugPrint('🎯 HOST - User ID: ${widget.hostId}');
-      debugPrint('🎯 HOST - Mode: ${widget.mode}');
+      AppLogger.websocket('🎯 HOST - User ID: ${widget.hostId}');
+      AppLogger.websocket('🎯 HOST - Mode: ${widget.mode}');
 
       // Connect host to WebSocket (isHost: true to preserve host status)
       await ref
@@ -286,25 +287,25 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
-              debugPrint(
+              AppLogger.warning(
                 '⚠️ HOST - Join timeout after 10s, but continuing anyway (host can still control session)',
               );
             },
           );
 
-      debugPrint(
+      AppLogger.websocket(
         '✅ HOST - Successfully connected to WebSocket for session $sessionCode',
       );
-      debugPrint('✅ HOST - Now listening for participant updates in real-time');
+      AppLogger.websocket('✅ HOST - Now listening for participant updates in real-time');
 
       // ✅ IMPORTANT: Update participants from WebSocket state AFTER connection
       // This ensures we get the latest participants list from session_state
       await Future.delayed(const Duration(milliseconds: 500));
       _updateParticipantsFromWebSocket();
     } catch (e, stackTrace) {
-      debugPrint('⚠️ HOST - WebSocket connection issue: $e');
-      debugPrint('⚠️ HOST - Stack trace: $stackTrace');
-      debugPrint(
+      AppLogger.error('⚠️ HOST - WebSocket connection issue: $e');
+      AppLogger.error('⚠️ HOST - Stack trace: $stackTrace');
+      AppLogger.warning(
         '⚠️ HOST - Continuing anyway - host can still start quiz via HTTP API',
       );
       // Don't show error - host can still start the quiz via HTTP API
@@ -339,8 +340,8 @@ class _HostingPageState extends ConsumerState<HostingPage> {
     });
 
     try {
-      debugPrint('🎯 HOST - Starting quiz via WebSocket...');
-      debugPrint(
+      AppLogger.websocket('🎯 HOST - Starting quiz via WebSocket...');
+      AppLogger.info(
         '⏱️ HOST - Time settings: perQuestion=${_perQuestionTimeLimit}s',
       );
 
@@ -349,7 +350,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
           .read(sessionProvider.notifier)
           .startQuiz(perQuestionTimeLimit: _perQuestionTimeLimit);
 
-      debugPrint(
+      AppLogger.websocket(
         '✅ HOST - Start quiz message sent via WebSocket, waiting for confirmation...',
       );
 
@@ -386,12 +387,12 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
       // Check current state
       final session = ref.read(sessionProvider);
-      debugPrint(
+      AppLogger.debug(
         '🔄 HOST - Polling status (attempt $attempts): ${session?.status}',
       );
 
       if (session?.status == 'active') {
-        debugPrint('🎯 HOST - Polling detected active status! Navigating...');
+        AppLogger.websocket('🎯 HOST - Polling detected active status! Navigating...');
         timer.cancel();
         _isStartingQuiz = false;
 
@@ -408,7 +409,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
       }
 
       if (attempts >= maxAttempts) {
-        debugPrint(
+        AppLogger.warning(
           '⚠️ HOST - Polling timeout after ${maxAttempts * 500}ms, resetting...',
         );
         timer.cancel();
@@ -535,10 +536,10 @@ class _HostingPageState extends ConsumerState<HostingPage> {
 
     // ✅ Listen to WebSocket updates for real-time participant sync
     ref.listen(sessionProvider, (previous, next) {
-      debugPrint(
+      AppLogger.websocket(
         '🔔 HOST - sessionProvider changed: prev=${previous?.status}, next=${next?.status}, _isStartingQuiz=$_isStartingQuiz',
       );
-      debugPrint(
+      AppLogger.websocket(
         '🔔 HOST - Participants: prev=${previous?.participants.length ?? 0}, next=${next?.participants.length ?? 0}',
       );
 
@@ -555,7 +556,7 @@ class _HostingPageState extends ConsumerState<HostingPage> {
             _isStartingQuiz &&
             !wasActive &&
             !_hasNavigatedToLiveHostView) {
-          debugPrint(
+          AppLogger.websocket(
             '🎯 HOST - Quiz is now active! Navigating to LiveHostView',
           );
           // Reset flags before navigation

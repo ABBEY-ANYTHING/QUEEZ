@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/models/multiplayer_models.dart';
 import 'package:quiz_app/services/active_session_service.dart';
 import 'package:quiz_app/services/websocket_service.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {
   return WebSocketService();
@@ -51,19 +51,21 @@ class SessionNotifier extends Notifier<SessionState?> {
     String username, {
     bool isHost = false,
   }) async {
-    debugPrint('🔍 Joining session $sessionCode as $username (host: $isHost)');
+    AppLogger.debug(
+      'Joining session $sessionCode as $username (host: $isHost)',
+    );
     _joinCompleter = Completer<void>();
 
     ref.read(currentUserProvider.notifier).setUser(userId);
 
-    debugPrint('📡 Connecting to WebSocket...');
+    AppLogger.network('Connecting to WebSocket...');
     await _wsService.connect(sessionCode, userId);
 
     // Wait for connection to stabilize through ngrok
-    debugPrint('⏸️ Waiting for connection to stabilize...');
+    AppLogger.debug('Waiting for connection to stabilize...');
     await Future.delayed(const Duration(milliseconds: 1000));
 
-    debugPrint('📤 Sending join message...');
+    AppLogger.debug('Sending join message...');
     // Send join message ONCE
     _wsService.sendMessage('join', {
       'session_code': sessionCode,
@@ -71,16 +73,16 @@ class SessionNotifier extends Notifier<SessionState?> {
       'username': username,
     });
 
-    debugPrint('⏳ Waiting for server response...');
+    AppLogger.debug('Waiting for server response...');
     // Wait for session_state response
     try {
       await _joinCompleter!.future.timeout(
         const Duration(seconds: 20),
         onTimeout: () {
-          debugPrint('⏰ Join timeout - checking if we have any state...');
+          AppLogger.warning('Join timeout - checking if we have any state...');
           // If we received session_update but not session_state, that's okay
           if (state != null) {
-            debugPrint('✅ Have state from session_update, proceeding');
+            AppLogger.success('Have state from session_update, proceeding');
             return;
           }
           throw TimeoutException(
@@ -99,9 +101,9 @@ class SessionNotifier extends Notifier<SessionState?> {
         );
       }
 
-      debugPrint('✅ Joined session successfully');
+      AppLogger.success('Joined session successfully');
     } catch (e) {
-      debugPrint('❌ Join failed: $e');
+      AppLogger.error('Join failed: $e');
       _joinCompleter = null;
       rethrow;
     }
@@ -109,17 +111,17 @@ class SessionNotifier extends Notifier<SessionState?> {
 
   /// Leave the current session and clean up
   Future<void> leaveSession(String userId) async {
-    debugPrint('👋 Leaving session...');
+    AppLogger.debug('Leaving session...');
     _wsService.disconnect();
     state = null;
     await ActiveSessionService.fullCleanup(userId);
-    debugPrint('✅ Left session and cleaned up');
+    AppLogger.success('Left session and cleaned up');
   }
 
   void startQuiz({int? perQuestionTimeLimit}) {
-    debugPrint('🚀 HOST - Sending start_quiz message');
+    AppLogger.debug('HOST - Sending start_quiz message');
     if (!_wsService.isConnected) {
-      debugPrint('⚠️ HOST - WebSocket not connected! Cannot start quiz.');
+      AppLogger.warning('HOST - WebSocket not connected! Cannot start quiz.');
       _errorController.add('Not connected to session. Please refresh.');
       return;
     }
@@ -140,11 +142,11 @@ class SessionNotifier extends Notifier<SessionState?> {
     final type = message['type'];
     final payload = message['payload'];
 
-    debugPrint('📨 FLUTTER - Received message type: $type');
+    AppLogger.debug('FLUTTER - Received message type: $type');
 
     if (type == 'error') {
       final errorMessage = payload['message'] ?? 'An unknown error occurred';
-      debugPrint('❌ FLUTTER - Error received: $errorMessage');
+      AppLogger.error('FLUTTER - Error received: $errorMessage');
       _errorController.add(errorMessage);
       // Complete join with error if waiting
       if (_joinCompleter != null && !_joinCompleter!.isCompleted) {
@@ -153,11 +155,11 @@ class SessionNotifier extends Notifier<SessionState?> {
         completer?.completeError(Exception(errorMessage));
       }
     } else if (type == 'session_state') {
-      debugPrint('✅ FLUTTER - Session state received, completing join');
-      debugPrint('📦 Raw payload: $payload');
+      AppLogger.success('FLUTTER - Session state received, completing join');
+      AppLogger.debug('Raw payload: $payload');
       try {
         state = SessionState.fromJson(payload);
-        debugPrint('✅ Successfully parsed SessionState');
+        AppLogger.success('Successfully parsed SessionState');
         // Complete join successfully if waiting
         if (_joinCompleter != null && !_joinCompleter!.isCompleted) {
           final completer = _joinCompleter;
@@ -165,8 +167,8 @@ class SessionNotifier extends Notifier<SessionState?> {
           completer?.complete();
         }
       } catch (e, stackTrace) {
-        debugPrint('❌ Failed to parse session_state: $e');
-        debugPrint('Stack trace: $stackTrace');
+        AppLogger.error('Failed to parse session_state: $e');
+        AppLogger.error('Stack trace: $stackTrace');
         if (_joinCompleter != null && !_joinCompleter!.isCompleted) {
           final completer = _joinCompleter;
           _joinCompleter = null;
@@ -174,7 +176,7 @@ class SessionNotifier extends Notifier<SessionState?> {
         }
       }
     } else if (type == 'session_update') {
-      debugPrint('🔄 FLUTTER - Session update received');
+      AppLogger.debug('FLUTTER - Session update received');
 
       if (state != null) {
         // Update existing state
@@ -190,32 +192,32 @@ class SessionNotifier extends Notifier<SessionState?> {
       // If we're waiting for join confirmation, session_update means we're in
       if (_joinCompleter != null && !_joinCompleter!.isCompleted) {
         if (state == null) {
-          debugPrint(
-            '✅ FLUTTER - Session update received, waiting for full state...',
+          AppLogger.debug(
+            'FLUTTER - Session update received, waiting for full state...',
           );
         } else {
-          debugPrint('✅ FLUTTER - Join confirmed with session_update');
+          AppLogger.success('FLUTTER - Join confirmed with session_update');
           final completer = _joinCompleter;
           _joinCompleter = null;
           completer?.complete();
         }
       }
     } else if (type == 'quiz_started') {
-      debugPrint('🚀 FLUTTER - Quiz started!');
+      AppLogger.debug('FLUTTER - Quiz started!');
       final overallTimeLimit = payload['overall_time_limit'] as int? ?? 0;
       final perQuestionTimeLimit =
           payload['per_question_time_limit'] as int? ?? 30;
-      debugPrint(
-        '⏱️ FLUTTER - Time settings: overall=${overallTimeLimit}s, perQuestion=${perQuestionTimeLimit}s',
+      AppLogger.debug(
+        'Time settings: overall=${overallTimeLimit}s, perQuestion=${perQuestionTimeLimit}s',
       );
 
       if (state != null) {
-        debugPrint('🔄 FLUTTER - Updating state status to active');
+        AppLogger.debug('FLUTTER - Updating state status to active');
         state = state!.copyWith(status: 'active');
       } else {
         // Edge case: state is null but we received quiz_started
         // This can happen if host reconnects and WebSocket hasn't fully synced
-        debugPrint('⚠️ FLUTTER - State is null but quiz_started received');
+        AppLogger.warning('FLUTTER - State is null but quiz_started received');
         // Create a minimal state so navigation can work
         state = SessionState(
           sessionCode: '',
@@ -226,12 +228,12 @@ class SessionNotifier extends Notifier<SessionState?> {
           participantCount: 0,
         );
       }
-      debugPrint('✅ FLUTTER - State status is now: ${state?.status}');
+      AppLogger.success('FLUTTER - State status is now: ${state?.status}');
       // Time settings will be handled by game_provider when it receives the first question
     } else if (type == 'quiz_completed' || type == 'quiz_ended') {
-      debugPrint('🏁 FLUTTER - Quiz completed/ended');
+      AppLogger.debug('FLUTTER - Quiz completed/ended');
       final hostEnded = payload['host_ended'] == true;
-      debugPrint('🏁 FLUTTER - Host manually ended: $hostEnded');
+      AppLogger.debug('Host manually ended: $hostEnded');
 
       if (state != null) {
         state = state!.copyWith(status: 'completed', hostEndedQuiz: hostEnded);
@@ -242,12 +244,12 @@ class SessionNotifier extends Notifier<SessionState?> {
         ActiveSessionService.clearActiveSession();
       }
     } else if (type == 'host_disconnected') {
-      debugPrint('⚠️ FLUTTER - Host disconnected');
+      AppLogger.warning('FLUTTER - Host disconnected');
       final message = payload['message'] ?? 'Host has disconnected';
       _errorController.add(message);
       // Quiz can continue in self-paced mode, just notify user
     } else if (type == 'host_reconnected') {
-      debugPrint('✅ FLUTTER - Host reconnected');
+      AppLogger.success('FLUTTER - Host reconnected');
       // Could show a toast notification here
     }
     // ✅ REMOVED: Don't handle 'question', 'answer_result', etc. here

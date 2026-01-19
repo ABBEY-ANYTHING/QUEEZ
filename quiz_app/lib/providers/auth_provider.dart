@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'auth_provider.g.dart';
 
@@ -82,11 +82,10 @@ class AppAuth extends _$AppAuth {
     // If profile setup status is not in SharedPreferences, check Firestore
     if (!profileSetupCompleted) {
       try {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(firebaseUser.uid)
-                .get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get();
 
         // Check if profile is properly setup with essential fields
         bool hasCompleteProfile = false;
@@ -130,7 +129,7 @@ class AppAuth extends _$AppAuth {
           );
         }
       } catch (e) {
-        debugPrint('Error checking profile: $e');
+        AppLogger.error('Error checking profile: $e');
         // On error, assume profile not setup
         return AppState(
           isLoading: false,

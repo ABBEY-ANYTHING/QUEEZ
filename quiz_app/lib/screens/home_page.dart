@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/translations.dart';
 
@@ -109,7 +110,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         }
       }
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      AppLogger.error('Error loading user data: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -137,7 +138,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         _isLoadingCourses = false;
       });
     } catch (e) {
-      debugPrint('Error loading courses: $e');
+      AppLogger.error('Error loading courses: $e');
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Could not load courses';
@@ -916,7 +917,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-
   String _formatNumber(int number) {
     if (number >= 1000) {
       return '${(number / 1000).toStringAsFixed(1)}K';
@@ -986,7 +986,7 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
         });
       }
     } catch (e) {
-      debugPrint('Error checking claimed status: $e');
+      AppLogger.error('Error checking claimed status: $e');
       if (mounted) {
         setState(() => _isCheckingClaimed = false);
       }
@@ -1221,7 +1221,11 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (isOwner || _alreadyClaimed || _isClaiming || _isCheckingClaimed)
+                      onPressed:
+                          (isOwner ||
+                              _alreadyClaimed ||
+                              _isClaiming ||
+                              _isCheckingClaimed)
                           ? null
                           : _handleClaim,
                       style: ElevatedButton.styleFrom(
@@ -1250,41 +1254,41 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
                               ),
                             )
                           : _isClaiming
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.white,
-                                    ),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      isOwner
-                                          ? Icons.check_circle_outlined
-                                          : _alreadyClaimed
-                                              ? Icons.check_circle_rounded
-                                              : Icons.add_to_photos_outlined,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      isOwner
-                                          ? 'You Own This'
-                                          : _alreadyClaimed
-                                              ? 'Already Claimed'
-                                              : 'Claim Course',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.white,
                                 ),
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  isOwner
+                                      ? Icons.check_circle_outlined
+                                      : _alreadyClaimed
+                                      ? Icons.check_circle_rounded
+                                      : Icons.add_to_photos_outlined,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isOwner
+                                      ? 'You Own This'
+                                      : _alreadyClaimed
+                                      ? 'Already Claimed'
+                                      : 'Claim Course',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),

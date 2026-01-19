@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:quiz_app/api_config.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 
 /// Service for uploading videos to Google Drive via backend API
 /// Videos are uploaded to the central Queez Google Drive folder
@@ -15,16 +16,16 @@ class GoogleDriveService {
   /// Wake up the server (Render free tier goes to sleep)
   static Future<bool> _wakeUpServer() async {
     try {
-      debugPrint('📹 [GoogleDriveService] Waking up server...');
+      AppLogger.websocket('📹 [GoogleDriveService] Waking up server...');
       final response = await http
           .get(Uri.parse('${ApiConfig.baseUrl}/health'))
           .timeout(const Duration(seconds: 10));
-      debugPrint(
+      AppLogger.websocket(
         '📹 [GoogleDriveService] Server wake response: ${response.statusCode}',
       );
       return response.statusCode == 200;
     } catch (e) {
-      debugPrint('📹 [GoogleDriveService] Server might be starting up: $e');
+      AppLogger.warning('📹 [GoogleDriveService] Server might be starting up: $e');
       return false;
     }
   }
@@ -40,21 +41,21 @@ class GoogleDriveService {
     required String title,
   }) async {
     try {
-      debugPrint('📹 [GoogleDriveService] Starting video upload...');
-      debugPrint('📹 [GoogleDriveService] File path: ${videoFile.path}');
-      debugPrint(
+      AppLogger.network('📹 [GoogleDriveService] Starting video upload...');
+      AppLogger.network('📹 [GoogleDriveService] File path: ${videoFile.path}');
+      AppLogger.network(
         '📹 [GoogleDriveService] File exists: ${await videoFile.exists()}',
       );
 
       final fileSize = await videoFile.length();
-      debugPrint(
+      AppLogger.network(
         '📹 [GoogleDriveService] File size: $fileSize bytes (${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB)',
       );
-      debugPrint('📹 [GoogleDriveService] Title: $title');
-      debugPrint('📹 [GoogleDriveService] Upload URL: $_baseUrl/upload');
+      AppLogger.network('📹 [GoogleDriveService] Title: $title');
+      AppLogger.network('📹 [GoogleDriveService] Upload URL: $_baseUrl/upload');
 
       // Wake up the server first (Render free tier sleeps after 15 mins)
-      debugPrint('📹 [GoogleDriveService] Checking if server is awake...');
+      AppLogger.network('📹 [GoogleDriveService] Checking if server is awake...');
       await _wakeUpServer();
 
       // Create multipart request
@@ -64,7 +65,7 @@ class GoogleDriveService {
       );
 
       // Add video file
-      debugPrint('📹 [GoogleDriveService] Adding file to multipart request...');
+      AppLogger.network('📹 [GoogleDriveService] Adding file to multipart request...');
       request.files.add(
         await http.MultipartFile.fromPath('file', videoFile.path),
       );
@@ -73,33 +74,33 @@ class GoogleDriveService {
       request.fields['title'] = title;
 
       // Send request with timeout (2 minutes for large files)
-      debugPrint(
+      AppLogger.network(
         '📹 [GoogleDriveService] Sending request to backend (timeout: 120s)...',
       );
 
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 120),
         onTimeout: () {
-          debugPrint(
+          AppLogger.warning(
             '📹 [GoogleDriveService] ⚠️ Request timed out after 120 seconds',
           );
           throw TimeoutException('Upload timed out after 120 seconds');
         },
       );
 
-      debugPrint(
+      AppLogger.network(
         '📹 [GoogleDriveService] Response status: ${streamedResponse.statusCode}',
       );
 
       final response = await http.Response.fromStream(streamedResponse);
-      debugPrint('📹 [GoogleDriveService] Response body: ${response.body}');
+      AppLogger.network('📹 [GoogleDriveService] Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          debugPrint('📹 [GoogleDriveService] ✅ Upload successful!');
-          debugPrint('📹 [GoogleDriveService] File ID: ${data['fileId']}');
-          debugPrint(
+          AppLogger.success('📹 [GoogleDriveService] ✅ Upload successful!');
+          AppLogger.success('📹 [GoogleDriveService] File ID: ${data['fileId']}');
+          AppLogger.success(
             '📹 [GoogleDriveService] Shareable Link: ${data['shareableLink']}',
           );
           return {
@@ -108,31 +109,31 @@ class GoogleDriveService {
             'name': data['name'],
           };
         } else {
-          debugPrint('📹 [GoogleDriveService] ❌ Upload failed - success=false');
-          debugPrint('📹 [GoogleDriveService] Message: ${data['message']}');
+          AppLogger.error('📹 [GoogleDriveService] ❌ Upload failed - success=false');
+          AppLogger.error('📹 [GoogleDriveService] Message: ${data['message']}');
         }
       } else {
-        debugPrint(
+        AppLogger.error(
           '📹 [GoogleDriveService] ❌ Upload failed with status ${response.statusCode}',
         );
-        debugPrint('📹 [GoogleDriveService] Error body: ${response.body}');
+        AppLogger.error('📹 [GoogleDriveService] Error body: ${response.body}');
       }
 
       return null;
     } on TimeoutException catch (e) {
-      debugPrint('📹 [GoogleDriveService] ⏱️ Timeout error: $e');
-      debugPrint(
+      AppLogger.warning('📹 [GoogleDriveService] ⏱️ Timeout error: $e');
+      AppLogger.warning(
         '📹 [GoogleDriveService] The server might be waking up or the file is too large.',
       );
-      debugPrint('📹 [GoogleDriveService] Try again in a few seconds.');
+      AppLogger.warning('📹 [GoogleDriveService] Try again in a few seconds.');
       return null;
     } on SocketException catch (e) {
-      debugPrint('📹 [GoogleDriveService] 🔌 Network error: $e');
-      debugPrint('📹 [GoogleDriveService] Check your internet connection.');
+      AppLogger.error('📹 [GoogleDriveService] 🔌 Network error: $e');
+      AppLogger.error('📹 [GoogleDriveService] Check your internet connection.');
       return null;
     } catch (e, stackTrace) {
-      debugPrint('📹 [GoogleDriveService] ❌ Error uploading video: $e');
-      debugPrint('📹 [GoogleDriveService] Stack trace: $stackTrace');
+      AppLogger.error('📹 [GoogleDriveService] ❌ Error uploading video: $e');
+      AppLogger.error('📹 [GoogleDriveService] Stack trace: $stackTrace');
       return null;
     }
   }
@@ -153,10 +154,10 @@ class GoogleDriveService {
         return data['success'] == true;
       }
 
-      debugPrint('Delete failed: ${response.statusCode} - ${response.body}');
+      AppLogger.error('Delete failed: ${response.statusCode} - ${response.body}');
       return false;
     } catch (e) {
-      debugPrint('Error deleting video: $e');
+      AppLogger.error('Error deleting video: $e');
       return false;
     }
   }
@@ -181,7 +182,7 @@ class GoogleDriveService {
 
       return null;
     } catch (e) {
-      debugPrint('Error getting video info: $e');
+      AppLogger.error('Error getting video info: $e');
       return null;
     }
   }

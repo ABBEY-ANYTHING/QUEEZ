@@ -4,6 +4,7 @@ import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/services/quiz_cache_manager.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
@@ -37,13 +38,9 @@ class _QuizQuestionsState extends State<QuizQuestions> {
   @override
   void initState() {
     super.initState();
-    debugPrint('========================================');
-    debugPrint('QuizQuestions initialized');
-    debugPrint('isStudySetMode: ${widget.isStudySetMode}');
-    debugPrint(
-      'onSaveForStudySet callback: ${widget.onSaveForStudySet != null ? "PROVIDED" : "NULL"}',
+    AppLogger.debug(
+      'QuizQuestions initialized | StudySetMode: ${widget.isStudySetMode} | Save callback: ${widget.onSaveForStudySet != null ? "YES" : "NO"}',
     );
-    debugPrint('========================================');
 
     if (widget.questions != null && widget.questions!.isNotEmpty) {
       questions = List.from(widget.questions!);
@@ -178,14 +175,12 @@ class _QuizQuestionsState extends State<QuizQuestions> {
       _isSaving = true;
     });
 
-    debugPrint('Starting _saveQuiz');
+    AppLogger.debug('Saving quiz: updating ${questions.length} questions');
     try {
       // Update questions in cache
-      debugPrint('Updating questions in cache');
       QuizCacheManager.instance.updateQuestions(questions);
 
       // Get the complete quiz from cache
-      debugPrint('Retrieving quiz from cache');
       final quiz = QuizCacheManager.instance.currentQuiz;
 
       if (quiz == null) {
@@ -194,10 +189,10 @@ class _QuizQuestionsState extends State<QuizQuestions> {
 
       // If in study set mode, add to study set cache and return
       if (widget.isStudySetMode && widget.onSaveForStudySet != null) {
-        debugPrint('========================================');
-        debugPrint('STUDY SET MODE DETECTED - NOT SAVING TO DATABASE');
-        debugPrint('Adding quiz to study set cache only');
-        debugPrint('========================================');
+        AppLogger.debug('========================================');
+        AppLogger.debug('STUDY SET MODE DETECTED - NOT SAVING TO DATABASE');
+        AppLogger.debug('Adding quiz to study set cache only');
+        AppLogger.debug('========================================');
 
         widget.onSaveForStudySet!(quiz);
         QuizCacheManager.instance.clearCache();
@@ -209,7 +204,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
             title: 'Quiz Added!',
             message: 'Quiz has been added to your study set.',
             onDismiss: () async {
-              debugPrint('Dialog dismissed, now popping navigation stack...');
+              AppLogger.debug('Dialog dismissed, now popping navigation stack...');
 
               if (mounted) {
                 // Pop back to dashboard with simple slide animation
@@ -219,18 +214,18 @@ class _QuizQuestionsState extends State<QuizQuestions> {
                 Navigator.of(context).popUntil((route) {
                   return popCount++ >= 2 || route.isFirst;
                 });
-                debugPrint('Navigation complete - should be at Dashboard now');
+                AppLogger.debug('Navigation complete - should be at Dashboard now');
               }
             },
           );
         }
-        debugPrint('Returning early - database save will NOT execute');
+        AppLogger.debug('Returning early - database save will NOT execute');
         return;
       }
 
-      debugPrint('========================================');
-      debugPrint('STANDALONE MODE - SAVING TO DATABASE');
-      debugPrint('========================================');
+      AppLogger.debug('========================================');
+      AppLogger.debug('STANDALONE MODE - SAVING TO DATABASE');
+      AppLogger.debug('========================================');
 
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -238,7 +233,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
       }
 
       // Save to backend with timeout
-      debugPrint('Saving quiz to backend');
+      AppLogger.debug('Saving quiz to backend');
       String quizId;
 
       // Call createQuiz() for new quiz
@@ -247,7 +242,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
         onTimeout: () => throw Exception('Request timed out'),
       );
 
-      debugPrint('Quiz saved with ID: $quizId');
+      AppLogger.success('Quiz saved with ID: $quizId');
 
       // Show success dialog
       if (mounted) {
@@ -256,19 +251,19 @@ class _QuizQuestionsState extends State<QuizQuestions> {
           title: 'Success!',
           message: 'Your quiz has been saved successfully and is ready to use!',
           onDismiss: () async {
-            debugPrint('Success dialog dismissed');
+            AppLogger.debug('Success dialog dismissed');
             QuizCacheManager.instance.clearCache();
-            debugPrint('Cache cleared');
+            AppLogger.debug('Cache cleared');
             if (mounted) {
               // Pop back to the Create page
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
           },
         );
-        debugPrint('Success dialog shown');
+        AppLogger.debug('Success dialog shown');
       }
     } catch (e, stackTrace) {
-      debugPrint('Error in _saveQuiz: $e\n$stackTrace');
+      AppLogger.error('Error in _saveQuiz: $e\n$stackTrace');
       setState(() {
         _isSaving = false;
       });
@@ -282,7 +277,7 @@ class _QuizQuestionsState extends State<QuizQuestions> {
           primaryActionCallback: () {
             if (mounted) {
               Navigator.of(context).pop();
-              debugPrint('Error dialog dismissed');
+              AppLogger.debug('Error dialog dismissed');
             }
           },
         );

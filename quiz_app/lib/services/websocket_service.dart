@@ -2,10 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io'; // ✅ ADD THIS
 
-import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../utils/app_logger.dart';
 
 enum ConnectionStatus { connected, disconnected, reconnecting, failed }
 
@@ -51,7 +52,7 @@ class WebSocketService {
     final wsUrl =
         'wss://$baseUrl/api/ws/$cleanSessionCode?user_id=$cleanUserId';
 
-    debugPrint('🔌 Connecting to WebSocket: $wsUrl');
+    AppLogger.websocket('Connecting to WebSocket: $wsUrl');
 
     try {
       if (_reconnectAttempts > 0) {
@@ -63,8 +64,8 @@ class WebSocketService {
         ..badCertificateCallback =
             ((X509Certificate cert, String host, int port) {
               // Accept all certificates in development
-              debugPrint(
-                '⚠️ Accepting certificate for $host (development mode)',
+              AppLogger.warning(
+                'Accepting certificate for $host (development mode)',
               );
               return true;
             });
@@ -87,7 +88,7 @@ class WebSocketService {
       // Start heartbeat to keep connection alive (mobile networks kill idle connections)
       _startHeartbeat();
 
-      debugPrint('✅ WebSocket connected successfully');
+      AppLogger.success('WebSocket connected successfully');
 
       _channel!.stream.listen(
         (message) {
@@ -95,22 +96,22 @@ class WebSocketService {
             final decodedMessage = jsonDecode(message);
             _messageController.add(decodedMessage);
           } catch (e) {
-            debugPrint('❌ WS - Failed to decode message: $e');
+            AppLogger.error('WS - Failed to decode message: $e');
           }
         },
         onDone: () {
-          debugPrint('⚠️ WebSocket connection closed');
+          AppLogger.warning('WebSocket connection closed');
           _isConnected = false;
           _handleDisconnect();
         },
         onError: (error) {
-          debugPrint('❌ WebSocket error: $error');
+          AppLogger.error('WebSocket error: $error');
           _isConnected = false;
           _handleDisconnect();
         },
       );
     } catch (e) {
-      debugPrint('❌ WebSocket connection failed: $e');
+      AppLogger.error('WebSocket connection failed: $e');
       _isConnected = false;
       _handleDisconnect();
       rethrow;
@@ -122,7 +123,7 @@ class WebSocketService {
       final message = {'type': type, if (payload != null) 'payload': payload};
       _channel!.sink.add(jsonEncode(message));
     } else {
-      debugPrint('⚠️ WS - Cannot send message, not connected. Type: $type');
+      AppLogger.warning('WS - Cannot send message, not connected. Type: $type');
     }
   }
 
@@ -144,7 +145,7 @@ class WebSocketService {
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       if (_isConnected) {
         sendMessage('ping');
-        debugPrint('💓 Heartbeat ping sent');
+        AppLogger.debug('Heartbeat ping sent');
       }
     });
   }
@@ -169,8 +170,8 @@ class WebSocketService {
           )];
       _reconnectAttempts++;
 
-      debugPrint(
-        '🔄 Reconnect attempt $_reconnectAttempts/$_maxReconnectAttempts in ${delay}s',
+      AppLogger.info(
+        'Reconnect attempt $_reconnectAttempts/$_maxReconnectAttempts in ${delay}s',
       );
 
       _reconnectTimer = Timer(Duration(seconds: delay), () {
@@ -180,7 +181,7 @@ class WebSocketService {
       });
     } else {
       // Max retries exceeded - signal permanent failure
-      debugPrint('❌ Max reconnect attempts reached, giving up');
+      AppLogger.error('Max reconnect attempts reached, giving up');
       _connectionStatusController.add(ConnectionStatus.failed);
     }
   }

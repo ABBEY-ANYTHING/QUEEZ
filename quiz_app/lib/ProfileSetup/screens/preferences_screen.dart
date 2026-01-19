@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_dropdown.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class PreferencesStep extends StatefulWidget {
@@ -44,7 +45,7 @@ class _PreferencesStepState extends State<PreferencesStep> {
     'Business',
     'Psychology',
     'Philosophy',
-    'Physical Education'
+    'Physical Education',
   ];
 
   @override
@@ -81,7 +82,7 @@ class _PreferencesStepState extends State<PreferencesStep> {
         });
       }
     } catch (e) {
-      debugPrint('Error saving preferences: $e');
+      AppLogger.error('Error saving preferences: $e');
     }
   }
 
@@ -160,8 +161,9 @@ class _PreferencesStepState extends State<PreferencesStep> {
   }
 
   Widget _buildInterestsSection() {
-    final availableInterests =
-        _allInterests.where((i) => !_selectedInterests.contains(i)).toList();
+    final availableInterests = _allInterests
+        .where((i) => !_selectedInterests.contains(i))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +174,9 @@ class _PreferencesStepState extends State<PreferencesStep> {
         ),
         const SizedBox(height: 20),
         CustomDropdown(
-          key: ValueKey(availableInterests.length), // Force rebuild to prevent state issues
+          key: ValueKey(
+            availableInterests.length,
+          ), // Force rebuild to prevent state issues
           value: null,
           items: availableInterests,
           hintText: availableInterests.isEmpty
@@ -190,26 +194,25 @@ class _PreferencesStepState extends State<PreferencesStep> {
           Wrap(
             spacing: 10,
             runSpacing: 14,
-            children:
-                _selectedInterests.map((interest) {
-                  return Chip(
-                    label: Text(interest),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () => _toggleInterest(interest),
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                    labelStyle: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    deleteIconColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                      ),
-                    ),
-                  );
-                }).toList(),
+            children: _selectedInterests.map((interest) {
+              return Chip(
+                label: Text(interest),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                onDeleted: () => _toggleInterest(interest),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                labelStyle: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+                deleteIconColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
       ],
     );

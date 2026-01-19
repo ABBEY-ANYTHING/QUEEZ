@@ -10,6 +10,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/widgets/question_text_widget.da
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/reconnection_overlay.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 
@@ -115,12 +116,12 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
 
   void _navigateToResults() {
     if (_hasNavigatedToResults) {
-      debugPrint('🏁 QUIZ_SCREEN - Already navigated to results, skipping');
+      AppLogger.debug('🏁 QUIZ_SCREEN - Already navigated to results, skipping');
       return;
     }
 
     _hasNavigatedToResults = true;
-    debugPrint('🏁 QUIZ_SCREEN - Navigating to results');
+    AppLogger.debug('🏁 QUIZ_SCREEN - Navigating to results');
 
     if (mounted) {
       Navigator.pushReplacement(
@@ -134,7 +135,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
     if (_isShowingHostEndedDialog || _hasNavigatedToResults) return;
     _isShowingHostEndedDialog = true;
 
-    debugPrint('🏁 QUIZ_SCREEN - Showing host ended dialog');
+    AppLogger.debug('🏁 QUIZ_SCREEN - Showing host ended dialog');
 
     AppDialog.show(
       context: context,
@@ -156,7 +157,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
 
     ref.listen(sessionProvider, (previous, next) {
       if (next != null && next.status == 'completed') {
-        debugPrint(
+        AppLogger.debug(
           '🏁 QUIZ_SCREEN - Session completed, hostEnded: ${next.hostEndedQuiz}',
         );
 
@@ -171,7 +172,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
     });
 
     ref.listen(gameProvider, (previous, next) {
-      debugPrint(
+      AppLogger.debug(
         '🎮 UI - Game state changed, currentQuestion: ${next.currentQuestion != null ? "SET" : "NULL"}',
       );
 
@@ -209,14 +210,14 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
           next.currentQuestion == null &&
           next.rankings != null &&
           next.rankings!.isNotEmpty) {
-        debugPrint('🏁 QUIZ_SCREEN - Quiz completed message received');
+        AppLogger.debug('🏁 QUIZ_SCREEN - Quiz completed message received');
         Future.delayed(const Duration(milliseconds: 500), () {
           _navigateToResults();
         });
       }
 
       // Check if last question answered - navigate to results
-      debugPrint(
+      AppLogger.debug(
         '🔍 LAST_Q_CHECK - hasAnswered: ${next.hasAnswered}, rankings: ${next.rankings != null ? "YES (${next.rankings!.length})" : "NULL"}, questionIndex: ${next.questionIndex}, totalQuestions: ${next.totalQuestions}, showingLeaderboard: ${next.showingLeaderboard}',
       );
 
@@ -225,14 +226,14 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
           next.rankings!.isNotEmpty &&
           next.questionIndex + 1 >= next.totalQuestions &&
           !next.showingLeaderboard) {
-        debugPrint(
+        AppLogger.debug(
           '🏁 QUIZ_SCREEN - ✅ LAST QUESTION DETECTED! Navigating to results in 2s...',
         );
-        debugPrint(
+        AppLogger.debug(
           '🏁 QUIZ_SCREEN - Details: index=${next.questionIndex}, total=${next.totalQuestions}, calc=${next.questionIndex + 1}',
         );
         Future.delayed(const Duration(milliseconds: 2000), () {
-          debugPrint('🏁 QUIZ_SCREEN - NOW NAVIGATING TO RESULTS!');
+          AppLogger.debug('🏁 QUIZ_SCREEN - NOW NAVIGATING TO RESULTS!');
           _navigateToResults();
         });
       }
@@ -242,7 +243,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
 
     final gameState = ref.watch(gameProvider);
     final currentQuestion = gameState.currentQuestion;
-    debugPrint(
+    AppLogger.debug(
       '🎮 UI - Building with currentQuestion: ${currentQuestion != null ? "SET" : "NULL"}',
     );
 
@@ -527,7 +528,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
                           QuestionTypeHandler.buildQuestionUI(
                             question: currentQuestion,
                             onAnswerSelected: (answer) {
-                              debugPrint(
+                              AppLogger.debug(
                                 '🎮 QUIZ_SCREEN - Answer selected: $answer',
                               );
                               ref
@@ -535,7 +536,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
                                   .submitAnswer(answer);
                             },
                             onNextQuestion: () {
-                              debugPrint(
+                              AppLogger.debug(
                                 '🎮 QUIZ_SCREEN - Next question requested',
                               );
                               ref
@@ -832,7 +833,7 @@ class _LiveMultiplayerQuizState extends ConsumerState<LiveMultiplayerQuiz>
 
   void _showLeaderboardBottomSheet(BuildContext context, WidgetRef ref) {
     ref.read(gameProvider.notifier).requestLeaderboard();
-    debugPrint('🏆 QUIZ_SCREEN - Requested leaderboard, showing bottom sheet');
+    AppLogger.debug('🏆 QUIZ_SCREEN - Requested leaderboard, showing bottom sheet');
 
     showModalBottomSheet(
       context: context,

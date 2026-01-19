@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 
 /// Model for video lecture
 class VideoLecture {
@@ -178,7 +179,7 @@ class CoursePackService {
   /// Save Course Pack to MongoDB via Backend API
   static Future<String> saveCoursePack(CoursePack coursePack) async {
     try {
-      debugPrint('Creating course pack...');
+      AppLogger.debug('Creating course pack...');
       final jsonData = coursePack.toJson();
 
       final response = await http
@@ -196,7 +197,7 @@ class CoursePackService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint('Course pack created: ${data['id']}');
+        AppLogger.success('Course pack created: ${data['id']}');
         return data['id'];
       } else {
         final errorBody = jsonDecode(response.body);
@@ -472,7 +473,7 @@ class CoursePackService {
           (course) => course.originalCoursePackId == coursePackId,
         );
       } catch (e2) {
-        debugPrint('Error checking claimed status: $e2');
+        AppLogger.warning('Error checking claimed status: $e2');
         return false;
       }
     }

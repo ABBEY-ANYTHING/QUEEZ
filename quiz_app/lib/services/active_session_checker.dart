@@ -7,6 +7,7 @@ import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
 import 'package:quiz_app/services/active_session_service.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 
@@ -94,14 +95,14 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
             result['quiz_title'] ?? localSession['quiz_title'];
         result['mode'] = result['mode'] ?? localSession['mode'];
 
-        debugPrint('🔄 ACTIVE_SESSION_CHECKER - Found active session:');
-        debugPrint('   session_code: ${result['session_code']}');
-        debugPrint('   user_id: ${result['user_id']}');
-        debugPrint('   is_host: ${result['is_host']}');
-        debugPrint('   status: ${result['status']}');
-        debugPrint('   quiz_id: ${result['quiz_id']}');
-        debugPrint('   quiz_title: ${result['quiz_title']}');
-        debugPrint('   mode: ${result['mode']}');
+        AppLogger.debug('ACTIVE_SESSION_CHECKER - Found active session:');
+        AppLogger.debug('   session_code: ${result['session_code']}');
+        AppLogger.debug('   user_id: ${result['user_id']}');
+        AppLogger.debug('   is_host: ${result['is_host']}');
+        AppLogger.debug('   status: ${result['status']}');
+        AppLogger.debug('   quiz_id: ${result['quiz_id']}');
+        AppLogger.debug('   quiz_title: ${result['quiz_title']}');
+        AppLogger.debug('   mode: ${result['mode']}');
 
         setState(() {
           _activeSessionInfo = result;
@@ -117,7 +118,7 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         }
       }
     } catch (e) {
-      debugPrint('❌ ACTIVE_SESSION_CHECKER - Error checking: $e');
+      AppLogger.error('ACTIVE_SESSION_CHECKER - Error checking: $e');
       ref.read(activeSessionCheckDoneProvider.notifier).markDone();
       if (mounted) {
         setState(() => _isChecking = false);
@@ -127,7 +128,7 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
 
   Future<void> _rejoinSession() async {
     if (_activeSessionInfo == null) {
-      debugPrint('❌ ACTIVE_SESSION_CHECKER - _activeSessionInfo is null');
+      AppLogger.error('ACTIVE_SESSION_CHECKER - _activeSessionInfo is null');
       _showError('No session info available. Please start a new quiz.');
       await _dismissPrompt();
       return;
@@ -142,28 +143,28 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
     final quizTitle = _activeSessionInfo!['quiz_title'] as String? ?? 'Quiz';
     final mode = _activeSessionInfo!['mode'] as String? ?? 'live_multiplayer';
 
-    debugPrint('🔄 ACTIVE_SESSION_CHECKER - Rejoin data:');
-    debugPrint('   sessionCode: $sessionCode');
-    debugPrint('   userId: $userId');
-    debugPrint('   isHost: $isHost');
-    debugPrint('   status: $sessionStatus');
-    debugPrint('   quizId: $quizId');
-    debugPrint('   quizTitle: $quizTitle');
-    debugPrint('   mode: $mode');
+    AppLogger.debug('ACTIVE_SESSION_CHECKER - Rejoin data:');
+    AppLogger.debug('   sessionCode: $sessionCode');
+    AppLogger.debug('   userId: $userId');
+    AppLogger.debug('   isHost: $isHost');
+    AppLogger.debug('   status: $sessionStatus');
+    AppLogger.debug('   quizId: $quizId');
+    AppLogger.debug('   quizTitle: $quizTitle');
+    AppLogger.debug('   mode: $mode');
 
     if (sessionCode == null || userId == null) {
-      debugPrint('❌ ACTIVE_SESSION_CHECKER - Missing required data');
-      debugPrint('   sessionCode null: ${sessionCode == null}');
-      debugPrint('   userId null: ${userId == null}');
+      AppLogger.error('ACTIVE_SESSION_CHECKER - Missing required data');
+      AppLogger.debug('   sessionCode null: ${sessionCode == null}');
+      AppLogger.debug('   userId null: ${userId == null}');
       _showError('Invalid session data. Please start a new quiz.');
       await _dismissPrompt();
       return;
     }
 
-    debugPrint(
-      '🔄 ACTIVE_SESSION_CHECKER - Rejoining session $sessionCode as ${isHost ? "host" : "participant"}',
+    AppLogger.debug(
+      'ACTIVE_SESSION_CHECKER - Rejoining session $sessionCode as ${isHost ? "host" : "participant"}',
     );
-    debugPrint('📊 Session status: $sessionStatus');
+    AppLogger.debug('Session status: $sessionStatus');
 
     // Mark as done before navigating
     ref.read(activeSessionCheckDoneProvider.notifier).markDone();
@@ -175,20 +176,20 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
     try {
       if (isHost) {
         // HOST RECONNECTION: Connect to WebSocket first, then navigate
-        debugPrint('🔄 HOST RECONNECTION - Connecting to WebSocket first');
+        AppLogger.debug('HOST RECONNECTION - Connecting to WebSocket first');
         ref.read(currentUserProvider.notifier).setUser(userId);
 
         // ✅ FIX: Initialize gameProvider BEFORE joining to ensure it receives messages
         // This triggers gameProvider.build() which sets up the WebSocket listener
         ref.read(gameProvider);
-        debugPrint('✅ HOST RECONNECTION - gameProvider initialized');
+        AppLogger.success('HOST RECONNECTION - gameProvider initialized');
 
         // Connect to WebSocket as host
         await ref
             .read(sessionProvider.notifier)
             .joinSession(sessionCode, userId, username, isHost: true);
 
-        debugPrint('✅ HOST RECONNECTION - WebSocket connected');
+        AppLogger.success('HOST RECONNECTION - WebSocket connected');
 
         // Restore active session tracking with quiz info
         await ActiveSessionService.saveActiveSession(
@@ -213,8 +214,8 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       if (sessionStatus == 'active' || sessionStatus == 'completed') {
         // Quiz is in progress OR completed - Host sees LiveHostView (leaderboard/podium)
         if (isHost) {
-          debugPrint(
-            '🔄 HOST RECONNECTION - Navigating to LiveHostView (status: $sessionStatus)',
+          AppLogger.debug(
+            'HOST RECONNECTION - Navigating to LiveHostView (status: $sessionStatus)',
           );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -231,8 +232,8 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
       } else if (sessionStatus == 'waiting') {
         // Still in lobby - Host goes to HostingPage (Dashboard), Participants go to lobby
         if (isHost && quizId != null) {
-          debugPrint(
-            '🔄 HOST RECONNECTION - Navigating to HostingPage (Dashboard)',
+          AppLogger.debug(
+            'HOST RECONNECTION - Navigating to HostingPage (Dashboard)',
           );
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -257,13 +258,15 @@ class _ActiveSessionCheckerState extends ConsumerState<ActiveSessionChecker> {
         }
       } else {
         // Unknown status - clear and show error
-        debugPrint('❌ ACTIVE_SESSION_CHECKER - Unknown status: $sessionStatus');
+        AppLogger.error(
+          'ACTIVE_SESSION_CHECKER - Unknown status: $sessionStatus',
+        );
         _showError('Session status unknown. Please start a new quiz.');
         await ActiveSessionService.fullCleanup(userId);
         setState(() => _isChecking = false);
       }
     } catch (e) {
-      debugPrint('❌ ACTIVE_SESSION_CHECKER - Error rejoining: $e');
+      AppLogger.error('ACTIVE_SESSION_CHECKER - Error rejoining: $e');
       _showError('Could not rejoin the session. It may have ended.');
       await ActiveSessionService.clearActiveSession();
       setState(() => _isChecking = false);

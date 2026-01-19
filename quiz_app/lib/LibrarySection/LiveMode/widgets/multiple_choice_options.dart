@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/widgets/quiz/quiz_widgets.dart';
 
 /// Multiple choice options widget for live multiplayer mode.
@@ -36,7 +37,7 @@ class _MultipleChoiceOptionsState extends State<MultipleChoiceOptions> {
     if (widget.options.length != oldWidget.options.length ||
         (widget.options.isNotEmpty && oldWidget.options.isNotEmpty && 
          widget.options[0] != oldWidget.options[0])) {
-      debugPrint('📝 SINGLE_CHOICE - New question detected, resetting');
+      AppLogger.debug('📝 SINGLE_CHOICE - New question detected, resetting');
       setState(() {
         _localSelectedIndex = null;
       });
@@ -58,7 +59,7 @@ class _MultipleChoiceOptionsState extends State<MultipleChoiceOptions> {
   void _handleAnswerSelected(dynamic answer) {
     if (_localSelectedIndex != null || widget.hasAnswered) return;
     
-    debugPrint('📝 SINGLE_CHOICE - User selected option $answer');
+    AppLogger.debug('📝 SINGLE_CHOICE - User selected option $answer');
     setState(() {
       _localSelectedIndex = answer as int;
     });

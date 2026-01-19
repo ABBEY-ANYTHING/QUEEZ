@@ -17,6 +17,7 @@ import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/services/favorites_service.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/wait_screen.dart';
 
@@ -300,11 +301,9 @@ class _ItemCardState extends ConsumerState<ItemCard>
           widget.item.type,
         );
       }
-      debugPrint(
-        '✅ Favorite persisted: ${widget.item.id} -> $newFavoriteStatus',
-      );
+      AppLogger.success('Favorite persisted: ${widget.item.id} -> $newFavoriteStatus');
     } catch (e) {
-      debugPrint('Error persisting favorite: $e');
+      AppLogger.error('Error persisting favorite', exception: e);
       // Revert on error
       setState(() {
         _isFavorite = !newFavoriteStatus;

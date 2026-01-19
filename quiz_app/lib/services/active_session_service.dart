@@ -2,11 +2,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api_config.dart';
+import '../utils/app_logger.dart';
 
 /// Service to manage active session persistence and recovery
 /// This enables users to rejoin a quiz after closing/reopening the app
@@ -40,9 +40,9 @@ class ActiveSessionService {
       if (quizId != null) await prefs.setString(_quizIdKey, quizId);
       if (quizTitle != null) await prefs.setString(_quizTitleKey, quizTitle);
       if (mode != null) await prefs.setString(_modeKey, mode);
-      debugPrint('✅ Saved active session: $sessionCode (host: $isHost)');
+      AppLogger.success('Saved active session: $sessionCode (host: $isHost)');
     } catch (e) {
-      debugPrint('❌ Failed to save active session: $e');
+      AppLogger.error('Failed to save active session: $e');
     }
   }
 
@@ -69,9 +69,7 @@ class ActiveSessionService {
         if (joinedTime != null) {
           final hoursSinceJoin = DateTime.now().difference(joinedTime).inHours;
           if (hoursSinceJoin > 4) {
-            debugPrint(
-              '⏰ Active session too old ($hoursSinceJoin hours), clearing',
-            );
+            AppLogger.info('Active session too old ($hoursSinceJoin hours), clearing');
             await clearActiveSession();
             return null;
           }
@@ -89,7 +87,7 @@ class ActiveSessionService {
         'mode': mode,
       };
     } catch (e) {
-      debugPrint('❌ Failed to get local active session: $e');
+      AppLogger.error('Failed to get local active session: $e');
       return null;
     }
   }
@@ -106,9 +104,9 @@ class ActiveSessionService {
       await prefs.remove(_quizIdKey);
       await prefs.remove(_quizTitleKey);
       await prefs.remove(_modeKey);
-      debugPrint('🗑️ Cleared active session from local storage');
+      AppLogger.success('Cleared active session from local storage');
     } catch (e) {
-      debugPrint('❌ Failed to clear active session: $e');
+      AppLogger.error('Failed to clear active session: $e');
     }
   }
 
@@ -135,9 +133,7 @@ class ActiveSessionService {
         final data = jsonDecode(response.body);
 
         if (data['success'] == true && data['has_active_session'] == true) {
-          debugPrint(
-            '✅ Backend confirms active session: ${data['session_code']}',
-          );
+          AppLogger.success('Backend confirms active session: ${data['session_code']}');
           return data;
         } else {
           // No active session on backend, clear local storage
@@ -145,15 +141,15 @@ class ActiveSessionService {
           return null;
         }
       } else {
-        debugPrint('⚠️ Backend returned ${response.statusCode}');
+        AppLogger.warning('Backend returned ${response.statusCode}');
         return null;
       }
     } on SocketException {
-      debugPrint('🌐 Network error checking active session');
+      AppLogger.network('Network error checking active session');
       // Return local data as fallback
       return await getLocalActiveSession();
     } catch (e) {
-      debugPrint('❌ Error checking active session with backend: $e');
+      AppLogger.error('Error checking active session with backend: $e');
       return null;
     }
   }
@@ -169,9 +165,9 @@ class ActiveSessionService {
             headers: {'Content-Type': 'application/json'},
           )
           .timeout(const Duration(seconds: 5));
-      debugPrint('✅ Cleared active session on backend');
+      AppLogger.success('Cleared active session on backend');
     } catch (e) {
-      debugPrint('⚠️ Failed to clear active session on backend: $e');
+      AppLogger.warning('Failed to clear active session on backend: $e');
     }
   }
 

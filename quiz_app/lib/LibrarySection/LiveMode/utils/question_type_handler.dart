@@ -4,6 +4,7 @@ import 'package:quiz_app/LibrarySection/LiveMode/widgets/drag_drop_interface.dar
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/multiple_choice_options.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/multi_select_options.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/true_false_options.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 
 /// Utility class for handling different question types in live multiplayer quiz
@@ -196,11 +197,11 @@ class QuestionTypeHandler {
             ? Map<String, String>.from(question['correctMatches'])
             : null;
         
-        debugPrint('🎯 QuestionTypeHandler - DragAndDrop question data:');
-        debugPrint('   dragItems: $dragItems');
-        debugPrint('   dropTargets: $dropTargets');
-        debugPrint('   hasAnswered: $hasAnswered');
-        debugPrint('   correctMatches: $correctMatches');
+        AppLogger.debug('🎯 QuestionTypeHandler - DragAndDrop question data:');
+        AppLogger.debug('   dragItems: $dragItems');
+        AppLogger.debug('   dropTargets: $dropTargets');
+        AppLogger.debug('   hasAnswered: $hasAnswered');
+        AppLogger.debug('   correctMatches: $correctMatches');
         
         return DragDropInterface(
           dragItems: dragItems,

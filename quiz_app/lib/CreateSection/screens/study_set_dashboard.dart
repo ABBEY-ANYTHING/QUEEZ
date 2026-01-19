@@ -20,6 +20,7 @@ import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
@@ -755,9 +756,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
 
       if (videoTitle == null || videoTitle.trim().isEmpty) return;
 
-      debugPrint(
-        '🎬 [Dashboard] User confirmed video title: ${videoTitle.trim()}',
-      );
+      AppLogger.debug('Video upload initiated: ${videoTitle.trim()}');
 
       // Set uploading state - show inline loading on page
       if (!mounted) return;
@@ -766,21 +765,16 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         _uploadingVideoTitle = videoTitle.trim();
       });
 
-      debugPrint('🎬 [Dashboard] Starting upload to Google Drive...');
-      debugPrint('🎬 [Dashboard] File path: ${file.path}');
-
       // Upload to Google Drive
       final uploadResult = await GoogleDriveService.uploadVideo(
         videoFile: File(file.path!),
         title: videoTitle.trim(),
       );
 
-      debugPrint('🎬 [Dashboard] Upload result: $uploadResult');
-
       if (!mounted) return;
 
       if (uploadResult == null) {
-        debugPrint('🎬 [Dashboard] ❌ Upload failed - result is null');
+        AppLogger.error('Video upload failed - server not responding');
         setState(() {
           _isUploadingVideo = false;
           _uploadingVideoTitle = '';
@@ -802,8 +796,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         return;
       }
 
-      debugPrint('🎬 [Dashboard] ✅ Upload successful!');
-      debugPrint('🎬 [Dashboard] Creating VideoLecture object...');
+      AppLogger.success('Video uploaded: ${videoTitle.trim()}');
 
       // Create VideoLecture object
       final videoLecture = VideoLecture(
@@ -815,21 +808,14 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         uploadedAt: DateTime.now().toIso8601String(),
       );
 
-      debugPrint(
-        '🎬 [Dashboard] VideoLecture created: ${videoLecture.title} (${videoLecture.driveFileId})',
-      );
-
       // Add to study set cache
       StudySetCacheManager.instance.addVideoLectureToStudySet(videoLecture);
-      debugPrint('🎬 [Dashboard] Added to cache');
 
       setState(() {
         _isUploadingVideo = false;
         _uploadingVideoTitle = '';
         _loadCachedItems();
       });
-
-      debugPrint('🎬 [Dashboard] 🎉 Video upload complete!');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -838,6 +824,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         ),
       );
     } catch (e) {
+      AppLogger.error('Video upload error: $e');
       if (!mounted) return;
       setState(() {
         _isUploadingVideo = false;

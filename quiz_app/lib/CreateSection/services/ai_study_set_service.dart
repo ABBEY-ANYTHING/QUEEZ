@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiz_app/CreateSection/models/ai_study_set_models.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 
 class AIStudySetService {
   static const String baseUrl = ApiConfig.baseUrl;
@@ -13,7 +14,7 @@ class AIStudySetService {
   /// Wake up the server (handles Render cold start)
   static Future<bool> wakeUpServer() async {
     try {
-      debugPrint('Waking up server...');
+      AppLogger.network('Waking up server...');
       final response = await http
           .get(Uri.parse('$baseUrl/health'))
           .timeout(
@@ -22,10 +23,10 @@ class AIStudySetService {
               throw Exception('Server wake-up timed out');
             },
           );
-      debugPrint('Server wake-up response: ${response.statusCode}');
+      AppLogger.network('Server wake-up response: ${response.statusCode}');
       return response.statusCode == 200;
     } catch (e) {
-      debugPrint('Server wake-up failed: $e');
+      AppLogger.warning('Server wake-up failed: $e');
       return false;
     }
   }
@@ -57,7 +58,7 @@ class AIStudySetService {
             },
           );
 
-      debugPrint('Upload URL response: ${response.statusCode}');
+      AppLogger.network('Upload URL response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -67,7 +68,7 @@ class AIStudySetService {
         throw Exception(error['detail'] ?? 'Failed to get upload URL');
       }
     } catch (e) {
-      debugPrint('Error getting upload URL: $e');
+      AppLogger.error('Error getting upload URL: $e');
       rethrow;
     }
   }
@@ -80,7 +81,7 @@ class AIStudySetService {
 
     while (true) {
       try {
-        debugPrint('Uploading file to Gemini: ${file.path} (attempt ${retryCount + 1}/$maxRetries)');
+        AppLogger.network('Uploading file to Gemini: ${file.path} (attempt ${retryCount + 1}/$maxRetries)');
 
         final fileName = file.path.split(Platform.pathSeparator).last;
         final fileBytes = await file.readAsBytes();
@@ -104,7 +105,7 @@ class AIStudySetService {
           mimeType = 'text/plain';
         }
 
-        debugPrint('File: $fileName, Size: $fileSize bytes, MIME: $mimeType');
+        AppLogger.network('File: $fileName, Size: $fileSize bytes, MIME: $mimeType');
 
         // Get resumable upload URL from backend
         final uploadUrl = await getUploadUrl(
@@ -112,7 +113,7 @@ class AIStudySetService {
           mimeType: mimeType,
         );
 
-        debugPrint('Got upload URL, uploading file...');
+        AppLogger.network('Got upload URL, uploading file...');
 
         // Upload file data using resumable protocol
         final uploadResponse = await http
@@ -132,8 +133,8 @@ class AIStudySetService {
               },
             );
 
-        debugPrint('Gemini upload response: ${uploadResponse.statusCode}');
-        debugPrint('Response body: ${uploadResponse.body}');
+        AppLogger.network('Gemini upload response: ${uploadResponse.statusCode}');
+        AppLogger.network('Response body: ${uploadResponse.body}');
 
         if (uploadResponse.statusCode == 200) {
           final data = jsonDecode(uploadResponse.body);
@@ -160,14 +161,14 @@ class AIStudySetService {
             errorString.contains('network');
 
         if (isRetryable && retryCount < maxRetries) {
-          debugPrint('Retryable error occurred: $e. Retrying in ${retryDelay.inSeconds}s...');
+          AppLogger.network('Retryable error occurred: $e. Retrying in ${retryDelay.inSeconds}s...');
           await Future.delayed(retryDelay);
           // Exponential backoff
           retryDelay *= 2;
           continue;
         }
 
-        debugPrint('Error uploading file to Gemini (final): $e');
+        AppLogger.network('Error uploading file to Gemini (final): $e');
         
         // Provide a more user-friendly error message
         if (isRetryable) {
@@ -188,7 +189,7 @@ class AIStudySetService {
 
       final token = await user.getIdToken();
 
-      debugPrint('Generating study set with ${fileUris.length} files');
+      AppLogger.network('Generating study set with ${fileUris.length} files');
 
       final response = await http
           .post(
@@ -208,7 +209,7 @@ class AIStudySetService {
             },
           );
 
-      debugPrint('Generation response: ${response.statusCode}');
+      AppLogger.network('Generation response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -221,7 +222,7 @@ class AIStudySetService {
         throw Exception(error['error'] ?? 'Generation failed');
       }
     } catch (e) {
-      debugPrint('Error generating study set: $e');
+      AppLogger.network('Error generating study set: $e');
       rethrow;
     }
   }

@@ -13,6 +13,7 @@ import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
@@ -53,13 +54,13 @@ class _StudySetViewerState extends State<StudySetViewer> {
 
     // Otherwise fetch from backend
     try {
-      debugPrint('Loading study set with ID: ${widget.studySetId}');
+      AppLogger.debug('Loading study set: ${widget.studySetId}');
 
       final fetchedStudySet = await StudySetService.fetchStudySetById(
         widget.studySetId,
       );
 
-      debugPrint('Fetched study set: ${fetchedStudySet?.name}');
+      AppLogger.info('Study set loaded: ${fetchedStudySet?.name}');
 
       if (fetchedStudySet == null) {
         setState(() {
@@ -73,7 +74,7 @@ class _StudySetViewerState extends State<StudySetViewer> {
         isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error loading study set: $e');
+      AppLogger.error('Failed to load study set: $e');
       setState(() {
         errorMessage = 'Failed to load study set: $e';
         isLoading = false;

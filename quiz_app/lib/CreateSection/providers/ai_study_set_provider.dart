@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/models/ai_study_set_models.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/services/ai_study_set_service.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 
 // State class to hold all AI study set data
 class AIStudySetState {
@@ -83,7 +84,7 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
     try {
       state = state.copyWith(error: null);
 
-      debugPrint('Uploading file via backend...');
+      AppLogger.debug('Uploading file via backend...');
 
       final uploadedFile = await AIStudySetService.uploadFileToGemini(
         file: file,
@@ -92,12 +93,12 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
       final updatedFiles = [...state.uploadedFiles, uploadedFile];
       state = state.copyWith(uploadedFiles: updatedFiles);
 
-      debugPrint(
+      AppLogger.debug(
         'File uploaded: ${uploadedFile.fileName} -> ${uploadedFile.fileUri}',
       );
     } catch (e) {
       state = state.copyWith(error: e.toString());
-      debugPrint('Error uploading file: $e');
+      AppLogger.debug('Error uploading file: $e');
       rethrow;
     }
   }
@@ -201,7 +202,7 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
             file: file,
           );
           uploadedFilesList.add(uploadedFile);
-          debugPrint(
+          AppLogger.debug(
             'File uploaded: ${uploadedFile.fileName} -> ${uploadedFile.fileUri}',
           );
         } catch (e) {
@@ -250,7 +251,7 @@ class AIStudySetNotifier extends Notifier<AIStudySetState> {
         progress: 0,
         currentStep: '',
       );
-      debugPrint('Error generating study set: $e');
+      AppLogger.debug('Error generating study set: $e');
       rethrow;
     }
   }

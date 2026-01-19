@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/widgets/quiz/quiz_widgets.dart';
 
 /// True/False options widget for live multiplayer mode.
@@ -29,10 +30,9 @@ class _TrueFalseOptionsState extends State<TrueFalseOptions> {
   @override
   void didUpdateWidget(TrueFalseOptions oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Reset when moving to new question (correctAnswer becomes null again)
     if (widget.correctAnswer == null && oldWidget.correctAnswer != null) {
-      debugPrint('📝 TRUE_FALSE - New question, resetting');
       setState(() {
         _localSelectedValue = null;
       });
@@ -41,8 +41,8 @@ class _TrueFalseOptionsState extends State<TrueFalseOptions> {
 
   void _handleAnswerSelected(int value) {
     if (_localSelectedValue != null || widget.hasAnswered) return;
-    
-    debugPrint('📝 TRUE_FALSE - User tapped: ${value == 0 ? "TRUE" : "FALSE"}');
+
+    AppLogger.debug('Answer selected: ${value == 0 ? "TRUE" : "FALSE"}');
     setState(() {
       _localSelectedValue = value;
     });

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/widgets/reconnection_overlay.dart';
 import 'package:quiz_app/providers/game_provider.dart';
 import 'package:quiz_app/providers/session_provider.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class LiveMultiplayerResults extends ConsumerWidget {
@@ -178,7 +179,7 @@ class LiveMultiplayerResults extends ConsumerWidget {
               // Return Home Button
               ElevatedButton(
                 onPressed: () {
-                  debugPrint('🏠 RESULTS - Navigating back to home');
+                  AppLogger.debug('🏠 RESULTS - Navigating back to home');
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(

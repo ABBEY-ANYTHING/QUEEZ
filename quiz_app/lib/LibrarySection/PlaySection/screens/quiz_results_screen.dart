@@ -5,6 +5,7 @@ import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dar
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 
@@ -40,7 +41,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
         // No need to show a snackbar, it's expected behavior.
       } catch (e) {
         // Optionally handle error if deletion fails
-        debugPrint("Failed to delete quiz from library: $e");
+        AppLogger.error("Failed to delete quiz from library: $e");
       }
     }
   }

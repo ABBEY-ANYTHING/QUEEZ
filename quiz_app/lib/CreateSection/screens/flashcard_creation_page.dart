@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
@@ -136,7 +137,7 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
         cards: validCards,
       );
 
-      debugPrint('Flashcard set saved with ID: $flashcardSetId');
+      AppLogger.success('Flashcard set saved with ID: $flashcardSetId');
 
       // Show success dialog
       if (mounted) {
@@ -146,17 +147,17 @@ class FlashcardCreationPageState extends State<FlashcardCreationPage> {
           message:
               'Your flashcard set has been saved successfully and is ready to use!',
           onDismiss: () async {
-            debugPrint('Success dialog dismissed');
+            AppLogger.debug('Success dialog dismissed');
             if (mounted) {
               // Pop back to the Create page
               Navigator.of(context).popUntil((route) => route.isFirst);
             }
           },
         );
-        debugPrint('Success dialog shown');
+        AppLogger.debug('Success dialog shown');
       }
     } catch (e, stackTrace) {
-      debugPrint('Error in _saveFlashcardSet: $e\n$stackTrace');
+      AppLogger.error('Error in _saveFlashcardSet: $e\n$stackTrace');
       if (mounted) {
         await AppDialog.show(
           context: context,
