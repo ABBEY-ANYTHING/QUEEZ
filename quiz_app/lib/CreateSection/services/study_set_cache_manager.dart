@@ -77,8 +77,9 @@ class StudySetCacheManager {
   /// Remove quiz from study set
   void removeQuizFromStudySet(String quizId) {
     if (_currentStudySet != null) {
-      final updatedQuizzes =
-          _currentStudySet!.quizzes.where((q) => q.id != quizId).toList();
+      final updatedQuizzes = _currentStudySet!.quizzes
+          .where((q) => q.id != quizId)
+          .toList();
       _currentStudySet = _currentStudySet!.copyWith(
         quizzes: updatedQuizzes,
         updatedAt: DateTime.now(),
@@ -89,10 +90,9 @@ class StudySetCacheManager {
   /// Remove flashcard set from study set
   void removeFlashcardSetFromStudySet(String flashcardSetId) {
     if (_currentStudySet != null) {
-      final updatedFlashcardSets =
-          _currentStudySet!.flashcardSets
-              .where((f) => f.id != flashcardSetId)
-              .toList();
+      final updatedFlashcardSets = _currentStudySet!.flashcardSets
+          .where((f) => f.id != flashcardSetId)
+          .toList();
       _currentStudySet = _currentStudySet!.copyWith(
         flashcardSets: updatedFlashcardSets,
         updatedAt: DateTime.now(),
@@ -103,13 +103,19 @@ class StudySetCacheManager {
   /// Remove note from study set
   void removeNoteFromStudySet(String noteId) {
     if (_currentStudySet != null) {
-      final updatedNotes =
-          _currentStudySet!.notes.where((n) => n.id != noteId).toList();
+      final updatedNotes = _currentStudySet!.notes
+          .where((n) => n.id != noteId)
+          .toList();
       _currentStudySet = _currentStudySet!.copyWith(
         notes: updatedNotes,
         updatedAt: DateTime.now(),
       );
     }
+  }
+
+  /// Set complete study set (for AI-generated content)
+  void setStudySet(StudySet studySet) {
+    _currentStudySet = studySet;
   }
 
   /// Clear cache
