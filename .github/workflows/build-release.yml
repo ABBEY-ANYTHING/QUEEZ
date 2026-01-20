@@ -44,7 +44,7 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //' | tr -d ' ' | cut -d'+' -f1)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
         working-directory: quiz_app

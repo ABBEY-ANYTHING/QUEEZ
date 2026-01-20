@@ -8,7 +8,7 @@ import 'package:quiz_app/providers/app_version_provider.dart';
 import 'package:quiz_app/providers/auth_provider.dart';
 import 'package:quiz_app/providers/locale_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
-import 'package:quiz_app/widgets/core/update_dialog.dart';
+import 'package:quiz_app/widgets/core/app_update_dialog.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -77,7 +77,7 @@ class _AppEntryPointState extends ConsumerState<AppEntryPoint> {
       final currentVersion = await versionService.getCurrentAppVersion();
 
       if (mounted) {
-        await UpdateDialog.show(
+        await AppUpdateDialog.show(
           context: context,
           versionInfo: updateCheck,
           currentVersion: currentVersion,

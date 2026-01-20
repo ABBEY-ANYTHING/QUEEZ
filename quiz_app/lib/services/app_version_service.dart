@@ -33,9 +33,12 @@ class AppVersionService {
   static const String githubReleasesUrl =
       'https://github.com/ABBEY-ANYTHING/QUEEZ/releases/latest';
 
-  /// Direct download URL for the arm64 APK
-  static const String directDownloadUrl =
-      'https://github.com/ABBEY-ANYTHING/QUEEZ/releases/latest/download/Queez-arm64-v8a.apk';
+  /// Generates the direct download URL for the latest APK based on version
+  static String getDownloadUrl(String version) {
+    // Strip build number if present (e.g. 1.0.1+2 -> 1.0.1)
+    final cleanVersion = version.split('+')[0];
+    return 'https://github.com/ABBEY-ANYTHING/QUEEZ/releases/latest/download/Queez-arm64-v8a-$cleanVersion.apk';
+  }
 
   /// Fetches the latest version info from Firebase
   Future<AppVersionInfo?> getLatestVersionInfo() async {
@@ -83,11 +86,15 @@ class AppVersionService {
   /// Compares version strings to determine if newVersion is newer than currentVersion
   /// Supports semantic versioning (e.g., 1.2.3)
   bool _isNewerVersion(String newVersion, String currentVersion) {
-    final newParts = newVersion
+    // Strip build numbers for comparison
+    final cleanNew = newVersion.split('+')[0];
+    final cleanCurrent = currentVersion.split('+')[0];
+
+    final newParts = cleanNew
         .split('.')
         .map((e) => int.tryParse(e) ?? 0)
         .toList();
-    final currentParts = currentVersion
+    final currentParts = cleanCurrent
         .split('.')
         .map((e) => int.tryParse(e) ?? 0)
         .toList();
