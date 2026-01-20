@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
+import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 
@@ -219,23 +221,57 @@ class ModeSelectionSheet extends StatelessWidget {
               );
 
               try {
+                AppLogger.info(
+                  '${isRemove ? "Removing" : "Listing"} course pack on marketplace: $itemId',
+                );
+
                 await CoursePackService.publishCoursePack(
                   itemId,
                   isPublic: !isRemove, // Toggle based on current state
                 );
+
+                AppLogger.success(
+                  'Course pack ${isRemove ? "removed from" : "listed on"} marketplace',
+                );
+
                 // Close loading dialog
                 rootNavigator.pop();
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
-                    content: Text(
-                      isRemove
-                          ? 'Course pack removed from marketplace!'
-                          : 'Course pack listed on marketplace!',
+                    content: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            isRemove
+                                ? 'Course pack removed from marketplace!'
+                                : 'Course pack listed on marketplace!',
+                          ),
+                        ),
+                      ],
                     ),
                     backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: const EdgeInsets.all(16),
                   ),
                 );
+
+                // Reload the library to reflect the isPublic status change
+                LibraryPage.reloadItems();
               } catch (e) {
+                AppLogger.error(
+                  'Failed to ${isRemove ? "remove" : "list"} course pack',
+                  exception: e,
+                );
+
                 // Close loading dialog
                 rootNavigator.pop();
                 scaffoldMessenger.showSnackBar(

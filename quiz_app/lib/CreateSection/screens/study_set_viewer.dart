@@ -6,10 +6,9 @@ import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
 import 'package:quiz_app/CreateSection/models/quiz.dart';
-import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
-import 'package:quiz_app/CreateSection/services/study_set_service.dart';
+import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
@@ -19,7 +18,7 @@ import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 class StudySetViewer extends StatefulWidget {
   final String studySetId;
-  final StudySet? preloadedStudySet;
+  final CoursePack? preloadedStudySet;
 
   const StudySetViewer({
     super.key,
@@ -32,7 +31,7 @@ class StudySetViewer extends StatefulWidget {
 }
 
 class _StudySetViewerState extends State<StudySetViewer> {
-  StudySet? studySet;
+  CoursePack? studySet;
   bool isLoading = true;
   String? errorMessage;
 
@@ -56,19 +55,12 @@ class _StudySetViewerState extends State<StudySetViewer> {
     try {
       AppLogger.debug('Loading study set: ${widget.studySetId}');
 
-      final fetchedStudySet = await StudySetService.fetchStudySetById(
+      final fetchedStudySet = await CoursePackService.fetchCoursePackById(
         widget.studySetId,
       );
 
-      AppLogger.info('Study set loaded: ${fetchedStudySet?.name}');
+      AppLogger.info('Study set loaded: ${fetchedStudySet.name}');
 
-      if (fetchedStudySet == null) {
-        setState(() {
-          errorMessage = 'Study set not found';
-          isLoading = false;
-        });
-        return;
-      }
       setState(() {
         studySet = fetchedStudySet;
         isLoading = false;

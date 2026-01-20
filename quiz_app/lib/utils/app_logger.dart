@@ -1,7 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/material.dart';
-
 /// ANSI color codes for terminal output
 class _AnsiColor {
   static const String reset = '\x1B[0m';
@@ -102,14 +100,16 @@ class AppLogger {
     required String color,
     required String icon,
   }) {
-    final timestamp = DateTime.now().toString().split('.')[0];
-    final coloredLevel = _enableColors
-        ? '$color$logLevel${_AnsiColor.reset}'
-        : logLevel;
-    final formattedMessage = '$icon $_tag[$coloredLevel] $message';
+    final formattedMessage = '$icon $_tag[$logLevel] $message';
 
-    // Print to console with colors
-    debugPrint('[$timestamp] $formattedMessage');
+    // Color the entire log output including the message text
+    final fullOutput = _enableColors
+        ? '$color$formattedMessage${_AnsiColor.reset}'
+        : formattedMessage;
+
+    // Use print instead of debugPrint to preserve ANSI colors in terminal
+    // ignore: avoid_print
+    print(fullOutput);
 
     // Also log using developer.log for structured logging (visible in DevTools)
     developer.log(

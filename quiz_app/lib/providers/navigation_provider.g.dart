@@ -184,3 +184,67 @@ abstract class _$KeyboardVisible extends $Notifier<bool> {
     element.handleValue(ref, created);
   }
 }
+
+/// Provider for highlighting a newly claimed item in the library
+/// Stores the ID of the item to highlight, null when no highlight needed
+
+@ProviderFor(HighlightedLibraryItem)
+const highlightedLibraryItemProvider = HighlightedLibraryItemProvider._();
+
+/// Provider for highlighting a newly claimed item in the library
+/// Stores the ID of the item to highlight, null when no highlight needed
+final class HighlightedLibraryItemProvider
+    extends $NotifierProvider<HighlightedLibraryItem, String?> {
+  /// Provider for highlighting a newly claimed item in the library
+  /// Stores the ID of the item to highlight, null when no highlight needed
+  const HighlightedLibraryItemProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'highlightedLibraryItemProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$highlightedLibraryItemHash();
+
+  @$internal
+  @override
+  HighlightedLibraryItem create() => HighlightedLibraryItem();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$highlightedLibraryItemHash() =>
+    r'74c2efa49523587eff33c38966ce89f7aea07aff';
+
+/// Provider for highlighting a newly claimed item in the library
+/// Stores the ID of the item to highlight, null when no highlight needed
+
+abstract class _$HighlightedLibraryItem extends $Notifier<String?> {
+  String? build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<String?, String?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String?, String?>,
+              String?,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}

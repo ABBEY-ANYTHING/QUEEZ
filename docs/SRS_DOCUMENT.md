@@ -166,6 +166,7 @@ To create an engaging, gamified learning ecosystem that makes education accessib
 #### Content Creation Tools (90% Complete)
 
 **Flashcards (90% Complete):**
+
 - [x] Create flashcard decks with metadata (title, description, category, language)
 - [x] Add cards (term/definition - front/back)
 - [x] Edit flashcard set and individual cards
@@ -185,6 +186,7 @@ To create an engaging, gamified learning ecosystem that makes education accessib
 - [ ] Import/export flashcards
 
 **Notes (90% Complete):**
+
 - [x] Create notes with rich text editor (Flutter Quill)
 - [x] Toolbar with formatting options:
   - Bold, italic, underline
@@ -207,6 +209,7 @@ To create an engaging, gamified learning ecosystem that makes education accessib
 - [ ] Sharing and collaboration
 
 **Study Sets (85% Complete):**
+
 - [x] Create study set with metadata (title, description, category, language)
 - [x] Study set links to quiz, flashcard, and note
 - [x] Backend CRUD operations (study_sets.py)
@@ -224,6 +227,7 @@ To create an engaging, gamified learning ecosystem that makes education accessib
 - [ ] Study planner integration
 
 **Polls & Surveys (0% Complete):**
+
 - [ ] Create polls - Placeholder only
 - [ ] Create surveys - Placeholder only
 
@@ -325,6 +329,7 @@ To create an engaging, gamified learning ecosystem that makes education accessib
 ### 3.2 ❌ Not Implemented (Critical Gaps)
 
 #### High Priority Missing Features:
+
 - [ ] Classroom management system (0% complete)
 - [ ] Communication features (messaging, announcements) (0% complete)
 - [ ] Gamification (badges, achievements, challenges) (15% complete)
@@ -648,6 +653,30 @@ To create an engaging, gamified learning ecosystem that makes education accessib
   - Written review
   - Timestamp
 - **Moderation**: Educators can respond to reviews
+
+#### FR-COURSE-005: Rate Course Packs
+
+- **Description**: Users can rate course packs they've claimed or accessed
+- **Features**:
+  - 5-star rating system
+  - Average rating display on course pack cards
+  - Rating count displayed publicly
+  - Users can update their rating
+  - Only enrolled/claimed users can rate
+- **Backend**: POST /course-pack/{id}/rate endpoint
+- **Output**: Updated course pack with new average rating
+
+#### FR-COURSE-006: Export Notes as PDF
+
+- **Description**: Users can export individual notes or all notes from a course pack as PDF
+- **Features**:
+  - Export single note to PDF
+  - Export all notes from course pack as multi-page PDF
+  - Include formatting, images, and rich text
+  - Customizable PDF metadata (title, author, date)
+  - Download to device or share
+- **Supported Formats**: PDF (primary), optionally DOCX
+- **Output**: Downloadable PDF file
 
 ### 5.7 Collaboration Features
 
@@ -2275,11 +2304,11 @@ Real-time competitive quiz battles between 2-4 players simultaneously. Think "qu
 
 ### Appendix C: Change Log
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0 | October 16, 2025 | Initial SRS document created |
-| 2.0 | November 29, 2025 | Major update with implementation status, feature roadmap, and technical architecture |
-| 2.1 | November 30, 2025 | Updated implementation status: Authentication 70%, Quiz System 85%, Content Tools 90%, AI Features 75%, Library 60%. Added session recovery, WebSocket reconnection handling, Riverpod 3.x state management, Redis session storage, and comprehensive live multiplayer features. Updated backend from 31 to 50+ endpoints across 15 route modules. |
+| Version | Date              | Changes                                                                                                                                                                                                                                                                                                                                            |
+| ------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | October 16, 2025  | Initial SRS document created                                                                                                                                                                                                                                                                                                                       |
+| 2.0     | November 29, 2025 | Major update with implementation status, feature roadmap, and technical architecture                                                                                                                                                                                                                                                               |
+| 2.1     | November 30, 2025 | Updated implementation status: Authentication 70%, Quiz System 85%, Content Tools 90%, AI Features 75%, Library 60%. Added session recovery, WebSocket reconnection handling, Riverpod 3.x state management, Redis session storage, and comprehensive live multiplayer features. Updated backend from 31 to 50+ endpoints across 15 route modules. |
 
 ---
 

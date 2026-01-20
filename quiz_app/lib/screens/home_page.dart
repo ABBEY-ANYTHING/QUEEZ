@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/providers/navigation_provider.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -937,7 +938,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 }
 
 // Course Detail Bottom Sheet
-class _CourseDetailSheet extends StatefulWidget {
+class _CourseDetailSheet extends ConsumerStatefulWidget {
   final CoursePack course;
   final String? currentUserId;
   final VoidCallback onClaim;
@@ -953,10 +954,10 @@ class _CourseDetailSheet extends StatefulWidget {
   });
 
   @override
-  State<_CourseDetailSheet> createState() => _CourseDetailSheetState();
+  ConsumerState<_CourseDetailSheet> createState() => _CourseDetailSheetState();
 }
 
-class _CourseDetailSheetState extends State<_CourseDetailSheet> {
+class _CourseDetailSheetState extends ConsumerState<_CourseDetailSheet> {
   bool _isClaiming = false;
   bool _isCheckingClaimed = true;
   bool _alreadyClaimed = false;
@@ -974,9 +975,17 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
     }
 
     try {
+      AppLogger.debug(
+        'Checking if user ${widget.currentUserId} has claimed course ${widget.course.id}',
+      );
+
       final claimed = await CoursePackService.hasUserClaimedCourse(
         widget.course.id,
         widget.currentUserId!,
+      );
+
+      AppLogger.debug(
+        'Claimed status for course ${widget.course.id}: $claimed',
       );
 
       if (mounted) {
@@ -1003,28 +1012,59 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
     setState(() => _isClaiming = true);
 
     try {
-      await CoursePackService.claimCoursePack(
+      AppLogger.info('Claiming course pack: ${widget.course.id}');
+
+      final claimedCourseId = await CoursePackService.claimCoursePack(
         widget.course.id,
         widget.currentUserId!,
       );
 
       if (!mounted) return;
 
+      AppLogger.success(
+        'Course pack claimed successfully, new ID: $claimedCourseId',
+      );
+
       setState(() {
         _alreadyClaimed = true;
         _isClaiming = false;
       });
 
+      // Close the bottom sheet
       Navigator.pop(context);
+
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Course pack added to your library!'),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Course pack added to your library!')),
+            ],
+          ),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
 
-      // Call the parent's onClaim to refresh the list
+      // Refresh the library provider to include the new item
+      ref.invalidate(quizLibraryProvider);
+
+      // Set the highlighted item (use the newly claimed course ID)
+      ref
+          .read(highlightedLibraryItemProvider.notifier)
+          .setHighlightedItem(claimedCourseId);
+
+      // Navigate to library tab (index 1)
+      ref.read(bottomNavIndexProvider.notifier).setIndex(1);
+
+      // Call the parent's onClaim to refresh the store list
       widget.onClaim();
     } catch (e) {
       if (!mounted) return;
@@ -1094,7 +1134,6 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
@@ -1115,6 +1154,7 @@ class _CourseDetailSheetState extends State<_CourseDetailSheet> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 12),
                               Text(
                                 widget.course.name,
                                 style: const TextStyle(

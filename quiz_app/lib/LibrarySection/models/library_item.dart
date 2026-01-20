@@ -11,6 +11,10 @@ class LibraryItem {
   final String language; // Only for quizzes and course_packs
   final String? originalOwner;
   final String? originalOwnerUsername;
+  final String?
+  originalCoursePackId; // ID of the original course pack if this is a claimed copy
+  final String?
+  ownerId; // The owner of this specific item (current user for their items)
   final String? sharedMode; // Only for quizzes
   // Course pack specific fields
   final bool isPublic;
@@ -32,6 +36,8 @@ class LibraryItem {
     this.language = '',
     this.originalOwner,
     this.originalOwnerUsername,
+    this.originalCoursePackId,
+    this.ownerId,
     this.sharedMode,
     this.isPublic = false,
     this.rating = 0.0,
@@ -46,11 +52,12 @@ class LibraryItem {
     String type = json['type'] ?? '';
     // If type is missing, try to infer from content
     if (type.isEmpty) {
-      if (json.containsKey('quizzes') || 
-          json.containsKey('flashcardSets') || 
+      if (json.containsKey('quizzes') ||
+          json.containsKey('flashcardSets') ||
           json.containsKey('notes')) {
         type = 'course_pack';
-      } else if (json.containsKey('questions') || json.containsKey('questionCount')) {
+      } else if (json.containsKey('questions') ||
+          json.containsKey('questionCount')) {
         type = 'quiz';
       } else if (json.containsKey('cards') || json.containsKey('cardCount')) {
         type = 'flashcard';
@@ -67,11 +74,14 @@ class LibraryItem {
       description: json['description'] ?? '',
       coverImagePath: json['coverImagePath'],
       createdAt: json['createdAt'],
-      itemCount: json['itemCount'] ?? json['qsCount'] ?? 0, // Fallbacks for counts
+      itemCount:
+          json['itemCount'] ?? json['qsCount'] ?? 0, // Fallbacks for counts
       category: json['category'] ?? '',
       language: json['language'] ?? '',
       originalOwner: json['originalOwner'] ?? json['ownerId'],
       originalOwnerUsername: json['originalOwnerUsername'],
+      originalCoursePackId: json['originalCoursePackId'],
+      ownerId: json['ownerId'],
       sharedMode: json['sharedMode'],
       isPublic: json['isPublic'] ?? false,
       rating: (json['rating'] ?? 0).toDouble(),
@@ -88,6 +98,12 @@ class LibraryItem {
   bool get isStudySet =>
       type == 'course_pack'; // Alias for backward compatibility
   bool get isCoursePack => type == 'course_pack';
+
+  /// Returns true if this is a claimed course pack (has both originalOwner and originalCoursePackId)
+  bool get isClaimed => originalOwner != null && originalCoursePackId != null;
+
+  /// Returns true if this is the original course pack (no originalCoursePackId)
+  bool get isOriginal => originalCoursePackId == null;
 
   // Convert to QuizLibraryItem (for quizzes only)
   dynamic toQuizLibraryItem() {
@@ -120,7 +136,14 @@ class LibraryItem {
     String? language,
     String? originalOwner,
     String? originalOwnerUsername,
+    String? originalCoursePackId,
+    String? ownerId,
     String? sharedMode,
+    bool? isPublic,
+    double? rating,
+    int? enrolledCount,
+    double? estimatedHours,
+    int? videoCount,
     bool? isFavorite,
   }) {
     return LibraryItem(
@@ -136,7 +159,14 @@ class LibraryItem {
       originalOwner: originalOwner ?? this.originalOwner,
       originalOwnerUsername:
           originalOwnerUsername ?? this.originalOwnerUsername,
+      originalCoursePackId: originalCoursePackId ?? this.originalCoursePackId,
+      ownerId: ownerId ?? this.ownerId,
       sharedMode: sharedMode ?? this.sharedMode,
+      isPublic: isPublic ?? this.isPublic,
+      rating: rating ?? this.rating,
+      enrolledCount: enrolledCount ?? this.enrolledCount,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
+      videoCount: videoCount ?? this.videoCount,
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }

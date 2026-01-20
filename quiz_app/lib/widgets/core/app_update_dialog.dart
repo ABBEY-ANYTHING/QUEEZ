@@ -37,31 +37,46 @@ class AppUpdateDialog extends StatelessWidget {
   }
 
   Future<void> _launchUpdate(BuildContext context) async {
-    // Try the direct download first as it's the most convenient for users
+    // Direct download URL for the APK
     final downloadUri = Uri.parse(AppVersionService.getDownloadUrl(newVersion));
-    final releasesUri = Uri.parse(AppVersionService.githubReleasesUrl);
 
     try {
-      if (await canLaunchUrl(downloadUri)) {
-        await launchUrl(downloadUri, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(releasesUri)) {
-        // Fallback to releases page
-        await launchUrl(releasesUri, mode: LaunchMode.externalApplication);
-      } else {
-        // Show error if neither works
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Could not launch update. Please check your internet connection.',
-              ),
-              backgroundColor: Colors.red,
+      // Launch the APK download directly
+      // No need to use canLaunchUrl as it may incorrectly return false for APK downloads
+      final launched = await launchUrl(
+        downloadUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched && context.mounted) {
+        // If direct download fails, show error with option to visit releases page
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not start download automatically.'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Open Releases',
+              textColor: Colors.white,
+              onPressed: () {
+                launchUrl(
+                  Uri.parse(AppVersionService.githubReleasesUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
             ),
-          );
-        }
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error launching update: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to launch update. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

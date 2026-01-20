@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/utils/app_logger.dart';
+
 import '../../api_config.dart';
 
 class StudySetService {
@@ -20,7 +22,7 @@ class StudySetService {
 
       final response = await http
           .post(
-            Uri.parse('$baseUrl/study-sets'),
+            Uri.parse('$baseUrl/course-pack'),
             headers: _headers,
             body: jsonEncode(jsonData),
           )
@@ -69,7 +71,7 @@ class StudySetService {
       AppLogger.debug('Fetching study set with ID: $id');
 
       final response = await http
-          .get(Uri.parse('$baseUrl/study-sets/$id'), headers: _headers)
+          .get(Uri.parse('$baseUrl/course-pack/$id'), headers: _headers)
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -135,7 +137,10 @@ class StudySetService {
       AppLogger.debug('Fetching study sets for user: $userId');
 
       final response = await http
-          .get(Uri.parse('$baseUrl/study-sets/user/$userId'), headers: _headers)
+          .get(
+            Uri.parse('$baseUrl/course-pack/user/$userId'),
+            headers: _headers,
+          )
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -166,7 +171,7 @@ class StudySetService {
       AppLogger.debug('Deleting study set with ID: $id');
 
       final response = await http
-          .delete(Uri.parse('$baseUrl/study-sets/$id'), headers: _headers)
+          .delete(Uri.parse('$baseUrl/course-pack/$id'), headers: _headers)
           .timeout(
             Duration(seconds: 30),
             onTimeout: () {
@@ -199,7 +204,7 @@ class StudySetService {
 
       final response = await http
           .put(
-            Uri.parse('$baseUrl/study-sets/${updatedStudySet.id}'),
+            Uri.parse('$baseUrl/course-pack/${updatedStudySet.id}'),
             headers: _headers,
             body: jsonEncode(updatedStudySet.toJson()),
           )

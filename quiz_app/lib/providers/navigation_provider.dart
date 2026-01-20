@@ -40,3 +40,21 @@ class KeyboardVisible extends _$KeyboardVisible {
     state = visible;
   }
 }
+
+/// Provider for highlighting a newly claimed item in the library
+/// Stores the ID of the item to highlight, null when no highlight needed
+@riverpod
+class HighlightedLibraryItem extends _$HighlightedLibraryItem {
+  @override
+  String? build() {
+    return null;
+  }
+
+  void setHighlightedItem(String? itemId) {
+    state = itemId;
+  }
+
+  void clearHighlight() {
+    state = null;
+  }
+}

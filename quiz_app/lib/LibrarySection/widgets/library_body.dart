@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/widgets/item_card.dart';
+import 'package:quiz_app/providers/navigation_provider.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 import 'package:quiz_app/widgets/core/core_widgets.dart';
@@ -259,7 +261,7 @@ Widget buildLibraryBody({
   );
 }
 
-class _AnimatedItemList extends StatelessWidget {
+class _AnimatedItemList extends ConsumerStatefulWidget {
   final List<LibraryItem> items;
   final VoidCallback onFavoriteChanged;
 
@@ -269,21 +271,94 @@ class _AnimatedItemList extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_AnimatedItemList> createState() => _AnimatedItemListState();
+}
+
+class _AnimatedItemListState extends ConsumerState<_AnimatedItemList> {
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _itemKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize keys for all items
+    for (final item in widget.items) {
+      _itemKeys[item.id] = GlobalKey();
+    }
+
+    // Scroll to highlighted item on first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToHighlightedItem();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedItemList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update keys for new items
+    for (final item in widget.items) {
+      _itemKeys.putIfAbsent(item.id, () => GlobalKey());
+    }
+
+    // Check if we need to scroll to highlighted item
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToHighlightedItem();
+    });
+  }
+
+  void _scrollToHighlightedItem() {
+    final highlightedId = ref.read(highlightedLibraryItemProvider);
+    if (highlightedId == null) return;
+
+    final key = _itemKeys[highlightedId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+        alignment: 0.3, // Scroll so item is roughly 30% from top
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final highlightedItemId = ref.watch(highlightedLibraryItemProvider);
+
+    // Clear highlight after it's been shown for a while
+    if (highlightedItemId != null) {
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) {
+          ref.read(highlightedLibraryItemProvider.notifier).clearHighlight();
+        }
+      });
+    }
+
     return ListView.builder(
+      controller: _scrollController,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
+      itemCount: widget.items.length,
       itemBuilder: (context, index) {
-        final item = items[index];
+        final item = widget.items[index];
+        final isHighlighted = highlightedItemId == item.id;
+
         return Padding(
+          key: _itemKeys[item.id],
           padding: const EdgeInsets.only(bottom: QuizSpacing.md),
           child: ItemCard(
             key: ValueKey(item.id),
             item: item,
-            onFavoriteChanged: onFavoriteChanged,
+            isHighlighted: isHighlighted,
+            onFavoriteChanged: widget.onFavoriteChanged,
             onDelete: () {
-              // Delete is handled inside ItemCard
+              // Delete is handled inside ItemCard, library will be refreshed
             },
           ),
         );

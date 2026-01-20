@@ -1,5 +1,9 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
+import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
 import 'package:quiz_app/utils/app_logger.dart';
@@ -52,9 +56,9 @@ class CoursePack {
   final String ownerId;
   final String? originalOwner; // Original owner if this is a claimed course
   final String? originalCoursePackId; // Original course pack ID if claimed
-  final List<dynamic> quizzes;
-  final List<dynamic> flashcardSets;
-  final List<dynamic> notes;
+  final List<Quiz> quizzes;
+  final List<FlashcardSet> flashcardSets;
+  final List<Note> notes;
   final List<VideoLecture> videoLectures;
   final bool isPublic;
   final double rating;
@@ -98,9 +102,9 @@ class CoursePack {
     'language': language,
     'coverImagePath': coverImagePath,
     'ownerId': ownerId,
-    'quizzes': quizzes,
-    'flashcardSets': flashcardSets,
-    'notes': notes,
+    'quizzes': quizzes.map((q) => q.toJson()).toList(),
+    'flashcardSets': flashcardSets.map((f) => f.toJson()).toList(),
+    'notes': notes.map((n) => n.toJson()).toList(),
     'videoLectures': videoLectures.map((v) => v.toJson()).toList(),
     'isPublic': isPublic,
     'estimatedHours': estimatedHours,
@@ -116,9 +120,15 @@ class CoursePack {
     ownerId: json['ownerId'] ?? json['owner_id'] ?? '',
     originalOwner: json['originalOwner'],
     originalCoursePackId: json['originalCoursePackId'],
-    quizzes: json['quizzes'] ?? [],
-    flashcardSets: json['flashcardSets'] ?? [],
-    notes: json['notes'] ?? [],
+    quizzes: (json['quizzes'] as List? ?? [])
+        .map((q) => Quiz.fromJson(q as Map<String, dynamic>))
+        .toList(),
+    flashcardSets: (json['flashcardSets'] as List? ?? [])
+        .map((f) => FlashcardSet.fromJson(f as Map<String, dynamic>))
+        .toList(),
+    notes: (json['notes'] as List? ?? [])
+        .map((n) => Note.fromJson(n as Map<String, dynamic>))
+        .toList(),
     videoLectures: (json['videoLectures'] as List? ?? [])
         .map((v) => VideoLecture.fromJson(v))
         .toList(),
@@ -150,10 +160,26 @@ class CoursePack {
     language: studySet.language,
     coverImagePath: studySet.coverImagePath,
     ownerId: studySet.ownerId,
-    quizzes: studySet.quizzes.map((q) => q.toJson()).toList(),
-    flashcardSets: studySet.flashcardSets.map((f) => f.toJson()).toList(),
-    notes: studySet.notes.map((n) => n.toJson()).toList(),
-    videoLectures: [],
+    quizzes: studySet.quizzes,
+    flashcardSets: studySet.flashcardSets,
+    notes: studySet.notes,
+    videoLectures: studySet.videoLectures
+        .map(
+          (v) => VideoLecture(
+            id: v.id,
+            title: v.title,
+            driveFileId: v.driveFileId,
+            shareableLink: v.shareableLink,
+            duration: v.duration,
+            uploadedAt: v.uploadedAt,
+          ),
+        )
+        .toList(),
+    isPublic: studySet.isPublic,
+    rating: studySet.rating,
+    ratingCount: studySet.ratingCount,
+    enrolledCount: studySet.enrolledCount,
+    estimatedHours: studySet.estimatedHours,
     createdAt: studySet.createdAt,
     updatedAt: studySet.updatedAt,
   );
@@ -244,7 +270,7 @@ class CoursePackService {
             Uri.parse('$baseUrl/course-pack/featured?limit=$limit'),
             headers: _headers,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -449,6 +475,10 @@ class CoursePackService {
     String userId,
   ) async {
     try {
+      AppLogger.debug(
+        'Checking claimed status via API: coursePackId=$coursePackId, userId=$userId',
+      );
+
       final response = await http
           .get(
             Uri.parse(
@@ -458,20 +488,43 @@ class CoursePackService {
           )
           .timeout(const Duration(seconds: 30));
 
+      AppLogger.debug('Claimed check response: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['claimed'] ?? false;
+        final claimed = data['claimed'] ?? false;
+        AppLogger.debug('API returned claimed status: $claimed');
+        return claimed;
       }
+
+      AppLogger.warning(
+        'API returned non-200 status: ${response.statusCode}, falling back to local check',
+      );
       return false;
     } catch (e) {
+      AppLogger.warning('API check failed: $e, falling back to local check');
+
       // If endpoint doesn't exist, check locally by fetching user's courses
       try {
         final userCourses = await fetchUserCoursePacks(userId);
-        return userCourses.any(
-          (course) => course.originalCoursePackId == coursePackId,
+        AppLogger.debug(
+          'Fetched ${userCourses.length} user courses for local claimed check',
         );
+
+        final hasClaimed = userCourses.any((course) {
+          final matches = course.originalCoursePackId == coursePackId;
+          if (matches) {
+            AppLogger.debug(
+              'Found claimed copy: ${course.id} (original: ${course.originalCoursePackId})',
+            );
+          }
+          return matches;
+        });
+
+        AppLogger.debug('Local check result: hasClaimed=$hasClaimed');
+        return hasClaimed;
       } catch (e2) {
-        AppLogger.warning('Error checking claimed status: $e2');
+        AppLogger.warning('Error in local claimed check: $e2');
         return false;
       }
     }

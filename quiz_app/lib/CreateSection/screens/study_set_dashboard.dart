@@ -11,12 +11,13 @@ import 'package:quiz_app/CreateSection/models/video_lecture.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/note_details_page.dart';
 import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
+import 'package:quiz_app/CreateSection/services/course_pack_service.dart'
+    hide VideoLecture;
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/CreateSection/services/google_drive_service.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
-import 'package:quiz_app/CreateSection/services/study_set_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
@@ -938,7 +939,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       }
 
       // Save to MongoDB via backend API
-      await StudySetService.saveStudySet(cachedStudySet);
+      await CoursePackService.saveCoursePack(
+        CoursePack.fromStudySet(cachedStudySet),
+      );
       StudySetCacheManager.instance.clearCache();
 
       if (!mounted) return;
