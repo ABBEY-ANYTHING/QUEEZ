@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 
 class QuestionNavigation extends StatefulWidget {
   final int currentIndex;
@@ -41,12 +42,10 @@ class _QuestionNavigationState extends State<QuestionNavigation>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
-    );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
 
     _buttonController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -116,8 +115,14 @@ class _QuestionNavigationState extends State<QuestionNavigation>
           ],
         ),
         child: SafeArea(
+          bottom: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 8,
+              bottom: kBottomNavbarHeight + 8,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -125,9 +130,7 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                   onTap: widget.onToggleExpanded,
                   child: Center(
                     child: Icon(
-                      widget.isExpanded
-                          ? Icons.expand_more
-                          : Icons.expand_less,
+                      widget.isExpanded ? Icons.expand_more : Icons.expand_less,
                       color: AppColors.textSecondary,
                       size: 20,
                     ),
@@ -135,8 +138,10 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -170,15 +175,18 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 3,
-                          thumbShape:
-                              const RoundSliderThumbShape(enabledThumbRadius: 6),
-                          overlayShape:
-                              const RoundSliderOverlayShape(overlayRadius: 12),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 12,
+                          ),
                           activeTrackColor: AppColors.primary,
                           inactiveTrackColor: AppColors.primaryLighter,
                           thumbColor: AppColors.primary,
-                          overlayColor:
-                              AppColors.primary.withValues(alpha: 0.2),
+                          overlayColor: AppColors.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                         child: Slider(
                           value: widget.currentIndex.toDouble(),
@@ -205,20 +213,28 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                             child: ElevatedButton.icon(
                               onPressed: widget.currentIndex > 0
                                   ? () => widget.onIndexChanged(
-                                      widget.currentIndex - 1)
+                                      widget.currentIndex - 1,
+                                    )
                                   : null,
                               icon: const Icon(
                                 Icons.arrow_back_ios_rounded,
                                 size: 12,
                               ),
-                              label: const Text('Prev', style: TextStyle(fontSize: 12)),
+                              label: const Text(
+                                'Prev',
+                                style: TextStyle(fontSize: 12),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: widget.currentIndex > 0
                                     ? AppColors.secondary
-                                    : AppColors.iconInactive.withValues(alpha: 0.3),
+                                    : AppColors.iconInactive.withValues(
+                                        alpha: 0.3,
+                                      ),
                                 foregroundColor: AppColors.white,
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 6),
+                                  vertical: 8,
+                                  horizontal: 6,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -229,33 +245,44 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                           const SizedBox(width: 8),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: widget.currentIndex <
+                              onPressed:
+                                  widget.currentIndex <
                                       widget.totalQuestions - 1
                                   ? () => widget.onIndexChanged(
-                                      widget.currentIndex + 1)
+                                      widget.currentIndex + 1,
+                                    )
                                   : null,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: widget.currentIndex <
+                                backgroundColor:
+                                    widget.currentIndex <
                                         widget.totalQuestions - 1
                                     ? AppColors.secondary
-                                    : AppColors.iconInactive.withValues(alpha: 0.3),
+                                    : AppColors.iconInactive.withValues(
+                                        alpha: 0.3,
+                                      ),
                                 foregroundColor: AppColors.white,
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 6),
+                                  vertical: 8,
+                                  horizontal: 6,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 elevation:
-                                    widget.currentIndex < widget.totalQuestions - 1
-                                        ? 1
-                                        : 0,
+                                    widget.currentIndex <
+                                        widget.totalQuestions - 1
+                                    ? 1
+                                    : 0,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: const [
                                   Text('Next', style: TextStyle(fontSize: 12)),
                                   SizedBox(width: 4),
-                                  Icon(Icons.arrow_forward_ios_rounded, size: 12),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 12,
+                                  ),
                                 ],
                               ),
                             ),
@@ -270,8 +297,11 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: _handleAddQuestion,
-                              icon: const Icon(Icons.add_rounded,
-                                  size: 14, color: Colors.white),
+                              icon: const Icon(
+                                Icons.add_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                               label: const Text(
                                 'Add Question',
                                 style: TextStyle(
@@ -283,7 +313,9 @@ class _QuestionNavigationState extends State<QuestionNavigation>
                                 backgroundColor: AppColors.accentBright,
                                 foregroundColor: AppColors.white,
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: 10, horizontal: 12),
+                                  vertical: 10,
+                                  horizontal: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),

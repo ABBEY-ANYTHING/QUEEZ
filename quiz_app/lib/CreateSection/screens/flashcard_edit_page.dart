@@ -3,6 +3,7 @@ import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 import 'package:uuid/uuid.dart';
@@ -257,6 +258,50 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
     }
   }
 
+  Widget _buildSaveButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: GestureDetector(
+        onTap: (_isSaving || !_hasChanges) ? null : _saveFlashcardSet,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _hasChanges
+                ? (_isSaving
+                      ? AppColors.secondary.withValues(alpha: 0.6)
+                      : AppColors.secondary)
+                : AppColors.secondary.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 40,
+                  height: 20,
+                  child: Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
+                  'Save',
+                  style: TextStyle(
+                    color: _hasChanges
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -273,32 +318,7 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
         appBar: UniversalAppBar(
           title: 'Edit Flashcard Set',
           showNotificationBell: false,
-          actions: [
-            _isSaving
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  )
-                : IconButton(
-                    icon: Icon(
-                      Icons.save,
-                      color: _hasChanges
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                    ),
-                    onPressed: _hasChanges ? _saveFlashcardSet : null,
-                    tooltip: 'Save',
-                  ),
-          ],
+          actions: [_buildSaveButton()],
         ),
         body: Column(
           children: [
@@ -342,110 +362,127 @@ class _FlashcardEditPageState extends State<FlashcardEditPage> {
 
             const Divider(height: 1),
 
-            // Card navigation
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  Text(
-                    'Card ${_currentCardIndex + 1} of ${_cards.length}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: _currentCardIndex > 0
-                        ? () => _navigateToCard(_currentCardIndex - 1)
-                        : null,
-                    color: AppColors.primary,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: _currentCardIndex < _cards.length - 1
-                        ? () => _navigateToCard(_currentCardIndex + 1)
-                        : null,
-                    color: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 1),
-
             // Card editor
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                child: _buildCardEditor(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Card navigation - now scrollable
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Card ${_currentCardIndex + 1} of ${_cards.length}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: _currentCardIndex > 0
+                                ? () => _navigateToCard(_currentCardIndex - 1)
+                                : null,
+                            color: AppColors.primary,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right),
+                            onPressed: _currentCardIndex < _cards.length - 1
+                                ? () => _navigateToCard(_currentCardIndex + 1)
+                                : null,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCardEditor(),
+                  ],
+                ),
               ),
             ),
 
-            // Bottom action bar with safe area padding
+            // Bottom action bar with proper bottom nav bar clearance
             Container(
               color: Colors.white,
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
                 top: 16,
-                bottom: 16 + MediaQuery.of(context).padding.bottom,
+                bottom: kBottomNavbarHeight + 16,
               ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isDeleting
-                            ? null
-                            : () => _deleteCard(_currentCardIndex),
-                        icon: _isDeleting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.red,
-                                  ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isDeleting
+                          ? null
+                          : () => _deleteCard(_currentCardIndex),
+                      icon: _isDeleting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
                               ),
-                        label: Text(
-                          _isDeleting ? 'Deleting...' : 'Delete Card',
-                          style: const TextStyle(color: Colors.red),
+                            )
+                          : const Icon(Icons.delete_outline, size: 18),
+                      label: Text(
+                        _isDeleting ? 'Deleting...' : 'Delete Card',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _addNewCard,
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        label: const Text(
-                          'Add Card',
-                          style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _addNewCard,
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text(
+                        'Add Card',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentBright,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

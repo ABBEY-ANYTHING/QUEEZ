@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/services/quiz_cache_manager.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
@@ -13,7 +15,7 @@ import 'package:quiz_app/widgets/core/app_dialog.dart';
 import '../widgets/question_card/question_card.dart';
 import '../widgets/question_navigation.dart';
 
-class QuizQuestions extends StatefulWidget {
+class QuizQuestions extends ConsumerStatefulWidget {
   final List<Question>? questions;
   final bool isStudySetMode;
   final bool isEditMode;
@@ -29,10 +31,10 @@ class QuizQuestions extends StatefulWidget {
     this.onSaveForStudySet,
   });
   @override
-  State<QuizQuestions> createState() => _QuizQuestionsState();
+  ConsumerState<QuizQuestions> createState() => _QuizQuestionsState();
 }
 
-class _QuizQuestionsState extends State<QuizQuestions> {
+class _QuizQuestionsState extends ConsumerState<QuizQuestions> {
   List<Question> questions = [];
   int currentQuestionIndex = 0;
   bool isNavigationExpanded = false;
@@ -48,7 +50,8 @@ class _QuizQuestionsState extends State<QuizQuestions> {
 
     if (widget.questions != null && widget.questions!.isNotEmpty) {
       questions = List.from(widget.questions!);
-      _isLocked = true;
+      // Only lock if NOT in edit mode (e.g., viewing AI-generated questions before saving)
+      _isLocked = !widget.isEditMode;
       currentQuestionIndex = 0;
     } else {
       _addNewQuestion();
@@ -130,7 +133,9 @@ class _QuizQuestionsState extends State<QuizQuestions> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: UniversalAppBar(
-        title: 'Create Quiz Questions',
+        title: widget.isEditMode
+            ? 'Edit Quiz Questions'
+            : 'Create Quiz Questions',
         showNotificationBell: false,
         actions: [_buildSaveButton()],
       ),
@@ -273,6 +278,8 @@ class _QuizQuestionsState extends State<QuizQuestions> {
             AppLogger.debug('Success dialog dismissed');
             QuizCacheManager.instance.clearCache();
             AppLogger.debug('Cache cleared');
+            // Refresh library to show updated quiz
+            ref.invalidate(quizLibraryProvider);
             if (mounted) {
               // Pop back to the Create page
               Navigator.of(context).popUntil((route) => route.isFirst);

@@ -86,7 +86,8 @@ class ItemTypeHelper {
   }
 }
 
-/// Format date with shortened month (e.g., "January 20, 2025" -> "Jan 20, 2025")
+/// Format date to show only month and year (e.g., "January 20, 2025" -> "Jan 2025")
+/// Also handles ISO format dates like "2026-01-20T12:00:00Z"
 String formatDateShort(String dateString) {
   try {
     const months = [
@@ -118,14 +119,36 @@ String formatDateShort(String dateString) {
       'Dec',
     ];
 
-    for (int i = 0; i < months.length; i++) {
-      if (dateString.contains(months[i])) {
-        return dateString
-            .replaceFirst(months[i], shortMonths[i])
-            .replaceAll(', ', ' ');
+    // Try to parse ISO format first (e.g., "2026-01-20T12:00:00Z")
+    final isoMatch = RegExp(r'(\d{4})-(\d{2})-\d{2}').firstMatch(dateString);
+    if (isoMatch != null) {
+      final year = isoMatch.group(1);
+      final monthNum = int.tryParse(isoMatch.group(2) ?? '');
+      if (year != null && monthNum != null && monthNum >= 1 && monthNum <= 12) {
+        return '${shortMonths[monthNum - 1]} $year';
       }
     }
-    return dateString;
+
+    // Try to extract year (4 digits)
+    final yearMatch = RegExp(r'\b(\d{4})\b').firstMatch(dateString);
+    final year = yearMatch?.group(1);
+
+    // Check for full month names
+    for (int i = 0; i < months.length; i++) {
+      if (dateString.contains(months[i])) {
+        return year != null ? '${shortMonths[i]} $year' : shortMonths[i];
+      }
+    }
+
+    // Check for short month names already present
+    for (int i = 0; i < shortMonths.length; i++) {
+      if (dateString.contains(shortMonths[i])) {
+        return year != null ? '${shortMonths[i]} $year' : shortMonths[i];
+      }
+    }
+
+    // If no month found, return year only if available
+    return year ?? dateString;
   } catch (e) {
     return dateString;
   }

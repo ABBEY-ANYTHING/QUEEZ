@@ -62,6 +62,7 @@ class _StudySetDashboardState extends ConsumerState<StudySetDashboard> {
   List<Note> notes = [];
   List<VideoLecture> videoLectures = [];
   bool _isSaving = false;
+  String? _deletingItemId;
 
   @override
   void initState() {
@@ -1442,10 +1443,19 @@ class _StudySetDashboardState extends ConsumerState<StudySetDashboard> {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-            onPressed: () => _removeQuiz(quiz.id ?? ''),
-          ),
+          _deletingItemId == quiz.id
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                  onPressed: () => _removeQuiz(quiz.id ?? ''),
+                ),
         ],
       ),
     );
@@ -1498,10 +1508,19 @@ class _StudySetDashboardState extends ConsumerState<StudySetDashboard> {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-            onPressed: () => _removeFlashcardSet(set.id ?? ''),
-          ),
+          _deletingItemId == set.id
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                  onPressed: () => _removeFlashcardSet(set.id ?? ''),
+                ),
         ],
       ),
     );
@@ -1554,34 +1573,133 @@ class _StudySetDashboardState extends ConsumerState<StudySetDashboard> {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-            onPressed: () => _removeNote(note.id ?? ''),
-          ),
+          _deletingItemId == note.id
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                  onPressed: () => _removeNote(note.id ?? ''),
+                ),
         ],
       ),
     );
   }
 
-  void _removeQuiz(String quizId) {
+  Future<void> _removeQuiz(String quizId) async {
+    final shouldDelete = await AppDialog.showInput<bool>(
+      context: context,
+      title: 'Remove Quiz?',
+      content: const Text(
+        'Are you sure you want to remove this quiz from the course pack?',
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      ),
+      cancelText: 'Cancel',
+      submitText: 'Remove',
+      onSubmit: () => true,
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() => _deletingItemId = quizId);
+
+    // Brief delay for visual feedback
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
     setState(() {
       quizzes.removeWhere((q) => q.id == quizId);
       StudySetCacheManager.instance.removeQuizFromStudySet(quizId);
+      _deletingItemId = null;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quiz removed from course pack'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
-  void _removeFlashcardSet(String setId) {
+  Future<void> _removeFlashcardSet(String setId) async {
+    final shouldDelete = await AppDialog.showInput<bool>(
+      context: context,
+      title: 'Remove Flashcard Set?',
+      content: const Text(
+        'Are you sure you want to remove this flashcard set from the course pack?',
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      ),
+      cancelText: 'Cancel',
+      submitText: 'Remove',
+      onSubmit: () => true,
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() => _deletingItemId = setId);
+
+    // Brief delay for visual feedback
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
     setState(() {
       flashcardSets.removeWhere((s) => s.id == setId);
       StudySetCacheManager.instance.removeFlashcardSetFromStudySet(setId);
+      _deletingItemId = null;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Flashcard set removed from course pack'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
-  void _removeNote(String noteId) {
+  Future<void> _removeNote(String noteId) async {
+    final shouldDelete = await AppDialog.showInput<bool>(
+      context: context,
+      title: 'Remove Note?',
+      content: const Text(
+        'Are you sure you want to remove this note from the course pack?',
+        style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      ),
+      cancelText: 'Cancel',
+      submitText: 'Remove',
+      onSubmit: () => true,
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() => _deletingItemId = noteId);
+
+    // Brief delay for visual feedback
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
     setState(() {
       notes.removeWhere((n) => n.id == noteId);
       StudySetCacheManager.instance.removeNoteFromStudySet(noteId);
+      _deletingItemId = null;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Note removed from course pack'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Widget _buildVideoCard(VideoLecture video) {

@@ -105,7 +105,7 @@ Widget buildFilterChips({
     {'label': 'Quizzes', 'value': 'quiz'},
     {'label': 'Flashcards', 'value': 'flashcard'},
     {'label': 'Notes', 'value': 'note'},
-    {'label': 'Courses', 'value': 'course_pack'},
+    {'label': 'Course Packs', 'value': 'course_pack'},
   ];
 
   return Container(

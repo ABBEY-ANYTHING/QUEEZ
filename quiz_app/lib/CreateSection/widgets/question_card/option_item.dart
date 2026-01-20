@@ -38,7 +38,7 @@ class OptionItem extends StatelessWidget {
                 question.type == QuestionType.trueFalse || isLocked;
 
             return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: isCorrect

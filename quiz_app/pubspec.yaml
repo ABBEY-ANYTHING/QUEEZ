@@ -2,7 +2,7 @@ name: quiz_app
 description: Interactive quiz application with live multiplayer support.
 publish_to: none
 
-version: 1.0.2+2
+version: 1.0.3+3
 
 environment:
   sdk: ^3.10.0
