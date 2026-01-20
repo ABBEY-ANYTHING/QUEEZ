@@ -38,9 +38,16 @@ class UpdateDialog extends StatelessWidget {
   }
 
   Future<void> _launchUpdate() async {
-    final uri = Uri.parse(AppVersionService.githubReleasesUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    // Launch the releases page
+    final releasesUri = Uri.parse(AppVersionService.githubReleasesUrl);
+    if (await canLaunchUrl(releasesUri)) {
+      await launchUrl(releasesUri, mode: LaunchMode.externalApplication);
+    }
+
+    // Also trigger the direct download
+    final downloadUri = Uri.parse(AppVersionService.directDownloadUrl);
+    if (await canLaunchUrl(downloadUri)) {
+      await launchUrl(downloadUri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -251,7 +258,7 @@ class UpdateDialog extends StatelessWidget {
                             Icon(Icons.download_rounded, size: 20),
                             SizedBox(width: QuizSpacing.sm),
                             Text(
-                              'Update Now',
+                              'Update',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

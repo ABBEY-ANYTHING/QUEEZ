@@ -31,7 +31,11 @@ class AppVersionService {
 
   /// GitHub releases URL for downloading latest APK
   static const String githubReleasesUrl =
-      'https://github.com/Arhaan-P/Queez/releases/latest';
+      'https://github.com/ABBEY-ANYTHING/QUEEZ/releases/latest';
+
+  /// Direct download URL for the arm64 APK
+  static const String directDownloadUrl =
+      'https://github.com/ABBEY-ANYTHING/QUEEZ/releases/latest/download/Queez-arm64-v8a.apk';
 
   /// Fetches the latest version info from Firebase
   Future<AppVersionInfo?> getLatestVersionInfo() async {
