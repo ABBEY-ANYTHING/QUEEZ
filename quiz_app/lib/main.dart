@@ -8,6 +8,7 @@ import 'package:quiz_app/providers/app_version_provider.dart';
 import 'package:quiz_app/providers/auth_provider.dart';
 import 'package:quiz_app/providers/locale_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
+import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/core/app_update_dialog.dart';
 
 class MyHttpOverrides extends HttpOverrides {
@@ -33,7 +34,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(localeProvider);
+    final locale = ref.watch(localeStateProvider);
 
     return MaterialApp(
       title: 'Queez',
@@ -45,6 +46,15 @@ class MyApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      theme: ThemeData(
+        useMaterial3: true,
+        // Text cursor color
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: AppColors.primary,
+          selectionColor: AppColors.primary.withValues(alpha: 0.3),
+          selectionHandleColor: AppColors.primary,
+        ),
+      ),
       home: const AppEntryPoint(),
     );
   }

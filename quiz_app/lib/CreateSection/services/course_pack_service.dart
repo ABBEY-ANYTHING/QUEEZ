@@ -8,6 +8,9 @@ import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 
+// TODO: Allow other users to claim, make a copy, and edit quizzes, flashcards, or course packs
+// TODO: Fix editing of individual quizzes, flashcards and course packs
+
 /// Model for video lecture
 class VideoLecture {
   final String? id;
@@ -192,6 +195,7 @@ class CoursePack {
 }
 
 /// Service for Course Pack API operations
+// TODO: Allow other users to claim, make a copy, and edit quizzes, flashcards, or course packs
 class CoursePackService {
   static const String baseUrl = ApiConfig.baseUrl;
 
@@ -200,7 +204,7 @@ class CoursePackService {
     'Accept': 'application/json',
   };
 
-  /// Save Course Pack to MongoDB via Backend API
+  /// Save Course Pack to MongoDB via Backend API (create new)
   static Future<String> saveCoursePack(CoursePack coursePack) async {
     try {
       AppLogger.debug('Creating course pack...');
@@ -229,6 +233,36 @@ class CoursePackService {
       }
     } catch (e) {
       throw Exception('Failed to save course pack: $e');
+    }
+  }
+
+  /// Update existing Course Pack in MongoDB via Backend API
+  static Future<void> updateCoursePack(CoursePack coursePack) async {
+    try {
+      AppLogger.debug('Updating course pack: ${coursePack.id}');
+      final jsonData = coursePack.toJson();
+
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/course-pack/${coursePack.id}'),
+            headers: _headers,
+            body: jsonEncode(jsonData),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timed out');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        AppLogger.success('Course pack updated: ${coursePack.id}');
+      } else {
+        final errorBody = jsonDecode(response.body);
+        throw Exception(errorBody['detail'] ?? 'Failed to update course pack');
+      }
+    } catch (e) {
+      throw Exception('Failed to update course pack: $e');
     }
   }
 

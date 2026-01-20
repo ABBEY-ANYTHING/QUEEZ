@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_text_field.dart';
-import '../../models/question.dart';
 import 'package:quiz_app/utils/color.dart';
 
 class OptionItem extends StatelessWidget {
@@ -34,7 +34,8 @@ class OptionItem extends StatelessWidget {
             bool isCorrect = question.type == QuestionType.multiMcq
                 ? multiCorrect.contains(index)
                 : singleCorrect == index;
-            bool isReadOnly = question.type == QuestionType.trueFalse || isLocked;
+            bool isReadOnly =
+                question.type == QuestionType.trueFalse || isLocked;
 
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
@@ -65,7 +66,8 @@ class OptionItem extends StatelessWidget {
                           ? _buildReadOnlyOption()
                           : CustomTextField(
                               controller: controller,
-                              hintText: 'Option ${String.fromCharCode(65 + index)}',
+                              hintText:
+                                  'Option ${String.fromCharCode(65 + index)}',
                               enabled: !isLocked,
                             ),
                     ),
@@ -101,11 +103,7 @@ class OptionItem extends StatelessWidget {
             ),
           ),
           child: isCorrect
-              ? const Icon(
-                  Icons.check,
-                  color: AppColors.white,
-                  size: 16,
-                )
+              ? const Icon(Icons.check, color: AppColors.white, size: 16)
               : null,
         ),
       ),

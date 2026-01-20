@@ -16,6 +16,7 @@ import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
+// TODO: Add rating course packs functionality
 class StudySetViewer extends StatefulWidget {
   final String studySetId;
   final CoursePack? preloadedStudySet;

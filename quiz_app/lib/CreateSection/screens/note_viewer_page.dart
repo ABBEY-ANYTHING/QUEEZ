@@ -9,6 +9,7 @@ import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/bottom_nav_aware_page.dart';
 
+// TODO: Add option to export notes as pdf
 class NoteViewerPage extends StatefulWidget {
   final String noteId;
   final String userId;

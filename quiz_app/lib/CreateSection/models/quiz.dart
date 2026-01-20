@@ -47,14 +47,37 @@ class Quiz {
       category: json['category'] ?? '',
       coverImagePath: json['coverImagePath'],
       creatorId: json['creatorId'] ?? json['creator_id'] ?? '',
-      questions:
-          (json['questions'] as List? ?? [])
-              .map((q) => Question.fromJson(q))
-              .toList(),
-      createdAt:
-          json['createdAt'] != null
-              ? DateTime.parse(json['createdAt'])
-              : DateTime.now(),
+      questions: (json['questions'] as List? ?? [])
+          .map((q) => Question.fromJson(q))
+          .toList(),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+    );
+  }
+
+  /// Creates a copy of this Quiz with the given fields replaced
+  Quiz copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? language,
+    String? category,
+    String? coverImagePath,
+    String? creatorId,
+    List<Question>? questions,
+    DateTime? createdAt,
+  }) {
+    return Quiz(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      language: language ?? this.language,
+      category: category ?? this.category,
+      coverImagePath: coverImagePath ?? this.coverImagePath,
+      creatorId: creatorId ?? this.creatorId,
+      questions: questions ?? this.questions,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

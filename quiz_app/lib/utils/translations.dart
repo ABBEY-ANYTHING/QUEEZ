@@ -7,14 +7,14 @@ import 'package:quiz_app/utils/app_strings.dart';
 /// Usage: 'settings'.tr(ref) or tr('settings', ref)
 extension TranslateString on String {
   String tr(WidgetRef ref) {
-    final locale = ref.watch(localeProvider);
+    final locale = ref.watch(localeStateProvider);
     return AppStrings.get(this, locale.languageCode);
   }
 }
 
 /// Global translation function for use in widgets
 String tr(String key, WidgetRef ref) {
-  final locale = ref.watch(localeProvider);
+  final locale = ref.watch(localeStateProvider);
   return AppStrings.get(key, locale.languageCode);
 }
 
@@ -37,7 +37,7 @@ class TrText extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(localeProvider);
+    final locale = ref.watch(localeStateProvider);
     return Text(
       AppStrings.get(textKey, locale.languageCode),
       style: style,

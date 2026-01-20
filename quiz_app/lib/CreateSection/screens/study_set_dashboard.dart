@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
@@ -19,7 +20,7 @@ import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
-import 'package:quiz_app/LibrarySection/screens/library_page.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -27,13 +28,18 @@ import 'package:quiz_app/utils/globals.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 
-class StudySetDashboard extends StatefulWidget {
+// TODO: Implement editing quizzes, flashcards, and notes INSIDE of a course pack (AI-generated content)
+// TODO: Create UI to differentiate between editing standalone items vs course pack embedded items
+class StudySetDashboard extends ConsumerStatefulWidget {
   final String studySetId;
   final String title;
   final String description;
   final String language;
   final String category;
   final String? coverImagePath;
+
+  /// Whether we are editing an existing course pack (true) or creating new (false)
+  final bool isEditing;
 
   const StudySetDashboard({
     super.key,
@@ -43,13 +49,14 @@ class StudySetDashboard extends StatefulWidget {
     required this.language,
     required this.category,
     this.coverImagePath,
+    this.isEditing = false,
   });
 
   @override
-  State<StudySetDashboard> createState() => _StudySetDashboardState();
+  ConsumerState<StudySetDashboard> createState() => _StudySetDashboardState();
 }
 
-class _StudySetDashboardState extends State<StudySetDashboard> {
+class _StudySetDashboardState extends ConsumerState<StudySetDashboard> {
   List<Quiz> quizzes = [];
   List<FlashcardSet> flashcardSets = [];
   List<Note> notes = [];
@@ -71,6 +78,94 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         notes = cachedStudySet.notes;
         videoLectures = cachedStudySet.videoLectures;
       });
+    }
+  }
+
+  /// Build cover image widget that handles both local files and URLs
+  Widget _buildCoverImage(String imagePath) {
+    // Check if it's a URL (http/https)
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return Image.network(
+        imagePath,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 200,
+            width: double.infinity,
+            color: AppColors.surface,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Image not available',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: 200,
+            width: double.infinity,
+            color: AppColors.surface,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                    : null,
+                color: AppColors.primary,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // Local file path
+      return Image.file(
+        File(imagePath),
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 200,
+            width: double.infinity,
+            color: AppColors.surface,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Image not available',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
   }
 
@@ -196,7 +291,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                 _buildAddItemOption(
                   icon: Icons.videocam_outlined,
                   title: 'Upload Video Lecture',
-                  description: 'Upload video from your device to Google Drive',
+                  description: 'Upload a video lecture from your device',
                   onTap: () {
                     Navigator.pop(context);
                     _uploadVideoLecture();
@@ -938,10 +1033,18 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
         throw Exception('Study set not found in cache');
       }
 
-      // Save to MongoDB via backend API
-      await CoursePackService.saveCoursePack(
-        CoursePack.fromStudySet(cachedStudySet),
-      );
+      // Save or update to MongoDB via backend API
+      if (widget.isEditing) {
+        // Update existing course pack
+        await CoursePackService.updateCoursePack(
+          CoursePack.fromStudySet(cachedStudySet),
+        );
+      } else {
+        // Create new course pack
+        await CoursePackService.saveCoursePack(
+          CoursePack.fromStudySet(cachedStudySet),
+        );
+      }
       StudySetCacheManager.instance.clearCache();
 
       if (!mounted) return;
@@ -950,7 +1053,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
       await QuizSavedDialog.show(
         context,
         title: 'Success!',
-        message: 'Your study set has been saved successfully.',
+        message: widget.isEditing
+            ? 'Your course pack has been updated successfully.'
+            : 'Your study set has been saved successfully.',
         onDismiss: () async {
           if (mounted) {
             // Pop back to dashboard
@@ -960,7 +1065,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
             bottomNavbarKey.currentState?.setIndex(1);
 
             // Trigger library reload to fetch the new study set
-            LibraryPage.reloadItems();
+            ref.invalidate(quizLibraryProvider);
           }
         },
       );
@@ -1003,7 +1108,9 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
                       )
                     : Icon(Icons.save, color: AppColors.primary),
                 label: Text(
-                  _isSaving ? 'Saving...' : 'Save',
+                  _isSaving
+                      ? (widget.isEditing ? 'Updating...' : 'Saving...')
+                      : (widget.isEditing ? 'Update' : 'Save'),
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -1023,12 +1130,7 @@ class _StudySetDashboardState extends State<StudySetDashboard> {
               if (widget.coverImagePath != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(widget.coverImagePath!),
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+                  child: _buildCoverImage(widget.coverImagePath!),
                 ),
               if (widget.coverImagePath != null) const SizedBox(height: 20),
 

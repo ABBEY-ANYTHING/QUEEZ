@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../../api_config.dart';
 import '../models/flashcard_set.dart';
 
@@ -85,6 +87,60 @@ class FlashcardService {
       }
     } catch (e) {
       throw Exception('Error fetching flashcard set: $e');
+    }
+  }
+
+  static Future<void> updateFlashcardSet({
+    required String setId,
+    required String title,
+    required String description,
+    required String category,
+    required String creatorId,
+    required List<Map<String, String>> cards,
+    String? coverImagePath,
+  }) async {
+    try {
+      final flashcardSet = FlashcardSet(
+        id: setId,
+        title: title,
+        description: description,
+        category: category,
+        creatorId: creatorId,
+        coverImagePath: coverImagePath,
+        cards: cards
+            .map(
+              (card) => Flashcard(
+                id: card['id'],
+                front: card['front']!,
+                back: card['back']!,
+              ),
+            )
+            .toList(),
+      );
+
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/flashcards/$setId'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(flashcardSet.toJson()),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Request timed out. Please check your internet connection.',
+              );
+            },
+          );
+
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(
+          errorData['detail'] ?? 'Failed to update flashcard set',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error updating flashcard set: $e');
     }
   }
 

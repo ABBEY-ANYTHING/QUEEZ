@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../utils/app_logger.dart';
+import '../utils/exceptions.dart';
 
 /// Service for managing user favourites stored in Firestore users collection
 class FavoritesService {
@@ -10,6 +11,15 @@ class FavoritesService {
 
   /// Get the current user's Firebase UID
   String? get _userId => _auth.currentUser?.uid;
+
+  /// Valid item types for favorites
+  static const List<String> validItemTypes = [
+    'quiz',
+    'flashcard',
+    'note',
+    'study_set',
+    'course_pack',
+  ];
 
   /// Mapping from item type to favourites field
   static const Map<String, String> _typeToField = {
@@ -25,16 +35,26 @@ class FavoritesService {
     return _firestore.collection('users').doc(_userId);
   }
 
-  /// Add an item to favorites
-  Future<void> addToFavorites(String itemId, String itemType) async {
+  /// Validate user is authenticated
+  void _validateAuth() {
     if (_userId == null) {
-      throw Exception('User not authenticated');
+      throw const AuthenticationException('User not authenticated');
     }
+  }
 
+  /// Validate item type
+  String _validateAndGetField(String itemType) {
     final field = _typeToField[itemType];
     if (field == null) {
-      throw Exception('Invalid item type: $itemType');
+      throw InvalidItemTypeException(itemType, validTypes: validItemTypes);
     }
+    return field;
+  }
+
+  /// Add an item to favorites
+  Future<void> addToFavorites(String itemId, String itemType) async {
+    _validateAuth();
+    final field = _validateAndGetField(itemType);
 
     try {
       await _getUserDoc().set({
@@ -44,22 +64,26 @@ class FavoritesService {
       }, SetOptions(merge: true));
 
       AppLogger.success('Added $itemType item $itemId to favorites');
-    } catch (e) {
-      AppLogger.error('Error adding to favorites: $e');
-      rethrow;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error adding to favorites',
+        exception: e,
+        stackTrace: stackTrace,
+      );
+      throw FavoriteException(
+        itemId: itemId,
+        operation: 'add',
+        message: 'Failed to add item to favorites',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   /// Remove an item from favorites
   Future<void> removeFromFavorites(String itemId, String itemType) async {
-    if (_userId == null) {
-      throw Exception('User not authenticated');
-    }
-
-    final field = _typeToField[itemType];
-    if (field == null) {
-      throw Exception('Invalid item type: $itemType');
-    }
+    _validateAuth();
+    final field = _validateAndGetField(itemType);
 
     try {
       await _getUserDoc().update({
@@ -67,17 +91,25 @@ class FavoritesService {
       });
 
       AppLogger.success('Removed item $itemId from favorites');
-    } catch (e) {
-      AppLogger.error('Error removing from favorites: $e');
-      rethrow;
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error removing from favorites',
+        exception: e,
+        stackTrace: stackTrace,
+      );
+      throw FavoriteException(
+        itemId: itemId,
+        operation: 'remove',
+        message: 'Failed to remove item from favorites',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   /// Toggle favorite status
   Future<bool> toggleFavorite(String itemId, String itemType) async {
-    if (_userId == null) {
-      throw Exception('User not authenticated');
-    }
+    _validateAuth();
 
     try {
       final isFavorite = await isFavorited(itemId, itemType);
@@ -88,8 +120,12 @@ class FavoritesService {
         await addToFavorites(itemId, itemType);
         return true;
       }
-    } catch (e) {
-      AppLogger.error('Error toggling favorite: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error toggling favorite',
+        exception: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

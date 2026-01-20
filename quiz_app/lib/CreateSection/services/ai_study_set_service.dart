@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:quiz_app/CreateSection/models/ai_study_set_models.dart';
 import 'package:quiz_app/CreateSection/models/study_set.dart';
 import 'package:quiz_app/api_config.dart';
@@ -37,7 +38,12 @@ class AIStudySetService {
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      if (user == null) {
+        throw Exception(
+          'Authentication required\n\n'
+          'Please sign in to upload documents.',
+        );
+      }
 
       final token = await user.getIdToken();
 
@@ -53,7 +59,10 @@ class AIStudySetService {
           .timeout(
             const Duration(seconds: 90), // Increased for Render cold start
             onTimeout: () {
-              throw Exception('Request timed out - server may be starting up');
+              throw Exception(
+                'Server is starting up\n\n'
+                'The server is warming up. This can take up to a minute on the first request. Please try again.',
+              );
             },
           );
 
@@ -63,9 +72,27 @@ class AIStudySetService {
         final data = jsonDecode(response.body);
         return data['uploadUrl'];
       } else {
-        final error = jsonDecode(response.body);
-        throw Exception(error['detail'] ?? 'Failed to get upload URL');
+        String errorMessage = 'Failed to prepare upload';
+        try {
+          final errorData = jsonDecode(response.body);
+          final detail = errorData['detail'] ?? errorData['error'];
+          if (detail != null) {
+            errorMessage = detail.toString();
+          }
+        } catch (_) {
+          if (response.statusCode == 401 || response.statusCode == 403) {
+            errorMessage = 'Session expired. Please sign in again.';
+          } else if (response.statusCode >= 500) {
+            errorMessage = 'Server temporarily unavailable. Please try again.';
+          }
+        }
+        throw Exception(errorMessage);
       }
+    } on SocketException catch (_) {
+      throw Exception(
+        'No internet connection\n\n'
+        'Please check your network connection and try again.',
+      );
     } catch (e) {
       AppLogger.error('Error getting upload URL: $e');
       rethrow;
@@ -80,31 +107,58 @@ class AIStudySetService {
 
     while (true) {
       try {
-        AppLogger.network('Uploading file to Gemini: ${file.path} (attempt ${retryCount + 1}/$maxRetries)');
+        AppLogger.network(
+          'Uploading file to Gemini: ${file.path} (attempt ${retryCount + 1}/$maxRetries)',
+        );
 
         final fileName = file.path.split(Platform.pathSeparator).last;
         final fileBytes = await file.readAsBytes();
         final fileSize = fileBytes.length;
 
-        // Determine MIME type
-        String mimeType = 'application/octet-stream';
-        if (fileName.toLowerCase().endsWith('.pdf')) {
-          mimeType = 'application/pdf';
-        } else if (fileName.toLowerCase().endsWith('.pptx')) {
-          mimeType =
-              'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-        } else if (fileName.toLowerCase().endsWith('.ppt')) {
-          mimeType = 'application/vnd.ms-powerpoint';
-        } else if (fileName.toLowerCase().endsWith('.docx')) {
-          mimeType =
-              'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        } else if (fileName.toLowerCase().endsWith('.doc')) {
-          mimeType = 'application/msword';
-        } else if (fileName.toLowerCase().endsWith('.txt')) {
-          mimeType = 'text/plain';
+        // Check file size (20MB limit for Gemini)
+        if (fileSize > 20 * 1024 * 1024) {
+          throw Exception(
+            'File "$fileName" is too large (${(fileSize / (1024 * 1024)).toStringAsFixed(1)}MB). '
+            'Maximum file size is 20MB. Try compressing or splitting your document.',
+          );
         }
 
-        AppLogger.network('File: $fileName, Size: $fileSize bytes, MIME: $mimeType');
+        // Determine MIME type and validate supported formats
+        String mimeType = 'application/octet-stream';
+        final lowerFileName = fileName.toLowerCase();
+
+        if (lowerFileName.endsWith('.pdf')) {
+          mimeType = 'application/pdf';
+        } else if (lowerFileName.endsWith('.pptx')) {
+          mimeType =
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        } else if (lowerFileName.endsWith('.ppt')) {
+          mimeType = 'application/vnd.ms-powerpoint';
+        } else if (lowerFileName.endsWith('.docx')) {
+          mimeType =
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        } else if (lowerFileName.endsWith('.doc')) {
+          mimeType = 'application/msword';
+        } else if (lowerFileName.endsWith('.txt')) {
+          mimeType = 'text/plain';
+        } else {
+          // Unsupported file format
+          final extension = lowerFileName.contains('.')
+              ? lowerFileName.split('.').last.toUpperCase()
+              : 'unknown';
+          throw Exception(
+            'Unsupported file format: .$extension\n\n'
+            'Supported formats:\n'
+            '• PDF documents (.pdf)\n'
+            '• Word documents (.doc, .docx)\n'
+            '• PowerPoint presentations (.ppt, .pptx)\n'
+            '• Text files (.txt)',
+          );
+        }
+
+        AppLogger.network(
+          'File: $fileName, Size: $fileSize bytes, MIME: $mimeType',
+        );
 
         // Get resumable upload URL from backend
         final uploadUrl = await getUploadUrl(
@@ -128,11 +182,19 @@ class AIStudySetService {
             .timeout(
               const Duration(minutes: 3),
               onTimeout: () {
-                throw Exception('Upload timed out');
+                throw Exception(
+                  'Upload timed out after 3 minutes.\n\n'
+                  'This could be due to:\n'
+                  '• Slow internet connection\n'
+                  '• Large file size\n\n'
+                  'Try with a smaller document or check your connection.',
+                );
               },
             );
 
-        AppLogger.network('Gemini upload response: ${uploadResponse.statusCode}');
+        AppLogger.network(
+          'Gemini upload response: ${uploadResponse.statusCode}',
+        );
         AppLogger.network('Response body: ${uploadResponse.body}');
 
         if (uploadResponse.statusCode == 200) {
@@ -146,21 +208,49 @@ class AIStudySetService {
             mimeType: fileData['mimeType'] ?? mimeType,
           );
         } else {
-          throw Exception('Upload failed: ${uploadResponse.body}');
+          // Parse error response for better messaging
+          String errorMessage = 'Upload failed';
+          try {
+            final errorData = jsonDecode(uploadResponse.body);
+            if (errorData['error'] != null) {
+              errorMessage = errorData['error']['message'] ?? errorMessage;
+            }
+          } catch (_) {
+            // Use status code for generic message
+            if (uploadResponse.statusCode == 413) {
+              errorMessage = 'File is too large for the server to process';
+            } else if (uploadResponse.statusCode == 415) {
+              errorMessage = 'File format not supported';
+            } else if (uploadResponse.statusCode >= 500) {
+              errorMessage =
+                  'Server is temporarily unavailable. Please try again later.';
+            }
+          }
+          throw Exception(errorMessage);
         }
       } catch (e) {
         retryCount++;
         final errorString = e.toString().toLowerCase();
-        
+
         // Check if this is a retryable error (network issues, broken pipe, etc.)
-        final isRetryable = errorString.contains('broken pipe') ||
+        final isNetworkError =
+            errorString.contains('broken pipe') ||
             errorString.contains('connection') ||
             errorString.contains('socket') ||
+            errorString.contains('network') ||
+            errorString.contains('socketexception') ||
+            errorString.contains('handshake');
+
+        final isTimeoutError =
             errorString.contains('timeout') ||
-            errorString.contains('network');
+            errorString.contains('timed out');
+
+        final isRetryable = isNetworkError || isTimeoutError;
 
         if (isRetryable && retryCount < maxRetries) {
-          AppLogger.network('Retryable error occurred: $e. Retrying in ${retryDelay.inSeconds}s...');
+          AppLogger.network(
+            'Retryable error occurred: $e. Retrying in ${retryDelay.inSeconds}s...',
+          );
           await Future.delayed(retryDelay);
           // Exponential backoff
           retryDelay *= 2;
@@ -168,12 +258,34 @@ class AIStudySetService {
         }
 
         AppLogger.network('Error uploading file to Gemini (final): $e');
-        
-        // Provide a more user-friendly error message
-        if (isRetryable) {
-          throw Exception('Network error: Please check your internet connection and try again.');
+
+        // Provide user-friendly error messages based on error type
+        if (isNetworkError) {
+          throw Exception(
+            'Connection error\n\n'
+            'Unable to connect to the server. Please:\n'
+            '• Check your internet connection\n'
+            '• Make sure you\'re not on a restricted network\n'
+            '• Try again in a few moments',
+          );
         }
-        rethrow;
+
+        if (isTimeoutError) {
+          throw Exception(
+            'Request timed out\n\n'
+            'The server took too long to respond. This may be due to:\n'
+            '• Slow internet connection\n'
+            '• Server is busy\n\n'
+            'Please try again.',
+          );
+        }
+
+        // For other errors, clean up the message
+        final cleanError = e
+            .toString()
+            .replaceAll('Exception: ', '')
+            .replaceAll('exception: ', '');
+        throw Exception(cleanError);
       }
     }
   }
@@ -184,7 +296,12 @@ class AIStudySetService {
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not authenticated');
+      if (user == null) {
+        throw Exception(
+          'Authentication required\n\n'
+          'Please sign in to generate study materials.',
+        );
+      }
 
       final token = await user.getIdToken();
 
@@ -203,7 +320,11 @@ class AIStudySetService {
             const Duration(minutes: 3),
             onTimeout: () {
               throw Exception(
-                'Generation timed out. Please try with smaller documents.',
+                'Generation timed out\n\n'
+                'The AI is taking longer than expected. This may happen with:\n'
+                '• Very large documents\n'
+                '• Complex content\n\n'
+                'Try with smaller or simpler documents.',
               );
             },
           );
@@ -215,14 +336,82 @@ class AIStudySetService {
         if (data['studySet'] != null) {
           return StudySet.fromJson(data['studySet']);
         }
-        throw Exception('Invalid response format');
+        throw Exception(
+          'Invalid response from server\n\n'
+          'The server returned an unexpected format. Please try again.',
+        );
       } else {
-        final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Generation failed');
+        // Parse and provide user-friendly error messages
+        String errorMessage = 'Generation failed';
+        try {
+          final errorData = jsonDecode(response.body);
+          final detail = errorData['error'] ?? errorData['detail'];
+          if (detail != null) {
+            // Check for common error patterns
+            final detailLower = detail.toString().toLowerCase();
+            if (detailLower.contains('quota') ||
+                detailLower.contains('rate limit')) {
+              errorMessage =
+                  'Service temporarily busy\n\n'
+                  'Too many requests at the moment. Please wait a few minutes and try again.';
+            } else if (detailLower.contains('content') &&
+                detailLower.contains('extract')) {
+              errorMessage =
+                  'Unable to read document\n\n'
+                  'The AI couldn\'t extract text from your document. This may happen with:\n'
+                  '• Scanned PDFs (image-based)\n'
+                  '• Password-protected files\n'
+                  '• Corrupted documents\n\n'
+                  'Try a different document or use a text-based PDF.';
+            } else if (detailLower.contains('empty') ||
+                detailLower.contains('no content')) {
+              errorMessage =
+                  'Document appears empty\n\n'
+                  'No text content was found in your document. Please ensure your file contains readable text.';
+            } else if (detailLower.contains('safety') ||
+                detailLower.contains('block')) {
+              errorMessage =
+                  'Content not supported\n\n'
+                  'The document contains content that cannot be processed. Please try a different document.';
+            } else {
+              errorMessage = detail.toString();
+            }
+          }
+        } catch (_) {
+          // Handle by status code
+          if (response.statusCode == 401 || response.statusCode == 403) {
+            errorMessage =
+                'Session expired\n\n'
+                'Please sign out and sign in again to continue.';
+          } else if (response.statusCode == 429) {
+            errorMessage =
+                'Too many requests\n\n'
+                'Please wait a few minutes before trying again.';
+          } else if (response.statusCode >= 500) {
+            errorMessage =
+                'Server error\n\n'
+                'Our servers are experiencing issues. Please try again later.';
+          }
+        }
+        throw Exception(errorMessage);
       }
+    } on SocketException catch (_) {
+      throw Exception(
+        'No internet connection\n\n'
+        'Please check your network connection and try again.',
+      );
     } catch (e) {
       AppLogger.network('Error generating study set: $e');
-      rethrow;
+      // Clean up error message if it's already user-friendly
+      final errorStr = e.toString();
+      if (errorStr.contains('\n\n')) {
+        // Already formatted, rethrow as-is
+        rethrow;
+      }
+      // Clean and rethrow
+      throw Exception(
+        errorStr.replaceAll('Exception: ', '').replaceAll('exception: ', ''),
+      );
     }
   }
 }

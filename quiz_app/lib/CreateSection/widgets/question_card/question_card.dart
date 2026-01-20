@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/CreateSection/widgets/custom_text_field.dart';
-import '../../models/question.dart';
+import 'package:quiz_app/utils/color.dart';
+
+import '../../mixins/animation_mixin.dart';
 import '../custom_dropdown.dart';
 import 'question_content_builder.dart';
-import '../../mixins/animation_mixin.dart';
-import 'package:quiz_app/utils/color.dart';
 
 class QuestionCard extends StatefulWidget {
   final Question question;
@@ -85,16 +86,21 @@ class _QuestionCardState extends State<QuestionCard>
   }
 
   void _updateDragDropQuestion() {
-    widget.question.dragItems = _dragItemControllers.map((c) => c.text).toList();
-    widget.question.dropTargets = _dropTargetControllers.map((c) => c.text).toList();
-    
+    widget.question.dragItems = _dragItemControllers
+        .map((c) => c.text)
+        .toList();
+    widget.question.dropTargets = _dropTargetControllers
+        .map((c) => c.text)
+        .toList();
+
     // Build correctMatches map based on index matching
     // dragItems[0] matches dropTargets[0], dragItems[1] matches dropTargets[1], etc.
     final correctMatches = <String, String>{};
-    final minLength = widget.question.dragItems!.length < widget.question.dropTargets!.length
+    final minLength =
+        widget.question.dragItems!.length < widget.question.dropTargets!.length
         ? widget.question.dragItems!.length
         : widget.question.dropTargets!.length;
-    
+
     for (int i = 0; i < minLength; i++) {
       final dragItem = widget.question.dragItems![i].trim();
       final dropTarget = widget.question.dropTargets![i].trim();
@@ -102,7 +108,7 @@ class _QuestionCardState extends State<QuestionCard>
         correctMatches[dragItem] = dropTarget;
       }
     }
-    
+
     widget.question.correctMatches = correctMatches;
     widget.onQuestionUpdated(widget.question);
   }

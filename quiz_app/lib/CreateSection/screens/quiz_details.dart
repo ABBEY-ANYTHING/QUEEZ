@@ -21,12 +21,14 @@ import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 class QuizDetails extends StatefulWidget {
   final QuizLibraryItem? quizItem;
   final bool isStudySetMode;
+  final bool isEditMode;
   final Function(Quiz)? onSaveForStudySet;
 
   const QuizDetails({
     super.key,
     this.quizItem,
     this.isStudySetMode = false,
+    this.isEditMode = false,
     this.onSaveForStudySet,
   });
 
@@ -63,7 +65,8 @@ class QuizDetailsState extends State<QuizDetails> {
       _selectedTag = widget.quizItem!.category;
       _selectedLanguage = widget.quizItem!.language;
       _coverImagePath = widget.quizItem!.coverImagePath;
-      _isLocked = true;
+      // Only lock fields if viewing (not editing)
+      _isLocked = !widget.isEditMode;
       _fetchQuestions();
     }
   }
@@ -94,7 +97,9 @@ class QuizDetailsState extends State<QuizDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const UniversalAppBar(title: 'Create Quiz'),
+      appBar: UniversalAppBar(
+        title: widget.isEditMode ? 'Edit Quiz' : 'Create Quiz',
+      ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -293,6 +298,8 @@ class QuizDetailsState extends State<QuizDetails> {
             child: QuizQuestions(
               questions: questions,
               isStudySetMode: widget.isStudySetMode,
+              isEditMode: widget.isEditMode,
+              quizId: widget.quizItem?.id,
               onSaveForStudySet: widget.onSaveForStudySet,
             ),
           );

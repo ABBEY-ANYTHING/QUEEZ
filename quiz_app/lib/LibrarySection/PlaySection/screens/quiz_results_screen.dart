@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/models/quiz_attempt.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
-import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
 
-class QuizResultsScreen extends StatefulWidget {
+class QuizResultsScreen extends ConsumerStatefulWidget {
   final QuizLibraryItem quizItem;
   final QuizAttempt quizAttempt;
 
@@ -20,10 +21,10 @@ class QuizResultsScreen extends StatefulWidget {
   });
 
   @override
-  State<QuizResultsScreen> createState() => _QuizResultsScreenState();
+  ConsumerState<QuizResultsScreen> createState() => _QuizResultsScreenState();
 }
 
-class _QuizResultsScreenState extends State<QuizResultsScreen> {
+class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
   @override
   void initState() {
     super.initState();
@@ -48,7 +49,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
 
   void _goHome() {
     // Reload library to reflect potential deletion
-    LibraryPage.reloadItems();
+    ref.invalidate(quizLibraryProvider);
     // Pop until we are at the root of the navigator (Dashboard)
     Navigator.of(context).popUntil((route) => route.isFirst);
     // Switch to library tab

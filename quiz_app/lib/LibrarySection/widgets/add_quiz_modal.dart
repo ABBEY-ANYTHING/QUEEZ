@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
 import 'package:quiz_app/CreateSection/widgets/quiz_saved_dialog.dart';
 import 'package:quiz_app/LibrarySection/LiveMode/screens/live_multiplayer_dashboard.dart';
-import 'package:quiz_app/LibrarySection/screens/library_page.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/providers/library_search_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
@@ -144,8 +144,8 @@ class _AddQuizModalContentState extends ConsumerState<AddQuizModalContent> {
         AppLogger.success('Wait complete, setting search query');
 
         // Set the search query to the quiz title so it appears in results
-        AppLogger.info('Calling LibraryPage.setSearchQuery("$quizTitle")...');
-        LibraryPage.setSearchQuery(quizTitle);
+        AppLogger.info('Setting search query to "$quizTitle"...');
+        ref.read(librarySearchQueryProvider.notifier).setQuery(quizTitle);
         AppLogger.success('Search query set');
 
         // Close the dialog after a short delay
@@ -164,7 +164,11 @@ class _AddQuizModalContentState extends ConsumerState<AddQuizModalContent> {
         AppLogger.success('_handleAddQuiz completed successfully');
       }
     } catch (e, stackTrace) {
-      AppLogger.error('ERROR in _handleAddQuiz', exception: e, stackTrace: stackTrace);
+      AppLogger.error(
+        'ERROR in _handleAddQuiz',
+        exception: e,
+        stackTrace: stackTrace,
+      );
       setState(() {
         _isLoading = false;
         _errorMessage = e.toString().replaceAll('Exception: ', '');

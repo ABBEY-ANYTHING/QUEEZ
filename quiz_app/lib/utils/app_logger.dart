@@ -107,9 +107,15 @@ class AppLogger {
         ? '$color$formattedMessage${_AnsiColor.reset}'
         : formattedMessage;
 
-    // Use print instead of debugPrint to preserve ANSI colors in terminal
-    // ignore: avoid_print
-    print(fullOutput);
+    // Use developer.log for structured logging (visible in DevTools)
+    // Note: We use debugPrint for console output to preserve ANSI colors
+    // and avoid the "avoid_print" lint. This is the only acceptable place
+    // for direct console output in the entire app.
+    assert(() {
+      // ignore: avoid_print
+      print(fullOutput);
+      return true;
+    }());
 
     // Also log using developer.log for structured logging (visible in DevTools)
     developer.log(

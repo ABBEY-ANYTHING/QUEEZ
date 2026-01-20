@@ -151,6 +151,26 @@ class StudySetCacheManager {
     _currentStudySet = studySet;
   }
 
+  /// Set study set from CoursePack (for editing existing course packs)
+  void setStudySetFromCoursePack(dynamic coursePack) {
+    // Import from course_pack_service.dart CoursePack model
+    _currentStudySet = StudySet(
+      id: coursePack.id,
+      name: coursePack.name,
+      description: coursePack.description,
+      category: coursePack.category,
+      language: coursePack.language,
+      coverImagePath: coursePack.coverImagePath,
+      ownerId: coursePack.ownerId,
+      quizzes: List<Quiz>.from(coursePack.quizzes),
+      flashcardSets: List<FlashcardSet>.from(coursePack.flashcardSets),
+      notes: List<Note>.from(coursePack.notes),
+      videoLectures: List<VideoLecture>.from(coursePack.videoLectures),
+      createdAt: coursePack.createdAt,
+      updatedAt: coursePack.updatedAt,
+    );
+  }
+
   /// Clear cache
   void clearCache() {
     _currentStudySet = null;

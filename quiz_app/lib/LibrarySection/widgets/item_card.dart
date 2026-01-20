@@ -1,25 +1,40 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quiz_app/CreateSection/models/flashcard_set.dart';
 import 'package:quiz_app/CreateSection/models/note.dart';
+import 'package:quiz_app/CreateSection/screens/flashcard_edit_page.dart';
 import 'package:quiz_app/CreateSection/screens/flashcard_play_screen_new.dart';
+import 'package:quiz_app/CreateSection/screens/note_edit_page.dart';
 import 'package:quiz_app/CreateSection/screens/note_viewer_page.dart';
+import 'package:quiz_app/CreateSection/screens/quiz_details.dart';
+import 'package:quiz_app/CreateSection/screens/study_set_dashboard.dart';
 import 'package:quiz_app/CreateSection/screens/study_set_viewer.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/CreateSection/services/flashcard_service.dart';
 import 'package:quiz_app/CreateSection/services/note_service.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
+import 'package:quiz_app/CreateSection/services/study_set_cache_manager.dart';
 import 'package:quiz_app/LibrarySection/PlaySection/screens/quiz_play_screen.dart';
 import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/screens/mode_selection_sheet.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_actions.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_clippers.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_components.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_dialogs.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_helpers.dart';
+import 'package:quiz_app/LibrarySection/widgets/item_card_options_menu.dart';
 import 'package:quiz_app/LibrarySection/widgets/quiz_library_item.dart';
 import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/services/favorites_service.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
+import 'package:quiz_app/utils/constants.dart';
+import 'package:quiz_app/utils/exceptions.dart';
 import 'package:quiz_app/widgets/wait_screen.dart';
 
+/// Library item card widget displaying quiz, flashcard, note, or study set
 class ItemCard extends ConsumerStatefulWidget {
   final LibraryItem item;
   final VoidCallback onDelete;
@@ -44,6 +59,8 @@ class _ItemCardState extends ConsumerState<ItemCard>
   bool _isDeleting = false;
   late bool _isFavorite;
   final FavoritesService _favoritesService = FavoritesService();
+
+  // Animation controllers
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -54,8 +71,15 @@ class _ItemCardState extends ConsumerState<ItemCard>
   void initState() {
     super.initState();
     _isFavorite = widget.item.isFavorite;
+    _initAnimations();
+    if (widget.isHighlighted) {
+      _startHighlightAnimation();
+    }
+  }
+
+  void _initAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: AppDurations.fast,
       vsync: this,
     );
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -65,23 +89,16 @@ class _ItemCardState extends ConsumerState<ItemCard>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    // Highlight animation controller
     _highlightController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: AppDurations.highlightPulse,
       vsync: this,
     );
     _highlightAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _highlightController, curve: Curves.easeInOut),
     );
-
-    // Start highlight animation if this item is highlighted
-    if (widget.isHighlighted) {
-      _startHighlightAnimation();
-    }
   }
 
   void _startHighlightAnimation() {
-    // Animate 3 times then stop
     _highlightController.repeat(reverse: true);
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -128,6 +145,10 @@ class _ItemCardState extends ConsumerState<ItemCard>
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = ItemCardColors.getBackgroundColor(widget.item);
+    final accentColor = ItemCardColors.getAccentColor(widget.item);
+    final textColor = ItemCardColors.getTextColor(widget.item);
+
     return AnimatedBuilder(
       animation: _highlightAnimation,
       builder: (context, child) {
@@ -144,160 +165,13 @@ class _ItemCardState extends ConsumerState<ItemCard>
             },
             child: Stack(
               children: [
-                // Main card container
-                Container(
-                  decoration: BoxDecoration(
-                    color: _getCardBackgroundColor(),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(28),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: const Radius.circular(16),
-                      bottomRight: const Radius.circular(28),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _getCardBackgroundColor().withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                    // Highlight border when item is highlighted
-                    border: widget.isHighlighted && highlightValue > 0
-                        ? Border.all(
-                            color: AppColors.primary.withValues(
-                              alpha: highlightValue * 0.8,
-                            ),
-                            width: 3,
-                          )
-                        : null,
-                  ),
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Decorative accent shape
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: ClipPath(
-                          clipper: _AccentShapeClipper(),
-                          child: Container(
-                            width: 150,
-                            height: 120,
-                            color: _getAccentColor().withValues(alpha: 0.3),
-                          ),
-                        ),
-                      ),
-                      // Main content
-                      Row(
-                        children: [
-                          // Thumbnail with unique shape
-                          _buildThumbnail(),
-                          // Content
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 18, 50, 18),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Type Badge Row with marketplace tag
-                                  _buildTypeBadgeRow(),
-                                  const SizedBox(height: 12),
-                                  // Title
-                                  Text(
-                                    widget.item.title,
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w700,
-                                      color: _getTextColor(),
-                                      height: 1.3,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (widget.item.description.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      widget.item.description,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: _getTextColor().withValues(
-                                          alpha: 0.7,
-                                        ),
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.4,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                  const SizedBox(height: 14),
-                                  // Stats Row
-                                  _buildStatsRow(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Action buttons (share + more)
-                      Positioned(
-                        top: 14,
-                        right: 14,
-                        child: _buildActionButtons(context),
-                      ),
-                      // Options bubbles
-                      if (_showOptions) _buildOptionsBubbles(),
-                      // Delete loading overlay
-                      if (_isDeleting)
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(28),
-                                topRight: const Radius.circular(16),
-                                bottomLeft: const Radius.circular(16),
-                                bottomRight: const Radius.circular(28),
-                              ),
-                            ),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.white,
-                                ),
-                                strokeWidth: 3,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                _buildMainCard(
+                  backgroundColor,
+                  accentColor,
+                  textColor,
+                  highlightValue,
                 ),
-                // Highlight glow effect
-                if (widget.isHighlighted && highlightValue > 0)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(28),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: const Radius.circular(16),
-                            bottomRight: const Radius.circular(28),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(
-                                alpha: highlightValue * 0.4,
-                              ),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                _buildHighlightGlow(highlightValue),
               ],
             ),
           ),
@@ -306,141 +180,211 @@ class _ItemCardState extends ConsumerState<ItemCard>
     );
   }
 
-  /// Build type badge row with optional marketplace tag
-  Widget _buildTypeBadgeRow() {
-    return Row(
-      children: [
-        _buildTypeBadge(),
-        // Marketplace listing tag for course packs that are public
-        if (widget.item.isCoursePack && widget.item.isPublic) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.accentBright.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.accentBright.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.storefront_rounded,
-                  size: 12,
-                  color: AppColors.accentBright,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Listed',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.accentBright,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildMainCard(
+    Color backgroundColor,
+    Color accentColor,
+    Color textColor,
+    double highlightValue,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(16),
+          bottomLeft: Radius.circular(16),
+          bottomRight: Radius.circular(28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: backgroundColor.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
-      ],
+        border: widget.isHighlighted && highlightValue > 0
+            ? Border.all(
+                color: AppColors.primary.withValues(
+                  alpha: highlightValue * 0.8,
+                ),
+                width: 3,
+              )
+            : null,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Decorative accent shape
+          Positioned(
+            top: 0,
+            right: 0,
+            child: ClipPath(
+              clipper: AccentShapeClipper(),
+              child: Container(
+                width: 150,
+                height: 120,
+                color: accentColor.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+          // Main content
+          Row(
+            children: [
+              ItemCardThumbnail(item: widget.item),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 18, 50, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ItemTypeBadgeRow(item: widget.item),
+                      const SizedBox(height: 12),
+                      _buildTitle(textColor),
+                      if (widget.item.description.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildDescription(textColor),
+                      ],
+                      const SizedBox(height: 14),
+                      ItemStatsRow(item: widget.item),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Action buttons
+          Positioned(
+            top: 14,
+            right: 14,
+            child: ItemCardActionButtons(
+              isFavorite: _isFavorite,
+              onFavoriteTap: _toggleFavorite,
+              onShareTap: () => _handleShare(context),
+              onMoreTap: _toggleOptions,
+              accentColor: accentColor,
+              textColor: textColor,
+            ),
+          ),
+          // Options menu
+          if (_showOptions)
+            Positioned(
+              top: 52,
+              right: 12,
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return ItemCardOptionsMenu(
+                    scaleAnimation: _scaleAnimation,
+                    fadeAnimation: _fadeAnimation,
+                    onEdit: () {
+                      _hideOptions();
+                      _handleEdit();
+                    },
+                    onDelete: () {
+                      _hideOptions();
+                      _showDeleteConfirmationDialog();
+                    },
+                    showMarketplaceOption: false,
+                  );
+                },
+              ),
+            ),
+          // Delete loading overlay
+          if (_isDeleting) _buildLoadingOverlay(),
+        ],
+      ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Favorite button
-        GestureDetector(
-          onTap: _toggleFavorite,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              size: 18,
-              color: _isFavorite ? Colors.red : _getAccentColor(),
-            ),
+  Widget _buildTitle(Color textColor) {
+    return Text(
+      widget.item.title,
+      style: TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w700,
+        color: textColor,
+        height: 1.3,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildDescription(Color textColor) {
+    return Text(
+      widget.item.description,
+      style: TextStyle(
+        fontSize: 13,
+        color: textColor.withValues(alpha: 0.7),
+        fontWeight: FontWeight.w400,
+        height: 1.4,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: AppOpacity.overlay),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+            bottomRight: Radius.circular(28),
           ),
         ),
-        const SizedBox(width: 8),
-        // Share button
-        GestureDetector(
-          onTap: () => _handleShare(context),
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.share_outlined,
-              size: 18,
-              color: _getAccentColor(),
-            ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+            strokeWidth: AppSizes.progressIndicatorStroke,
           ),
         ),
-        const SizedBox(width: 8),
-        // More button
-        GestureDetector(
-          onTap: _toggleOptions,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightGlow(double highlightValue) {
+    if (!widget.isHighlighted || highlightValue <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(28),
             ),
-            child: Icon(Icons.more_horiz, size: 20, color: _getTextColor()),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(
+                  alpha: highlightValue * 0.4,
+                ),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
   Future<void> _toggleFavorite() async {
-    // Optimistic UI update - toggle locally first for instant feedback
     final newFavoriteStatus = !_isFavorite;
-    setState(() {
-      _isFavorite = newFavoriteStatus;
-    });
+    setState(() => _isFavorite = newFavoriteStatus);
 
-    // Update provider state locally (no server reload)
     ref
         .read(quizLibraryProvider.notifier)
         .toggleFavoriteLocally(widget.item.id, newFavoriteStatus);
 
     try {
-      // Persist to Firestore in background
       if (newFavoriteStatus) {
         await _favoritesService.addToFavorites(
           widget.item.id,
@@ -455,12 +399,13 @@ class _ItemCardState extends ConsumerState<ItemCard>
       AppLogger.success(
         'Favorite persisted: ${widget.item.id} -> $newFavoriteStatus',
       );
-    } catch (e) {
-      AppLogger.error('Error persisting favorite', exception: e);
-      // Revert on error
-      setState(() {
-        _isFavorite = !newFavoriteStatus;
-      });
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error persisting favorite',
+        exception: e,
+        stackTrace: stackTrace,
+      );
+      setState(() => _isFavorite = !newFavoriteStatus);
       ref
           .read(quizLibraryProvider.notifier)
           .toggleFavoriteLocally(widget.item.id, !newFavoriteStatus);
@@ -497,357 +442,34 @@ class _ItemCardState extends ConsumerState<ItemCard>
         isCurrentlyPublic: widget.item.isPublic,
       );
     } else {
-      // For other types, show a simple share message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Share ${_getTypeLabel()} coming soon!'),
-          backgroundColor: _getAccentColor(),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  Widget _buildOptionsBubbles() {
-    return Positioned(
-      top: 52,
-      right: 12,
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              alignment: Alignment.topRight,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildOptionItem(
-                      icon: Icons.edit_outlined,
-                      label: 'Edit',
-                      color: AppColors.primary,
-                      onTap: () {
-                        _hideOptions();
-                        // TODO: Implement edit functionality
-                      },
-                    ),
-                    // Remove from marketplace option (only for public course packs)
-                    if (widget.item.isCoursePack && widget.item.isPublic) ...[
-                      Container(height: 1, color: AppColors.surface),
-                      _buildOptionItem(
-                        icon: Icons.remove_shopping_cart_outlined,
-                        label: 'Remove from Marketplace',
-                        color: AppColors.accentBright,
-                        onTap: () {
-                          _hideOptions();
-                          _showRemoveFromMarketplaceDialog();
-                        },
-                      ),
-                    ],
-                    Container(height: 1, color: AppColors.surface),
-                    _buildOptionItem(
-                      icon: Icons.delete_outline,
-                      label: 'Delete',
-                      color: AppColors.error,
-                      onTap: () {
-                        _hideOptions();
-                        _showDeleteConfirmationDialog();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// Show confirmation dialog for removing from marketplace
-  Future<void> _showRemoveFromMarketplaceDialog() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.accentBright.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.remove_shopping_cart_outlined,
-                color: AppColors.accentBright,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Remove from Marketplace',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'This will remove "${widget.item.title}" from the public marketplace. Users will no longer be able to claim it.\n\nYou can list it again later.',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentBright,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Remove',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _removeFromMarketplace();
-    }
-  }
-
-  /// Remove course pack from marketplace
-  Future<void> _removeFromMarketplace() async {
-    setState(() => _isDeleting = true);
-
-    try {
-      AppLogger.info(
-        'Removing course pack from marketplace: ${widget.item.id}',
-      );
-
-      await CoursePackService.publishCoursePack(
-        widget.item.id,
-        isPublic: false,
-      );
-
-      AppLogger.success('Course pack removed from marketplace');
-
-      if (!mounted) return;
-
-      setState(() => _isDeleting = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              const Expanded(child: Text('Removed from marketplace')),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-
-      // Reload library to update the isPublic status
-      ref.invalidate(quizLibraryProvider);
-    } catch (e) {
-      AppLogger.error('Failed to remove from marketplace', exception: e);
-
-      if (!mounted) return;
-
-      setState(() => _isDeleting = false);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Failed to remove from marketplace: ${e.toString().replaceAll('Exception: ', '')}',
+            'Share ${ItemTypeHelper.getLabel(widget.item)} coming soon!',
           ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          backgroundColor: ItemCardColors.getAccentColor(widget.item),
+          duration: AppDurations.snackBar,
         ),
       );
     }
   }
 
-  /// Show confirmation dialog before deleting
   Future<void> _showDeleteConfirmationDialog() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
 
-    // Safety check: ensure user is logged in
     if (userId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You must be logged in to delete items'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackBar('You must be logged in to delete items');
       return;
     }
 
-    // Safety check: prevent deletion if this is the original course pack and user is not the owner
-    // (A claimed copy will have originalCoursePackId set)
-    if (widget.item.isCoursePack && !widget.item.isClaimed) {
-      // This is an original course pack - only the owner can delete it
-      if (widget.item.ownerId != userId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.lock_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text('You can only delete your own course packs'),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        AppLogger.warning(
-          'User $userId attempted to delete course pack ${widget.item.id} owned by ${widget.item.ownerId}',
-        );
-        return;
-      }
-    }
+    // Ownership checks
+    if (!_canDeleteItem(userId)) return;
 
-    // For all items: verify ownership before showing delete dialog
-    if (widget.item.ownerId != null && widget.item.ownerId != userId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.lock_outline, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              const Expanded(child: Text('You can only delete items you own')),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-      AppLogger.warning(
-        'User $userId attempted to delete ${widget.item.type} ${widget.item.id} owned by ${widget.item.ownerId}',
-      );
-      return;
-    }
+    final deletionMessage = _getDeleteMessage();
 
-    // Prepare deletion details message
-    String deletionMessage;
-    if (widget.item.isCoursePack && widget.item.isClaimed) {
-      final authorName = widget.item.originalOwnerUsername ?? 'the author';
-      deletionMessage =
-          'Are you sure you want to delete your copy of "${widget.item.title}"?\n\n'
-          '📌 The original course pack by $authorName will remain available.\n\n'
-          'This action cannot be undone.';
-    } else {
-      deletionMessage =
-          'Are you sure you want to delete "${widget.item.title}"?\n\nThis action cannot be undone.';
-    }
-
-    final confirmed = await showDialog<bool>(
+    final confirmed = await DeleteConfirmationDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Delete Item',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          deletionMessage,
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
+      message: deletionMessage,
     );
 
     if (confirmed == true) {
@@ -855,107 +477,103 @@ class _ItemCardState extends ConsumerState<ItemCard>
     }
   }
 
-  /// Perform the actual delete operation with ownership verification
+  bool _canDeleteItem(String userId) {
+    // Original course pack check
+    if (widget.item.isCoursePack && !widget.item.isClaimed) {
+      if (widget.item.ownerId != userId) {
+        _showErrorSnackBar('You can only delete your own course packs');
+        AppLogger.warning(
+          'User $userId attempted to delete course pack ${widget.item.id} owned by ${widget.item.ownerId}',
+        );
+        return false;
+      }
+    }
+
+    // General ownership check
+    if (widget.item.ownerId != null && widget.item.ownerId != userId) {
+      _showErrorSnackBar('You can only delete items you own');
+      AppLogger.warning(
+        'User $userId attempted to delete ${widget.item.type} ${widget.item.id} owned by ${widget.item.ownerId}',
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  String _getDeleteMessage() {
+    if (widget.item.isCoursePack && widget.item.isClaimed) {
+      final authorName = widget.item.originalOwnerUsername ?? 'the author';
+      return 'Are you sure you want to delete your copy of "${widget.item.title}"?\n\n'
+          '📌 The original course pack by $authorName will remain available.\n\n'
+          'This action cannot be undone.';
+    }
+    return 'Are you sure you want to delete "${widget.item.title}"?\n\nThis action cannot be undone.';
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.lock_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: AppDurations.snackBarLong,
+      ),
+    );
+  }
+
   Future<void> _performDelete() async {
     setState(() => _isDeleting = true);
 
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) {
-        throw Exception('User not logged in');
+        throw const AuthenticationException('User not logged in');
       }
 
-      // SECURITY CHECK 1: Verify ownership
+      // Security checks
       if (widget.item.ownerId != null && widget.item.ownerId != userId) {
-        throw Exception('You do not have permission to delete this item');
+        throw const PermissionException(
+          'You do not have permission to delete this item',
+        );
       }
 
-      // SECURITY CHECK 2: Prevent deletion of original course packs if not the owner
       if (widget.item.isCoursePack &&
           !widget.item.isClaimed &&
           widget.item.ownerId != userId) {
-        throw Exception('You cannot delete course packs you do not own');
+        throw const PermissionException(
+          'You cannot delete course packs you do not own',
+        );
       }
 
       AppLogger.info(
         'Deleting ${widget.item.type}: ${widget.item.id} (owned by: ${widget.item.ownerId}, isClaimed: ${widget.item.isClaimed})',
       );
 
-      // Delete based on item type
-      if (widget.item.isQuiz) {
-        await QuizService.deleteQuiz(widget.item.id);
-        AppLogger.success('Quiz deleted successfully (ID: ${widget.item.id})');
-      } else if (widget.item.isFlashcard) {
-        await FlashcardService.deleteFlashcardSet(widget.item.id);
-        AppLogger.success(
-          'Flashcard set deleted successfully (ID: ${widget.item.id})',
-        );
-      } else if (widget.item.isNote) {
-        await NoteService.deleteNote(widget.item.id, userId);
-        AppLogger.success('Note deleted successfully (ID: ${widget.item.id})');
-      } else if (widget.item.isStudySet || widget.item.isCoursePack) {
-        // Determine if this is a claimed copy or original
-        if (widget.item.isClaimed) {
-          AppLogger.info(
-            'Deleting claimed course pack copy (original: ${widget.item.originalCoursePackId})',
-          );
-        }
-
-        // Delete course pack
-        try {
-          await CoursePackService.deleteCoursePack(widget.item.id);
-          if (widget.item.isCoursePack && widget.item.isClaimed) {
-            AppLogger.success(
-              'Claimed course pack copy deleted successfully - original remains intact',
-            );
-          } else {
-            AppLogger.success(
-              'Study set deleted successfully (ID: ${widget.item.id})',
-            );
-          }
-        } catch (e) {
-          // If study set delete fails, try course pack delete
-          await CoursePackService.deleteCoursePack(widget.item.id);
-          AppLogger.success(
-            'Course pack deleted successfully (ID: ${widget.item.id})',
-          );
-        }
-      }
+      await _deleteByType(userId);
 
       if (!mounted) return;
-
       setState(() => _isDeleting = false);
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Expanded(child: Text('${_getTypeLabel()} deleted successfully')),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
+      _showSuccessSnackBar(
+        '${ItemTypeHelper.getLabel(widget.item)} deleted successfully',
       );
 
-      // Reload library to reflect the deletion
       ref.invalidate(quizLibraryProvider);
-
-      // Also call the parent's onDelete callback
       widget.onDelete();
-    } catch (e) {
-      AppLogger.error('Failed to delete ${widget.item.type}', exception: e);
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Failed to delete ${widget.item.type}',
+        exception: e,
+        stackTrace: stackTrace,
+      );
 
       if (!mounted) return;
-
       setState(() => _isDeleting = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -964,219 +582,66 @@ class _ItemCardState extends ConsumerState<ItemCard>
             'Failed to delete: ${e.toString().replaceAll('Exception: ', '')}',
           ),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
+          duration: AppDurations.snackBarLong,
         ),
       );
     }
   }
 
-  Widget _buildOptionItem({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
+  Future<void> _deleteByType(String userId) async {
+    if (widget.item.isQuiz) {
+      await QuizService.deleteQuiz(widget.item.id);
+      AppLogger.success('Quiz deleted successfully (ID: ${widget.item.id})');
+    } else if (widget.item.isFlashcard) {
+      await FlashcardService.deleteFlashcardSet(widget.item.id);
+      AppLogger.success(
+        'Flashcard set deleted successfully (ID: ${widget.item.id})',
+      );
+    } else if (widget.item.isNote) {
+      await NoteService.deleteNote(widget.item.id, userId);
+      AppLogger.success('Note deleted successfully (ID: ${widget.item.id})');
+    } else if (widget.item.isStudySet || widget.item.isCoursePack) {
+      if (widget.item.isClaimed) {
+        AppLogger.info(
+          'Deleting claimed course pack copy (original: ${widget.item.originalCoursePackId})',
+        );
+      }
+
+      try {
+        await CoursePackService.deleteCoursePack(widget.item.id);
+        AppLogger.success(
+          widget.item.isClaimed
+              ? 'Claimed course pack copy deleted successfully - original remains intact'
+              : 'Study set deleted successfully (ID: ${widget.item.id})',
+        );
+      } catch (e) {
+        await CoursePackService.deleteCoursePack(widget.item.id);
+        AppLogger.success(
+          'Course pack deleted successfully (ID: ${widget.item.id})',
+        );
+      }
+    }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildThumbnail() {
-    return Container(
-      width: 105,
-      height: 140,
-      margin: const EdgeInsets.all(16),
-      child: ClipPath(
-        clipper: _ThumbnailShapeClipper(),
-        child: Container(
-          decoration: BoxDecoration(color: _getAccentColor()),
-          child: widget.item.coverImagePath != null
-              ? Image.network(
-                  widget.item.coverImagePath!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildDefaultThumbnailIcon(),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return _buildDefaultThumbnailIcon();
-                  },
-                )
-              : _buildDefaultThumbnailIcon(),
+        backgroundColor: Colors.green,
+        duration: AppDurations.snackBar,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppBorderRadius.sm + 2),
         ),
+        margin: AppPadding.allLg,
       ),
     );
-  }
-
-  Widget _buildDefaultThumbnailIcon() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _getTypeIcon(),
-            size: 42,
-            color: Colors.white.withValues(alpha: 0.9),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _getTypeLabel(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTypeBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _getAccentColor(),
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(4),
-          topRight: const Radius.circular(12),
-          bottomLeft: const Radius.circular(12),
-          bottomRight: const Radius.circular(4),
-        ),
-      ),
-      child: Text(
-        _getTypeLabel().toUpperCase(),
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsRow() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 6,
-      children: [
-        // Item count
-        _buildStatChip(icon: _getTypeIcon(), text: _getItemCountText()),
-        // Author (if available)
-        if (widget.item.originalOwnerUsername != null &&
-            widget.item.originalOwnerUsername!.isNotEmpty)
-          _buildStatChip(
-            icon: Icons.person_outline_rounded,
-            text: widget.item.originalOwnerUsername!,
-          ),
-        // Date (if available)
-        if (widget.item.createdAt != null)
-          _buildStatChip(
-            icon: Icons.access_time_rounded,
-            text: _formatDateShort(widget.item.createdAt!),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStatChip({required IconData icon, required String text}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _getAccentColor().withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: _getTextColor()),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: _getTextColor(),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Earth tone background colors
-  Color _getCardBackgroundColor() {
-    if (widget.item.isQuiz) return const Color(0xFFF5F0E8); // Warm cream
-    if (widget.item.isNote) return const Color(0xFFFDF6E3); // Soft sand
-    if (widget.item.isStudySet) return const Color(0xFFE8F0E8); // Sage mist
-    if (widget.item.isCoursePack) return const Color(0xFFE8EBF0); // Cool slate
-    return const Color(0xFFF0EDE8); // Warm stone - Flashcard
-  }
-
-  // Accent colors (darker earth tones)
-  Color _getAccentColor() {
-    if (widget.item.isQuiz) return const Color(0xFF5E8C61); // Forest green
-    if (widget.item.isNote) return const Color(0xFFB8860B); // Dark goldenrod
-    if (widget.item.isStudySet) return const Color(0xFF6B8E7B); // Eucalyptus
-    if (widget.item.isCoursePack) return const Color(0xFF5B6B8C); // Slate blue
-    return const Color(0xFF8B7355); // Warm brown - Flashcard
-  }
-
-  // Text colors
-  Color _getTextColor() {
-    if (widget.item.isQuiz) return const Color(0xFF3D5940); // Deep forest
-    if (widget.item.isNote) return const Color(0xFF6B4423); // Saddle brown
-    if (widget.item.isStudySet) return const Color(0xFF4A6B5A); // Deep sage
-    if (widget.item.isCoursePack) return const Color(0xFF3A4A5C); // Deep slate
-    return const Color(0xFF5C4A3A); // Dark brown - Flashcard
-  }
-
-  IconData _getTypeIcon() {
-    if (widget.item.isQuiz) return Icons.quiz_outlined;
-    if (widget.item.isNote) return Icons.description_outlined;
-    if (widget.item.isStudySet) return Icons.collections_bookmark_outlined;
-    if (widget.item.isCoursePack) return Icons.school_outlined;
-    return Icons.style_outlined; // Flashcard
-  }
-
-  String _getTypeLabel() {
-    if (widget.item.isQuiz) return 'Quiz';
-    if (widget.item.isNote) return 'Note';
-    if (widget.item.isStudySet) return 'Course Pack';
-    return 'Flashcards';
-  }
-
-  String _getItemCountText() {
-    if (widget.item.isNote) return 'Note';
-    if (widget.item.isStudySet) return '${widget.item.itemCount} Items';
-    if (widget.item.isQuiz) return '${widget.item.itemCount} Questions';
-    if (widget.item.isCoursePack) return '${widget.item.itemCount} Items';
-    return '${widget.item.itemCount} Cards';
   }
 
   void _handleTap(BuildContext context) {
@@ -1192,6 +657,188 @@ class _ItemCardState extends ConsumerState<ItemCard>
     } else if (widget.item.isQuiz) {
       _navigateToQuiz(context, user.uid);
     }
+  }
+
+  void _handleEdit() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showErrorSnackBar('Please sign in to edit items');
+      return;
+    }
+
+    // Check ownership before editing
+    if (widget.item.ownerId != null && widget.item.ownerId != user.uid) {
+      _showErrorSnackBar('You can only edit items you own');
+      AppLogger.warning(
+        'User ${user.uid} attempted to edit ${widget.item.type} ${widget.item.id} owned by ${widget.item.ownerId}',
+      );
+      return;
+    }
+
+    // Check if it's a claimed course pack (cannot edit claimed content)
+    if (widget.item.isCoursePack && widget.item.isClaimed) {
+      _showErrorSnackBar('Claimed course packs cannot be edited');
+      return;
+    }
+
+    if (widget.item.isQuiz) {
+      _navigateToEditQuiz(context, user.uid);
+    } else if (widget.item.isFlashcard) {
+      _navigateToEditFlashcard(context, user.uid);
+    } else if (widget.item.isNote) {
+      _navigateToEditNote(context, user.uid);
+    } else if (widget.item.isStudySet || widget.item.isCoursePack) {
+      _navigateToEditStudySet(context);
+    }
+  }
+
+  void _navigateToEditQuiz(BuildContext context, String userId) {
+    AppLogger.info('Navigating to edit quiz: ${widget.item.id}');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading quiz for editing',
+          onLoadComplete: () async {
+            // Pre-fetch questions for the quiz
+            await QuizService.fetchQuestionsByQuizId(widget.item.id, userId);
+          },
+          onNavigate: () {
+            Navigator.pushReplacement(
+              context,
+              customRoute(
+                QuizDetails(
+                  quizItem: QuizLibraryItem.fromJson(
+                    widget.item.toQuizLibraryItem(),
+                  ),
+                  isEditMode: true,
+                ),
+                AnimationType.slideUp,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditFlashcard(BuildContext context, String userId) {
+    AppLogger.info('Navigating to edit flashcard set: ${widget.item.id}');
+    FlashcardSet? loadedFlashcardSet;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading flashcard set for editing',
+          onLoadComplete: () async {
+            loadedFlashcardSet = await FlashcardService.getFlashcardSet(
+              widget.item.id,
+              userId,
+            );
+          },
+          onNavigate: () {
+            if (loadedFlashcardSet != null) {
+              Navigator.pushReplacement(
+                context,
+                customRoute(
+                  FlashcardEditPage(
+                    flashcardSet: loadedFlashcardSet!,
+                    onSaved: () {
+                      // Refresh library after save
+                      ref.invalidate(quizLibraryProvider);
+                    },
+                  ),
+                  AnimationType.slideUp,
+                ),
+              );
+            } else {
+              Navigator.pop(context);
+              _showErrorSnackBar('Failed to load flashcard set');
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditNote(BuildContext context, String userId) {
+    AppLogger.info('Navigating to edit note: ${widget.item.id}');
+    Note? loadedNote;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading note for editing',
+          onLoadComplete: () async {
+            loadedNote = await NoteService.getNote(widget.item.id, userId);
+          },
+          onNavigate: () {
+            if (loadedNote != null) {
+              Navigator.pushReplacement(
+                context,
+                customRoute(
+                  NoteEditPage(
+                    note: loadedNote!,
+                    onSaved: () {
+                      // Refresh library after save
+                      ref.invalidate(quizLibraryProvider);
+                    },
+                  ),
+                  AnimationType.slideUp,
+                ),
+              );
+            } else {
+              Navigator.pop(context);
+              _showErrorSnackBar('Failed to load note');
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditStudySet(BuildContext context) {
+    AppLogger.info('Navigating to edit study set: ${widget.item.id}');
+    CoursePack? loadedStudySet;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WaitScreen(
+          loadingMessage: 'Loading course pack for editing',
+          onLoadComplete: () async {
+            loadedStudySet = await CoursePackService.fetchCoursePackById(
+              widget.item.id,
+            );
+          },
+          onNavigate: () {
+            if (loadedStudySet != null) {
+              // Load the study set into cache for editing
+              StudySetCacheManager.instance.setStudySetFromCoursePack(
+                loadedStudySet!,
+              );
+              Navigator.pushReplacement(
+                context,
+                customRoute(
+                  StudySetDashboard(
+                    studySetId: loadedStudySet!.id,
+                    title: loadedStudySet!.name,
+                    description: loadedStudySet!.description,
+                    language: loadedStudySet!.language,
+                    category: loadedStudySet!.category,
+                    coverImagePath: loadedStudySet!.coverImagePath,
+                    isEditing: true,
+                  ),
+                  AnimationType.slideUp,
+                ),
+              );
+            } else {
+              Navigator.pop(context);
+              _showErrorSnackBar('Failed to load course pack');
+            }
+          },
+        ),
+      ),
+    );
   }
 
   void _navigateToNote(BuildContext context, String userId) {
@@ -1309,98 +956,4 @@ class _ItemCardState extends ConsumerState<ItemCard>
       ),
     );
   }
-}
-
-// Custom clipper for the thumbnail with organic shape
-class _ThumbnailShapeClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-
-    // Create an organic blob-like shape
-    path.moveTo(w * 0.1, h * 0.05);
-    path.quadraticBezierTo(w * 0.5, 0, w * 0.9, h * 0.08);
-    path.quadraticBezierTo(w, h * 0.15, w * 0.95, h * 0.4);
-    path.quadraticBezierTo(w, h * 0.6, w * 0.92, h * 0.85);
-    path.quadraticBezierTo(w * 0.85, h, w * 0.5, h * 0.95);
-    path.quadraticBezierTo(w * 0.15, h, w * 0.08, h * 0.85);
-    path.quadraticBezierTo(0, h * 0.7, 0, h * 0.5);
-    path.quadraticBezierTo(0, h * 0.2, w * 0.1, h * 0.05);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-}
-
-/// Format date with shortened month (e.g., "January 20, 2025" -> "Jan 20, 2025")
-String _formatDateShort(String dateString) {
-  try {
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final shortMonths = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    for (int i = 0; i < months.length; i++) {
-      if (dateString.contains(months[i])) {
-        return dateString
-            .replaceFirst(months[i], shortMonths[i])
-            .replaceAll(', ', ' '); // Remove comma and extra space
-      }
-    }
-    return dateString;
-  } catch (e) {
-    return dateString;
-  }
-}
-
-// Custom clipper for the decorative accent shape
-class _AccentShapeClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-
-    // Create a flowing wave shape
-    path.moveTo(w * 0.3, 0);
-    path.lineTo(w, 0);
-    path.lineTo(w, h * 0.6);
-    path.quadraticBezierTo(w * 0.7, h * 0.8, w * 0.4, h * 0.5);
-    path.quadraticBezierTo(w * 0.1, h * 0.2, w * 0.3, 0);
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

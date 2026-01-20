@@ -1,19 +1,21 @@
 // lib/services/quiz_service.dart
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
-import '../../api_config.dart';
 import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/utils/app_logger.dart';
+
+import '../../api_config.dart';
 import '../models/quiz.dart';
 
 class QuizService {
   static const String baseUrl = ApiConfig.baseUrl;
 
   static Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
   static Future<String> createQuiz(Quiz quiz) async {
     try {
@@ -72,6 +74,59 @@ class QuizService {
     } on Exception catch (e) {
       AppLogger.error('Exception: $e');
       rethrow; // Re-throw custom exceptions as-is
+    } catch (e) {
+      AppLogger.error('Unexpected error: $e');
+      throw Exception('Unexpected error occurred: $e');
+    }
+  }
+
+  /// Update an existing quiz
+  static Future<void> updateQuiz(Quiz quiz) async {
+    try {
+      if (quiz.id == null || quiz.id!.isEmpty) {
+        throw Exception('Quiz ID is required for update');
+      }
+
+      AppLogger.debug('Updating quiz: ${quiz.id}');
+      AppLogger.debug('Quiz data: ${quiz.toJson()}');
+
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/quizzes/${quiz.id}'),
+            headers: _headers,
+            body: jsonEncode(quiz.toJson()),
+          )
+          .timeout(
+            Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Request timed out. Please check your internet connection.',
+              );
+            },
+          );
+
+      AppLogger.debug('Update response status: ${response.statusCode}');
+      AppLogger.debug('Update response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        AppLogger.success('Quiz updated successfully: ${quiz.id}');
+      } else {
+        AppLogger.error('Failed with status code: ${response.statusCode}');
+        throw Exception(
+          'Server error (${response.statusCode}): ${response.body}',
+        );
+      }
+    } on SocketException {
+      AppLogger.error('Network error');
+      throw Exception(
+        'Network error. Please check your internet connection and server status.',
+      );
+    } on FormatException catch (e) {
+      AppLogger.error('JSON format error: $e');
+      throw Exception('Invalid response format from server');
+    } on Exception catch (e) {
+      AppLogger.error('Exception: $e');
+      rethrow;
     } catch (e) {
       AppLogger.error('Unexpected error: $e');
       throw Exception('Unexpected error occurred: $e');

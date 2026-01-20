@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app/utils/exceptions.dart';
 import 'package:quiz_app/utils/routes.dart';
 
 enum AnimationType {
@@ -86,12 +87,10 @@ class PageTransition extends StatelessWidget {
         );
       case AnimationType.bounce:
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: animation, curve: Curves.bounceOut),
-          ),
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
+                CurvedAnimation(parent: animation, curve: Curves.bounceOut),
+              ),
           child: child,
         );
     }
@@ -135,7 +134,7 @@ void customNavigate(
       ),
     );
   } else {
-    throw Exception('Route "$routeName" not found in routeMap.');
+    throw RouteNotFoundException(routeName);
   }
 }
 
@@ -163,6 +162,6 @@ void customNavigateReplacement(
       ),
     );
   } else {
-    throw Exception('Route "$routeName" not found in routeMap.');
+    throw RouteNotFoundException(routeName);
   }
 }

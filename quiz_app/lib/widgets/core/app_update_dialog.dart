@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/app_version_service.dart';
+import '../../utils/app_logger.dart';
 import '../../utils/color.dart';
 import '../../utils/quiz_design_system.dart';
 
@@ -68,7 +69,7 @@ class AppUpdateDialog extends StatelessWidget {
         );
       }
     } catch (e) {
-      debugPrint('Error launching update: $e');
+      AppLogger.error('Error launching update', exception: e);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

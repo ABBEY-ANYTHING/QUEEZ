@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quiz_app/CreateSection/services/course_pack_service.dart';
 import 'package:quiz_app/LibrarySection/screens/hosting_page.dart';
-import 'package:quiz_app/LibrarySection/screens/library_page.dart';
+import 'package:quiz_app/providers/library_provider.dart';
 import 'package:quiz_app/utils/animations/page_transition.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/quiz_design_system.dart';
 
 /// Clean, minimalistic mode selection sheet with 2x2 grid layout
-class ModeSelectionSheet extends StatelessWidget {
+class ModeSelectionSheet extends ConsumerWidget {
   final String itemId; // Can be quizId or coursePackId
   final String itemTitle;
   final String hostId;
@@ -25,7 +26,7 @@ class ModeSelectionSheet extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(QuizSpacing.lg),
       decoration: BoxDecoration(
@@ -85,6 +86,7 @@ class ModeSelectionSheet extends StatelessWidget {
                       Expanded(
                         child: _buildModeCard(
                           context: context,
+                          ref: ref,
                           icon: Icons.share_outlined,
                           title: 'Share',
                           mode: 'share',
@@ -94,6 +96,7 @@ class ModeSelectionSheet extends StatelessWidget {
                       Expanded(
                         child: _buildModeCard(
                           context: context,
+                          ref: ref,
                           icon: isCurrentlyPublic
                               ? Icons.remove_shopping_cart_outlined
                               : Icons.storefront_outlined,
@@ -118,6 +121,7 @@ class ModeSelectionSheet extends StatelessWidget {
                           Expanded(
                             child: _buildModeCard(
                               context: context,
+                              ref: ref,
                               icon: Icons.share_outlined,
                               title: 'Share',
                               mode: 'share',
@@ -127,6 +131,7 @@ class ModeSelectionSheet extends StatelessWidget {
                           Expanded(
                             child: _buildModeCard(
                               context: context,
+                              ref: ref,
                               icon: Icons.groups_outlined,
                               title: 'Live Multiplayer',
                               mode: 'live_multiplayer',
@@ -143,6 +148,7 @@ class ModeSelectionSheet extends StatelessWidget {
                           Expanded(
                             child: _buildModeCard(
                               context: context,
+                              ref: ref,
                               icon: Icons.person_outline,
                               title: 'Self-Paced',
                               mode: 'self_paced',
@@ -152,6 +158,7 @@ class ModeSelectionSheet extends StatelessWidget {
                           Expanded(
                             child: _buildModeCard(
                               context: context,
+                              ref: ref,
                               icon: Icons.schedule_outlined,
                               title: 'Timed Individual',
                               mode: 'timed_individual',
@@ -191,6 +198,7 @@ class ModeSelectionSheet extends StatelessWidget {
 
   Widget _buildModeCard({
     required BuildContext context,
+    required WidgetRef ref,
     required IconData icon,
     required String title,
     required String mode,
@@ -265,7 +273,7 @@ class ModeSelectionSheet extends StatelessWidget {
                 );
 
                 // Reload the library to reflect the isPublic status change
-                LibraryPage.reloadItems();
+                ref.invalidate(quizLibraryProvider);
               } catch (e) {
                 AppLogger.error(
                   'Failed to ${isRemove ? "remove" : "list"} course pack',

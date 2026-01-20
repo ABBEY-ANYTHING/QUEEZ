@@ -308,7 +308,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _showLanguageSelector() {
-    final currentLocale = ref.read(localeProvider);
+    final currentLocale = ref.read(localeStateProvider);
 
     showModalBottomSheet(
       context: context,
@@ -386,7 +386,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         child: InkWell(
                           onTap: () {
                             ref
-                                .read(localeProvider.notifier)
+                                .read(localeStateProvider.notifier)
                                 .setLocale(language.code);
                             Navigator.pop(context);
                             ScaffoldMessenger.of(this.context).showSnackBar(
@@ -517,7 +517,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Text(
                 AppStrings.get(
                   'settings',
-                  ref.watch(localeProvider).languageCode,
+                  ref.watch(localeStateProvider).languageCode,
                 ),
                 style: const TextStyle(
                   fontSize: 32,
@@ -539,7 +539,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _buildSectionTitle(
                 AppStrings.get(
                   'account',
-                  ref.watch(localeProvider).languageCode,
+                  ref.watch(localeStateProvider).languageCode,
                 ),
               ),
               const SizedBox(height: 12),
@@ -548,11 +548,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.person_outline_rounded,
                   title: AppStrings.get(
                     'edit_profile',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: AppStrings.get(
                     'update_profile_info',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   onTap: () async {
                     if (_userModel != null) {
@@ -602,11 +602,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.lock_outline_rounded,
                   title: AppStrings.get(
                     'change_password',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: AppStrings.get(
                     'update_password',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   onTap: _handleChangePassword,
                 ),
@@ -618,7 +618,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _buildSectionTitle(
                 AppStrings.get(
                   'preferences',
-                  ref.watch(localeProvider).languageCode,
+                  ref.watch(localeStateProvider).languageCode,
                 ),
               ),
               const SizedBox(height: 12),
@@ -627,10 +627,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.language_rounded,
                   title: AppStrings.get(
                     'language',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: ref
-                      .watch(localeProvider.notifier)
+                      .watch(localeStateProvider.notifier)
                       .currentLanguage
                       .name,
                   onTap: () => _showLanguageSelector(),
@@ -640,11 +640,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.palette_outlined,
                   title: AppStrings.get(
                     'theme',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: AppStrings.get(
                     'light_mode',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -660,7 +660,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
               // About Section
               _buildSectionTitle(
-                AppStrings.get('about', ref.watch(localeProvider).languageCode),
+                AppStrings.get('about', ref.watch(localeStateProvider).languageCode),
               ),
               const SizedBox(height: 12),
               _buildSettingsCard([
@@ -668,10 +668,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.info_outline_rounded,
                   title: AppStrings.get(
                     'about_app',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle:
-                      '${AppStrings.get('version', ref.watch(localeProvider).languageCode)} 1.0.0',
+                      '${AppStrings.get('version', ref.watch(localeStateProvider).languageCode)} 1.0.0',
                   onTap: () {
                     AppDialog.show(
                       context: context,
@@ -999,7 +999,7 @@ These terms are governed by applicable laws in your jurisdiction.
               _buildSectionTitle(
                 AppStrings.get(
                   'danger_zone',
-                  ref.watch(localeProvider).languageCode,
+                  ref.watch(localeStateProvider).languageCode,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1008,7 +1008,7 @@ These terms are governed by applicable laws in your jurisdiction.
                   icon: Icons.logout_rounded,
                   title: AppStrings.get(
                     'sign_out',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: 'Sign out of your account',
                   onTap: _handleSignOut,
@@ -1019,7 +1019,7 @@ These terms are governed by applicable laws in your jurisdiction.
                   icon: Icons.delete_outline_rounded,
                   title: AppStrings.get(
                     'delete_account',
-                    ref.watch(localeProvider).languageCode,
+                    ref.watch(localeStateProvider).languageCode,
                   ),
                   subtitle: 'Permanently delete your account',
                   onTap: _handleDeleteAccount,

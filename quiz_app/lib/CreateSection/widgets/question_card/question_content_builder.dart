@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../models/question.dart';
-import 'option_item.dart';
-import 'drag_drop_content.dart';
+import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/utils/color.dart';
+
+import 'drag_drop_content.dart';
+import 'option_item.dart';
 
 class QuestionContentBuilder extends StatelessWidget {
   final Question question;

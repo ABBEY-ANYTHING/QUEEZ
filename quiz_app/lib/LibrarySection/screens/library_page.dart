@@ -4,6 +4,7 @@ import 'package:quiz_app/LibrarySection/models/library_item.dart';
 import 'package:quiz_app/LibrarySection/widgets/add_quiz_modal.dart';
 import 'package:quiz_app/LibrarySection/widgets/library_body.dart';
 import 'package:quiz_app/providers/library_provider.dart';
+import 'package:quiz_app/providers/library_search_provider.dart';
 import 'package:quiz_app/utils/app_logger.dart';
 import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/utils/globals.dart';
@@ -12,31 +13,16 @@ import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 
 import '../../utils/quiz_design_system.dart';
 
-final GlobalKey<LibraryPageState> libraryPageKey =
-    GlobalKey<LibraryPageState>();
-
 class LibraryPage extends ConsumerStatefulWidget {
-  LibraryPage({Key? key}) : super(key: libraryPageKey);
+  const LibraryPage({super.key});
 
   @override
   ConsumerState<LibraryPage> createState() => LibraryPageState();
-
-  /// ✅ Static method to call reload from anywhere
-  static void reloadItems() {
-    libraryPageKey.currentState?._reloadItems();
-  }
-
-  /// 🔍 Static method to set search query
-  static void setSearchQuery(String query) {
-    libraryPageKey.currentState?._setSearchQuery(query);
-  }
 }
 
 class LibraryPageState extends ConsumerState<LibraryPage>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
-  String _searchQuery = '';
-  String? _typeFilter; // null = all, 'quiz', or 'flashcard'
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -63,36 +49,14 @@ class LibraryPageState extends ConsumerState<LibraryPage>
     AppLogger.success('_reloadItems completed');
   }
 
-  /// 🔍 Set search query (also refreshes data if needed)
-  void _setSearchQuery(String query) {
-    AppLogger.info('_setSearchQuery called with: "$query"');
-
-    // First invalidate to ensure fresh data is fetched
-    AppLogger.info('Invalidating quizLibraryProvider...');
-    ref.invalidate(quizLibraryProvider);
-    AppLogger.success('quizLibraryProvider invalidated');
-
-    // Then update the search query UI
-    AppLogger.info('Updating search query state...');
-    setState(() {
-      _searchQuery = query;
-      _searchController.text = query;
-    });
-    AppLogger.success('Search query state updated, _searchQuery = "$_searchQuery"');
-  }
-
   void _filterItems(String query) {
     AppLogger.debug('_filterItems called with: "$query"');
-    setState(() {
-      _searchQuery = query;
-    });
+    ref.read(librarySearchQueryProvider.notifier).setQuery(query);
   }
 
   void _setTypeFilter(String? filter) {
     AppLogger.debug('Setting filter to: $filter');
-    setState(() {
-      _typeFilter = filter;
-    });
+    ref.read(libraryTypeFilterProvider.notifier).setFilter(filter);
   }
 
   /// Handle favorite changes (no longer needs server reload - handled locally)
@@ -100,32 +64,42 @@ class LibraryPageState extends ConsumerState<LibraryPage>
     AppLogger.debug('Favorite changed (handled locally)');
   }
 
-  List<LibraryItem> _getFilteredItems(List<LibraryItem> allItems) {
+  List<LibraryItem> _getFilteredItems(
+    List<LibraryItem> allItems,
+    String searchQuery,
+    String? typeFilter,
+  ) {
     var filtered = allItems;
 
-    AppLogger.debug('Filtering ${allItems.length} items with filter: $_typeFilter');
+    AppLogger.debug(
+      'Filtering ${allItems.length} items with filter: $typeFilter',
+    );
 
     // Apply type filter
-    if (_typeFilter != null) {
-      if (_typeFilter == 'favorites') {
+    if (typeFilter != null) {
+      if (typeFilter == 'favorites') {
         // Filter for favorites only
         filtered = filtered.where((item) => item.isFavorite).toList();
         AppLogger.debug('After favorites filter: ${filtered.length} items');
       } else {
         // Filter by type
-        filtered = filtered.where((item) => item.type == _typeFilter).toList();
-        AppLogger.debug('After type filter ($_typeFilter): ${filtered.length} items');
+        filtered = filtered.where((item) => item.type == typeFilter).toList();
+        AppLogger.debug(
+          'After type filter ($typeFilter): ${filtered.length} items',
+        );
       }
     }
 
     // Apply search filter
-    if (_searchQuery.isNotEmpty) {
+    if (searchQuery.isNotEmpty) {
       final beforeSearchCount = filtered.length;
       filtered = filtered.where((item) {
-        return item.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            item.description.toLowerCase().contains(_searchQuery.toLowerCase());
+        return item.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            item.description.toLowerCase().contains(searchQuery.toLowerCase());
       }).toList();
-      AppLogger.debug('After search filter "$_searchQuery": ${filtered.length} items (was $beforeSearchCount)');
+      AppLogger.debug(
+        'After search filter "$searchQuery": ${filtered.length} items (was $beforeSearchCount)',
+      );
     }
 
     return filtered;
@@ -134,7 +108,15 @@ class LibraryPageState extends ConsumerState<LibraryPage>
   @override
   Widget build(BuildContext context) {
     final itemsAsync = ref.watch(quizLibraryProvider);
+    final searchQuery = ref.watch(librarySearchQueryProvider);
+    final typeFilter = ref.watch(libraryTypeFilterProvider);
+
     AppLogger.debug('build() called, watching quizLibraryProvider');
+
+    // Sync the text controller with the provider state
+    if (_searchController.text != searchQuery) {
+      _searchController.text = searchQuery;
+    }
 
     // Get filtered items and loading/error state from AsyncValue
     bool isLoading = false;
@@ -144,8 +126,10 @@ class LibraryPageState extends ConsumerState<LibraryPage>
     itemsAsync.when(
       data: (items) {
         AppLogger.success('Provider has data: ${items.length} total items');
-        filteredItems = _getFilteredItems(items);
-        AppLogger.debug('After filtering with query "$_searchQuery": ${filteredItems.length} items');
+        filteredItems = _getFilteredItems(items, searchQuery, typeFilter);
+        AppLogger.debug(
+          'After filtering with query "$searchQuery": ${filteredItems.length} items',
+        );
         for (var i = 0; i < filteredItems.length && i < 5; i++) {
           AppLogger.debug('Filtered item $i: ${filteredItems[i].title}');
         }
@@ -172,7 +156,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
           slivers: [
             SliverToBoxAdapter(
               child: buildSearchSection(
-                searchQuery: _searchQuery,
+                searchQuery: searchQuery,
                 searchController: _searchController,
                 onQueryChanged: _filterItems,
                 context: context,
@@ -183,7 +167,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
             ),
             SliverToBoxAdapter(
               child: buildFilterChips(
-                typeFilter: _typeFilter,
+                typeFilter: typeFilter,
                 onFilterChanged: _setTypeFilter,
               ),
             ),
@@ -192,7 +176,7 @@ class LibraryPageState extends ConsumerState<LibraryPage>
               isLoading: isLoading,
               errorMessage: errorMessage,
               filteredItems: filteredItems,
-              searchQuery: _searchQuery,
+              searchQuery: searchQuery,
               onRetry: _reloadItems,
               onFavoriteChanged: _onFavoriteChanged,
             ),

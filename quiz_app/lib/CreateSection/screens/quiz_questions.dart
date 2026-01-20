@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:quiz_app/CreateSection/models/question.dart';
 import 'package:quiz_app/CreateSection/models/quiz.dart';
 import 'package:quiz_app/CreateSection/services/quiz_cache_manager.dart';
 import 'package:quiz_app/CreateSection/services/quiz_service.dart';
@@ -9,19 +10,22 @@ import 'package:quiz_app/utils/color.dart';
 import 'package:quiz_app/widgets/appbar/universal_appbar.dart';
 import 'package:quiz_app/widgets/core/app_dialog.dart';
 
-import '../models/question.dart';
 import '../widgets/question_card/question_card.dart';
 import '../widgets/question_navigation.dart';
 
 class QuizQuestions extends StatefulWidget {
   final List<Question>? questions;
   final bool isStudySetMode;
+  final bool isEditMode;
+  final String? quizId;
   final Function(Quiz)? onSaveForStudySet;
 
   const QuizQuestions({
     super.key,
     this.questions,
     this.isStudySetMode = false,
+    this.isEditMode = false,
+    this.quizId,
     this.onSaveForStudySet,
   });
   @override
@@ -204,7 +208,9 @@ class _QuizQuestionsState extends State<QuizQuestions> {
             title: 'Quiz Added!',
             message: 'Quiz has been added to your study set.',
             onDismiss: () async {
-              AppLogger.debug('Dialog dismissed, now popping navigation stack...');
+              AppLogger.debug(
+                'Dialog dismissed, now popping navigation stack...',
+              );
 
               if (mounted) {
                 // Pop back to dashboard with simple slide animation
@@ -214,7 +220,9 @@ class _QuizQuestionsState extends State<QuizQuestions> {
                 Navigator.of(context).popUntil((route) {
                   return popCount++ >= 2 || route.isFirst;
                 });
-                AppLogger.debug('Navigation complete - should be at Dashboard now');
+                AppLogger.debug(
+                  'Navigation complete - should be at Dashboard now',
+                );
               }
             },
           );
@@ -233,14 +241,25 @@ class _QuizQuestionsState extends State<QuizQuestions> {
       }
 
       // Save to backend with timeout
-      AppLogger.debug('Saving quiz to backend');
       String quizId;
 
-      // Call createQuiz() for new quiz
-      quizId = await QuizService.createQuiz(quiz).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw Exception('Request timed out'),
-      );
+      if (widget.isEditMode && widget.quizId != null) {
+        // Update existing quiz
+        AppLogger.debug('Updating existing quiz: ${widget.quizId}');
+        final quizToUpdate = quiz.copyWith(id: widget.quizId);
+        await QuizService.updateQuiz(quizToUpdate).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw Exception('Request timed out'),
+        );
+        quizId = widget.quizId!;
+      } else {
+        // Create new quiz
+        AppLogger.debug('Creating new quiz');
+        quizId = await QuizService.createQuiz(quiz).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () => throw Exception('Request timed out'),
+        );
+      }
 
       AppLogger.success('Quiz saved with ID: $quizId');
 
